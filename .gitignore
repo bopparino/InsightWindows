@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Environment / secrets — never commit .env (keep a .env.example instead)
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# Node / frontend
+node_modules/
+dist/
+.vite/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data files (already imported into PostgreSQL)
+downloadedfiles/
+data/quotes/
+"Equipment History/"
+Equipment History/
+
+# Claude session files (memory is in ~/.claude, not here)
+.claude/
