@@ -4,7 +4,11 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend/ ./
-# Build without Azure SSO env vars — login page falls back to username/password
+# Accept Azure SSO vars at build time so Vite can bake them into the bundle
+ARG VITE_AZURE_CLIENT_ID
+ARG VITE_AZURE_TENANT_ID
+ENV VITE_AZURE_CLIENT_ID=$VITE_AZURE_CLIENT_ID
+ENV VITE_AZURE_TENANT_ID=$VITE_AZURE_TENANT_ID
 RUN npm run build
 
 # ── Stage 2: Python backend + built frontend ───────────────────
