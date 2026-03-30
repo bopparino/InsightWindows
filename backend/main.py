@@ -26,6 +26,30 @@ Base.metadata.create_all(bind=engine)
 # Ensure storage folder exists
 os.makedirs(settings.STORAGE_PATH, exist_ok=True)
 
+# Seed admin user if ADMIN_PASSWORD env var is set or no admin exists
+def _seed_admin():
+    from core.database import SessionLocal
+    from core.security import hash_password
+    db = SessionLocal()
+    try:
+        admin = db.query(User).filter_by(username="admin").first()
+        env_pw = os.getenv("ADMIN_PASSWORD")
+        if not admin:
+            db.add(User(
+                username="admin", full_name="Administrator", initials="AD",
+                email="admin@insight.local",
+                hashed_password=hash_password(env_pw or "ChangeMe123!"),
+                role="admin", active=True,
+            ))
+            db.commit()
+        elif env_pw:
+            admin.hashed_password = hash_password(env_pw)
+            db.commit()
+    finally:
+        db.close()
+
+_seed_admin()
+
 app = FastAPI(
     title="HVAC Bid System — POC",
     version="0.1.0",

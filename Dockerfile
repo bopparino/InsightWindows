@@ -4,11 +4,7 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend/ ./
-# Accept Azure SSO vars at build time so Vite can bake them into the bundle
-ARG VITE_AZURE_CLIENT_ID
-ARG VITE_AZURE_TENANT_ID
-ENV VITE_AZURE_CLIENT_ID=$VITE_AZURE_CLIENT_ID
-ENV VITE_AZURE_TENANT_ID=$VITE_AZURE_TENANT_ID
+# .env.production is copied above — Vite picks it up automatically during build
 RUN npm run build
 
 # ── Stage 2: Python backend + built frontend ───────────────────

@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     COMPANY_LOGO_PATH:  str = ""
     SECRET_KEY:          str = "change-me-to-something-long-and-random"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
+    ADMIN_PASSWORD:      str = ""
 
     # Microsoft Entra ID (SSO)
     AZURE_CLIENT_ID: str = ""
