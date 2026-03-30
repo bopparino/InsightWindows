@@ -281,6 +281,121 @@ function HelpModal({ onClose }) {
   )
 }
 
+// ─── Feedback Modal ────────────────────────────────────────────────────────────
+
+function FeedbackModal({ onClose }) {
+  const [type, setType] = useState('bug')
+  const [subject, setSubject] = useState('')
+  const [message, setMessage] = useState('')
+  const [status, setStatus] = useState(null) // null | 'sending' | 'sent' | 'error'
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!subject.trim() || !message.trim()) return
+    setStatus('sending')
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ type, subject: subject.trim(), message: message.trim() }),
+      })
+      if (!res.ok) throw new Error()
+      setStatus('sent')
+      setTimeout(onClose, 1500)
+    } catch {
+      setStatus('error')
+    }
+  }
+
+  const inputStyle = {
+    width: '100%', boxSizing: 'border-box', padding: '8px 10px',
+    borderRadius: 7, border: '1px solid var(--border, rgba(0,0,0,0.15))',
+    background: 'var(--body-bg)', color: 'var(--text)', fontSize: 13,
+    fontFamily: 'inherit', outline: 'none',
+  }
+
+  return (
+    <div onClick={onClose} style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+      zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: 'var(--card-bg, #fff)', borderRadius: 12, padding: '28px 32px',
+        width: 460, maxWidth: '92vw',
+        boxShadow: '0 24px 80px rgba(0,0,0,0.3)', color: 'var(--text, #111)',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Send Feedback</h2>
+          <button onClick={onClose} style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            fontSize: 22, lineHeight: 1, color: 'var(--text-muted, #999)', padding: '0 4px',
+          }}>×</button>
+        </div>
+
+        {status === 'sent' ? (
+          <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 14, color: 'var(--status-contracted-text, #1a7c4a)' }}>
+            ✓ Feedback submitted — thanks!
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 5, color: 'var(--text-muted)' }}>TYPE</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {[['bug', 'Bug'], ['idea', 'Idea'], ['feedback', 'Other']].map(([val, label]) => (
+                  <button key={val} type="button" onClick={() => setType(val)} style={{
+                    flex: 1, padding: '6px 0', borderRadius: 7, fontSize: 13, cursor: 'pointer', fontWeight: type === val ? 600 : 400,
+                    border: `1px solid ${type === val ? 'var(--accent, #4f8ef7)' : 'var(--border, rgba(0,0,0,0.15))'}`,
+                    background: type === val ? 'var(--blue-light, #e8f0fe)' : 'var(--body-bg)',
+                    color: type === val ? 'var(--accent, #4f8ef7)' : 'var(--text-muted)',
+                  }}>{label}</button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 5, color: 'var(--text-muted)' }}>SUBJECT</label>
+              <input
+                style={inputStyle} value={subject} onChange={e => setSubject(e.target.value)}
+                placeholder="Brief summary…" maxLength={200} required
+              />
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 5, color: 'var(--text-muted)' }}>DETAILS</label>
+              <textarea
+                style={{ ...inputStyle, resize: 'vertical', minHeight: 100 }}
+                value={message} onChange={e => setMessage(e.target.value)}
+                placeholder="Describe the issue or idea in detail…" required
+              />
+            </div>
+
+            {status === 'error' && (
+              <p style={{ fontSize: 12, color: 'var(--status-lost-text, #b91c1c)', marginBottom: 12 }}>
+                Something went wrong — please try again.
+              </p>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button type="button" onClick={onClose} style={{
+                padding: '8px 18px', borderRadius: 8, border: '1px solid var(--border)',
+                background: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--text-muted)',
+              }}>Cancel</button>
+              <button type="submit" disabled={status === 'sending'} style={{
+                padding: '8px 20px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                fontSize: 13, fontWeight: 600, background: 'var(--accent, #4f8ef7)', color: '#fff',
+                opacity: status === 'sending' ? 0.7 : 1,
+              }}>
+                {status === 'sending' ? 'Sending…' : 'Submit'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Command Palette ───────────────────────────────────────────────────────────
 
 const TYPE_ICON = { plan: 'plans', project: 'projects', builder: 'builders', equipment: 'equipment' }
@@ -493,7 +608,7 @@ function CommandPalette({ onClose, onOpenHelp }) {
 
 // ─── Sidebar ───────────────────────────────────────────────────────────────────
 
-function Sidebar({ onOpenHelp }) {
+function Sidebar({ onOpenHelp, onOpenFeedback }) {
   const { user, logout } = useAuth()
   const { theme } = useTheme()
   const navigate = useNavigate()
@@ -609,6 +724,26 @@ function Sidebar({ onOpenHelp }) {
       {/* Footer */}
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', padding: '8px 10px' }}>
 
+        {/* Feedback */}
+        <button onClick={onOpenFeedback} title="Send Feedback"
+          style={{
+            width: '100%', background: 'none', border: 'none', cursor: 'pointer',
+            color: 'rgba(255,255,255,0.5)', borderRadius: 8, padding: '8px 12px', marginBottom: 2,
+            display: 'flex', alignItems: 'center',
+            gap: collapsed ? 0 : 10, justifyContent: collapsed ? 'center' : 'flex-start',
+            transition: 'color 0.15s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.color = 'white'}
+          onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}
+        >
+          <span style={iconWrap}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </span>
+          {!collapsed && <span style={{ fontSize: 13 }}>Feedback</span>}
+        </button>
+
         {/* Help */}
         <button onClick={onOpenHelp} title="Help"
           style={{
@@ -697,6 +832,7 @@ function AppLayout() {
   const { user } = useAuth()
   const isAccountManager = user?.role === 'account_manager'
   const [showHelp, setShowHelp] = useState(false)
+  const [showFeedback, setShowFeedback] = useState(false)
   const [showPalette, setShowPalette] = useState(false)
 
   useEffect(() => {
@@ -712,7 +848,7 @@ function AppLayout() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', background: 'var(--body-bg)' }}>
-      <Sidebar onOpenHelp={() => setShowHelp(true)} />
+      <Sidebar onOpenHelp={() => setShowHelp(true)} onOpenFeedback={() => setShowFeedback(true)} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'auto' }}>
         <main style={{ flex: 1, padding: '32px 40px', width: '100%', boxSizing: 'border-box' }}>
           <Routes>
@@ -732,8 +868,9 @@ function AppLayout() {
         </main>
       </div>
 
-      {showHelp    && <HelpModal onClose={() => setShowHelp(false)} />}
-      {showPalette && <CommandPalette onClose={() => setShowPalette(false)} onOpenHelp={() => { setShowHelp(true) }} />}
+      {showHelp     && <HelpModal onClose={() => setShowHelp(false)} />}
+      {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}
+      {showPalette  && <CommandPalette onClose={() => setShowPalette(false)} onOpenHelp={() => { setShowHelp(true) }} />}
     </div>
   )
 }

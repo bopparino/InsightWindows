@@ -188,6 +188,18 @@ class KitItem(Base):
     active        = Column(Boolean, default=True)
 
 
+class Suggestion(Base):
+    __tablename__ = "suggestions"
+    id           = Column(Integer, primary_key=True)
+    submitted_at = Column(DateTime, server_default=func.now())
+    user_id      = Column(Integer, ForeignKey("users.id"), nullable=True)
+    user_name    = Column(String(100), nullable=False)
+    type         = Column(String(20), nullable=False, default="feedback")
+    subject      = Column(String(200), nullable=False)
+    message      = Column(Text, nullable=False)
+    status       = Column(String(20), default="open")
+
+
 class User(Base):
     __tablename__ = "users"
     id              = Column(Integer, primary_key=True)
