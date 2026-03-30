@@ -61,3 +61,25 @@ def list_feedback(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admins only")
     return db.query(Suggestion).order_by(Suggestion.submitted_at.desc()).all()
+
+
+class StatusUpdate(BaseModel):
+    status: str
+
+
+@router.patch("/{item_id}", response_model=FeedbackOut)
+def update_feedback_status(
+    item_id: int,
+    body: StatusUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admins only")
+    item = db.query(Suggestion).filter_by(id=item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Not found")
+    item.status = body.status
+    db.commit()
+    db.refresh(item)
+    return item

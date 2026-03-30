@@ -16,6 +16,7 @@ import Files          from './pages/Files'
 import KitAdmin       from './pages/KitAdmin'
 import Performance    from './pages/Performance'
 import Login          from './pages/Login'
+import FeedbackInbox  from './pages/FeedbackInbox'
 
 const ICONS = {
   dashboard:   <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.9"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.9"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.9"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.9"/></svg>,
@@ -33,6 +34,7 @@ const ICONS = {
   chevronRight:<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 12l4-4-4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   signout:     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 14H3a1 1 0 01-1-1V3a1 1 0 011-1h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><path d="M11 11l3-3-3-3M14 8H6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   search:      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" strokeWidth="1.5"/><path d="M10 10l3.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
+  feedback:    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
   plus:        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
 }
 
@@ -49,6 +51,7 @@ const NAV = [
   { to: '/performance', label: 'Performance', icon: 'performance', section: 'admin', roles: ['admin', 'account_executive'] },
   { to: '/kit-admin',   label: 'Kit Pricing', icon: 'kitadmin',    section: 'admin', roles: ['admin', 'account_executive'] },
   { to: '/users',       label: 'Users',       icon: 'users',       section: 'admin', roles: ['admin', 'account_executive'] },
+  { to: '/feedback',    label: 'Feedback',    icon: 'feedback',    section: 'admin', roles: ['admin'] },
   { to: '/plans',       label: 'Plans',       icon: 'plans',       section: 'ops',   roles: ['admin', 'account_manager'] },
   { to: '/projects',    label: 'Projects',    icon: 'projects',    section: 'ops',   roles: ['admin', 'account_manager'] },
   { to: '/builders',    label: 'Builders',    icon: 'builders',    section: 'ops',   roles: ['admin', 'account_manager'] },
@@ -864,6 +867,7 @@ function AppLayout() {
             <Route path="/kit-admin"   element={<KitAdmin />} />
             <Route path="/files"       element={<Files />} />
             <Route path="/performance" element={<Performance />} />
+            <Route path="/feedback"    element={<FeedbackInbox />} />
           </Routes>
         </main>
       </div>

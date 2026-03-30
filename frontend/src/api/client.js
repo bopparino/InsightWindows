@@ -133,3 +133,9 @@ export const kit = {
   create:    (data) => api.post('/kit/', data).then(r => r.data),
   remove:    (id)   => api.delete(`/kit/${id}`).then(r => r.data),
 }
+
+export const feedbackApi = {
+  list:   ()         => api.get('/feedback').then(r => r.data),
+  submit: (data)     => api.post('/feedback', data).then(r => r.data),
+  update: (id, data) => api.patch(`/feedback/${id}`, data).then(r => r.data),
+}
