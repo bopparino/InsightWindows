@@ -37,12 +37,7 @@ function ThemePreviewCard({ t, active, onSelect }) {
         <div style={{ display: 'flex', height: 68, background: p.bg }}>
           {/* Sidebar stub */}
           <div style={{
-            width: 28, background:
-              t.id === 'blueprint'  ? '#030D14'
-              : t.id === 'cyberpunk'? '#070212'
-              : t.id === 'brutal' || t.id === 'mono' ? '#0a0a0a'
-              : t.id === 'dark'    ? '#0d1b2e'
-              : '#1a3a5c',
+            width: 28, background: p.sidebar || '#1a1a1a',
             display: 'flex', flexDirection: 'column',
             gap: 3, padding: '6px 4px',
           }}>
@@ -72,7 +67,7 @@ function ThemePreviewCard({ t, active, onSelect }) {
               background: p.card,
               border: `1px solid ${p.border}`,
               backdropFilter: 'none',
-          boxShadow: t.id === 'brutal' ? `2px 2px 0 ${p.border}` : 'none',
+          boxShadow: 'none',
               display: 'flex', alignItems: 'center', gap: 3, padding: '0 5px',
             }}>
               {[38, 55, 28, 44].map((w, i) => (
@@ -102,15 +97,8 @@ function ThemePreviewCard({ t, active, onSelect }) {
         <div style={{
           fontSize: 13, fontWeight: active ? 700 : 500,
           color: active ? 'var(--blue-mid)' : 'var(--gray-800)',
-          display: 'flex', alignItems: 'center', gap: 5,
         }}>
           {t.label}
-          {active && (
-            <span style={{
-              fontSize: 10, background: 'var(--blue-mid)', color: 'white',
-              borderRadius: 4, padding: '1px 5px', fontWeight: 600,
-            }}>Active</span>
-          )}
         </div>
       </div>
     </button>
