@@ -537,3 +537,272 @@ aside nav a:hover {
 .theme-dusk ::-webkit-scrollbar-thumb { background: var(--taupe-grey); border-radius: 3px; }
 .theme-dusk ::-webkit-scrollbar-thumb:hover { background: #7a7278; }
 .theme-dusk select { color-scheme: dark; }
+
+/* ═══════════════════════════════════════════════════════════
+   SUNSTONE THEME  — Warm cream & golden amber
+═══════════════════════════════════════════════════════════ */
+.theme-sunstone {
+  --body-bg:   #fff8ee;
+  --card-bg:   #ffffff;
+  --input-bg:  #fffdf8;
+  --sidebar-bg:#7a3e08;
+
+  --gray-50:   #fdf4e4;
+  --gray-100:  #f5e8cc;
+  --gray-200:  #e8d0a0;
+  --gray-300:  #d4b070;
+  --gray-400:  #b08040;
+  --gray-600:  #5a3a10;
+  --gray-800:  #1a0e00;
+
+  --blue:      #c87820;
+  --blue-mid:  #e09830;
+  --blue-light:rgba(200,120,32,0.1);
+  --accent:    #c87820;
+  --success:   #3a7d52;
+  --danger:    #c0392b;
+
+  --text:      #1a0e00;
+  --text-muted:#8a5a20;
+  --border:    #f0d8b0;
+
+  --shadow:    0 1px 3px rgba(100,60,0,0.08), 0 1px 2px rgba(100,60,0,0.05);
+  --shadow-md: 0 4px 12px rgba(100,60,0,0.12);
+
+  --status-draft-bg:          #fef8ee;
+  --status-draft-border:      #f0d8a8;
+  --status-draft-text:        #8a6030;
+  --status-draft-accent:      #c8a060;
+
+  --status-proposed-bg:       #fff4d8;
+  --status-proposed-border:   #f0c060;
+  --status-proposed-text:     #8a5000;
+  --status-proposed-accent:   #d4820a;
+
+  --status-contracted-bg:     rgba(58,125,82,0.1);
+  --status-contracted-border: rgba(58,125,82,0.4);
+  --status-contracted-text:   #1e5c36;
+  --status-contracted-accent: #3a7d52;
+
+  --status-complete-bg:       rgba(200,120,32,0.1);
+  --status-complete-border:   rgba(200,120,32,0.4);
+  --status-complete-text:     #7a4008;
+  --status-complete-accent:   #c87820;
+
+  --status-lost-bg:           #fef2f0;
+  --status-lost-border:       #e8b0a8;
+  --status-lost-text:         #8a2010;
+  --status-lost-accent:       #c0392b;
+}
+
+.theme-sunstone body { color: #1a0e00; }
+.theme-sunstone .card { border-color: #f0d8b0; box-shadow: 0 1px 4px rgba(100,60,0,0.08); }
+.theme-sunstone input, .theme-sunstone select, .theme-sunstone textarea {
+  border-color: #e8d0a0; color: #1a0e00; background: #fffdf8;
+}
+.theme-sunstone input:focus, .theme-sunstone select:focus, .theme-sunstone textarea:focus {
+  border-color: #c87820; box-shadow: 0 0 0 3px rgba(200,120,32,0.15);
+}
+.theme-sunstone label { color: #8a5a20; }
+.theme-sunstone .btn-primary { background: #c87820; color: #fff; }
+.theme-sunstone .btn-primary:hover { background: #a86010; }
+.theme-sunstone .btn-secondary { border-color: #e8d0a0; color: #5a3a10; }
+.theme-sunstone .table th { background: #fdf4e4; border-color: #f0d8b0; color: #b08040; }
+.theme-sunstone .table td { border-color: #f5e8cc; }
+.theme-sunstone .table tbody tr:hover { background: #fff8ee; }
+.theme-sunstone .badge-draft      { background: #f5e8cc;               color: #8a6030; }
+.theme-sunstone .badge-proposed   { background: #fff4d8;               color: #8a5000; }
+.theme-sunstone .badge-contracted { background: rgba(58,125,82,0.12);  color: #1e5c36; }
+.theme-sunstone .badge-complete   { background: rgba(200,120,32,0.12); color: #7a4008; }
+.theme-sunstone .badge-lost       { background: #fef2f0;               color: #8a2010; }
+.theme-sunstone .spinner { border-color: #f0d8b0; border-top-color: #c87820; }
+.theme-sunstone a { color: #c87820; }
+.theme-sunstone ::-webkit-scrollbar { width: 6px; height: 6px; }
+.theme-sunstone ::-webkit-scrollbar-track { background: #fdf4e4; }
+.theme-sunstone ::-webkit-scrollbar-thumb { background: #e8d0a0; border-radius: 3px; }
+.theme-sunstone ::-webkit-scrollbar-thumb:hover { background: #d4b070; }
+
+/* ═══════════════════════════════════════════════════════════
+   MIDNIGHT THEME  — Pure black & arctic white
+═══════════════════════════════════════════════════════════ */
+.theme-midnight {
+  --body-bg:   #000000;
+  --card-bg:   #111111;
+  --input-bg:  #0a0a0a;
+  --sidebar-bg:#000000;
+
+  --gray-50:   #111111;
+  --gray-100:  #1a1a1a;
+  --gray-200:  #222222;
+  --gray-300:  #444444;
+  --gray-400:  #888888;
+  --gray-600:  #cccccc;
+  --gray-800:  #ffffff;
+
+  --blue:      #60a5fa;
+  --blue-mid:  #93c5fd;
+  --blue-light:rgba(96,165,250,0.1);
+  --accent:    #60a5fa;
+  --success:   #34d399;
+  --danger:    #f87171;
+
+  --text:      #ffffff;
+  --text-muted:#888888;
+  --border:    #222222;
+
+  --shadow:    0 1px 4px rgba(0,0,0,0.8), 0 1px 2px rgba(0,0,0,0.6);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.9);
+
+  --status-draft-bg:          rgba(68,68,68,0.3);
+  --status-draft-border:      rgba(68,68,68,0.6);
+  --status-draft-text:        #aaaaaa;
+  --status-draft-accent:      #888888;
+
+  --status-proposed-bg:       rgba(251,191,36,0.1);
+  --status-proposed-border:   rgba(251,191,36,0.35);
+  --status-proposed-text:     #fbbf24;
+  --status-proposed-accent:   #f59e0b;
+
+  --status-contracted-bg:     rgba(52,211,153,0.1);
+  --status-contracted-border: rgba(52,211,153,0.35);
+  --status-contracted-text:   #34d399;
+  --status-contracted-accent: #10b981;
+
+  --status-complete-bg:       rgba(96,165,250,0.1);
+  --status-complete-border:   rgba(96,165,250,0.35);
+  --status-complete-text:     #60a5fa;
+  --status-complete-accent:   #3b82f6;
+
+  --status-lost-bg:           rgba(248,113,113,0.1);
+  --status-lost-border:       rgba(248,113,113,0.35);
+  --status-lost-text:         #f87171;
+  --status-lost-accent:       #ef4444;
+}
+
+.theme-midnight body { color: #ffffff; }
+.theme-midnight .card { border-color: #222222; box-shadow: 0 1px 4px rgba(0,0,0,0.8); }
+.theme-midnight input, .theme-midnight select, .theme-midnight textarea {
+  border-color: #222222; color: #ffffff; background: #0a0a0a;
+}
+.theme-midnight input::placeholder, .theme-midnight textarea::placeholder { color: #444444; }
+.theme-midnight input:focus, .theme-midnight select:focus, .theme-midnight textarea:focus {
+  border-color: #60a5fa; box-shadow: 0 0 0 3px rgba(96,165,250,0.15);
+}
+.theme-midnight select option { background: #111111; }
+.theme-midnight label { color: #888888; }
+.theme-midnight .btn-primary { background: #60a5fa; color: #000; font-weight: 700; }
+.theme-midnight .btn-primary:hover { background: #93c5fd; }
+.theme-midnight .btn-secondary { border-color: #222222; color: #cccccc; background: #111111; }
+.theme-midnight .table th { background: #111111; border-color: #222222; color: #444444; }
+.theme-midnight .table td { border-color: #1a1a1a; color: #ffffff; }
+.theme-midnight .table tbody tr:hover { background: rgba(255,255,255,0.03); }
+.theme-midnight .badge-draft      { background: rgba(68,68,68,0.4);      color: #aaaaaa; }
+.theme-midnight .badge-proposed   { background: rgba(251,191,36,0.15);   color: #fbbf24; }
+.theme-midnight .badge-contracted { background: rgba(52,211,153,0.12);   color: #34d399; }
+.theme-midnight .badge-complete   { background: rgba(96,165,250,0.12);   color: #60a5fa; }
+.theme-midnight .badge-lost       { background: rgba(248,113,113,0.12);  color: #f87171; }
+.theme-midnight .spinner { border-color: #222222; border-top-color: #60a5fa; }
+.theme-midnight a { color: #60a5fa; }
+.theme-midnight ::-webkit-scrollbar { width: 6px; height: 6px; }
+.theme-midnight ::-webkit-scrollbar-track { background: #000000; }
+.theme-midnight ::-webkit-scrollbar-thumb { background: #222222; border-radius: 3px; }
+.theme-midnight ::-webkit-scrollbar-thumb:hover { background: #444444; }
+.theme-midnight select { color-scheme: dark; }
+
+/* ═══════════════════════════════════════════════════════════
+   ASHEN THEME  — Ember, ash & bonfire glow  ⊹  Praise the Sun
+═══════════════════════════════════════════════════════════ */
+.theme-ashen {
+  --ember:      #c87941;
+  --bonfire:    #e09050;
+  --ash:        #d4c9b0;
+  --stone:      #1a1714;
+  --darkstone:  #0d0c0a;
+  --slab:       #242019;
+  --cinder:     #3a3530;
+  --char:       #4a4540;
+  --souls-gold: #c8a830;
+  --blood:      #c03020;
+
+  --body-bg:   var(--stone);
+  --card-bg:   var(--slab);
+  --input-bg:  var(--darkstone);
+  --sidebar-bg:var(--darkstone);
+
+  --gray-50:   #242019;
+  --gray-100:  #2e2a24;
+  --gray-200:  var(--cinder);
+  --gray-300:  var(--char);
+  --gray-400:  #7a7060;
+  --gray-600:  var(--ash);
+  --gray-800:  #f0e8d0;
+
+  --blue:      var(--ember);
+  --blue-mid:  var(--bonfire);
+  --blue-light:rgba(200,121,65,0.12);
+  --accent:    var(--ember);
+  --success:   #7ab87a;
+  --danger:    var(--blood);
+
+  --text:      var(--ash);
+  --text-muted:#7a7060;
+  --border:    var(--cinder);
+
+  --shadow:    0 1px 4px rgba(0,0,0,0.7), 0 1px 2px rgba(0,0,0,0.5);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.8);
+
+  --status-draft-bg:          rgba(74,69,64,0.4);
+  --status-draft-border:      rgba(74,69,64,0.7);
+  --status-draft-text:        #7a7060;
+  --status-draft-accent:      #7a7060;
+
+  --status-proposed-bg:       rgba(200,168,48,0.12);
+  --status-proposed-border:   rgba(200,168,48,0.35);
+  --status-proposed-text:     #c8a830;
+  --status-proposed-accent:   var(--souls-gold);
+
+  --status-contracted-bg:     rgba(122,184,122,0.12);
+  --status-contracted-border: rgba(122,184,122,0.35);
+  --status-contracted-text:   #7ab87a;
+  --status-contracted-accent: #5a9860;
+
+  --status-complete-bg:       rgba(200,121,65,0.12);
+  --status-complete-border:   rgba(200,121,65,0.35);
+  --status-complete-text:     var(--bonfire);
+  --status-complete-accent:   var(--ember);
+
+  --status-lost-bg:           rgba(192,48,32,0.15);
+  --status-lost-border:       rgba(192,48,32,0.4);
+  --status-lost-text:         #e05040;
+  --status-lost-accent:       var(--blood);
+}
+
+.theme-ashen body { color: var(--ash); }
+.theme-ashen .card { border-color: var(--cinder); box-shadow: 0 2px 8px rgba(0,0,0,0.6); }
+.theme-ashen input, .theme-ashen select, .theme-ashen textarea {
+  border-color: var(--cinder); color: var(--ash); background: var(--darkstone);
+}
+.theme-ashen input::placeholder, .theme-ashen textarea::placeholder { color: #4a4540; }
+.theme-ashen input:focus, .theme-ashen select:focus, .theme-ashen textarea:focus {
+  border-color: var(--ember); box-shadow: 0 0 0 3px rgba(200,121,65,0.2);
+}
+.theme-ashen select option { background: var(--slab); }
+.theme-ashen label { color: #7a7060; }
+.theme-ashen .btn-primary { background: var(--ember); color: #0d0c0a; font-weight: 700; }
+.theme-ashen .btn-primary:hover { background: var(--bonfire); }
+.theme-ashen .btn-secondary { border-color: var(--cinder); color: var(--ash); background: var(--slab); }
+.theme-ashen .table th { background: var(--slab); border-color: var(--cinder); color: #4a4540; }
+.theme-ashen .table td { border-color: #2e2a24; color: var(--ash); }
+.theme-ashen .table tbody tr:hover { background: rgba(200,121,65,0.04); }
+.theme-ashen .badge-draft      { background: rgba(74,69,64,0.5);       color: #7a7060; }
+.theme-ashen .badge-proposed   { background: rgba(200,168,48,0.15);    color: #c8a830; }
+.theme-ashen .badge-contracted { background: rgba(122,184,122,0.12);   color: #7ab87a; }
+.theme-ashen .badge-complete   { background: rgba(200,121,65,0.15);    color: var(--bonfire); }
+.theme-ashen .badge-lost       { background: rgba(192,48,32,0.2);      color: #e05040; }
+.theme-ashen .spinner { border-color: var(--cinder); border-top-color: var(--ember); }
+.theme-ashen a { color: var(--ember); }
+.theme-ashen ::-webkit-scrollbar { width: 6px; height: 6px; }
+.theme-ashen ::-webkit-scrollbar-track { background: var(--darkstone); }
+.theme-ashen ::-webkit-scrollbar-thumb { background: var(--cinder); border-radius: 3px; }
+.theme-ashen ::-webkit-scrollbar-thumb:hover { background: var(--char); }
+.theme-ashen select { color-scheme: dark; }

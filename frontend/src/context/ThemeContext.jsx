@@ -84,6 +84,46 @@ export const THEMES = [
     preview: { bg: '#f4f1de', card: '#faf9f2', accent: '#e07a5f', text: '#2a2820', border: '#dedad0' },
   },
   {
+    id:          'sunstone',
+    label:       'Sunstone',
+    description: 'Warm cream & golden amber',
+    tagline:     'Bid Management',
+    chartColors: {
+      primary:   '#b06a10',
+      secondary: '#3a7d52',
+      bar:       '#c87820',
+      donut: {
+        draft:      '#c8b89a',
+        proposed:   '#d4820a',
+        contracted: '#3a7d52',
+        complete:   '#8a4a10',
+        lost:       '#c0392b',
+      },
+      estimators: ['#b06a10','#3a7d52','#d4820a','#c87820','#2a6a42','#904a08','#1a5e38','#e09830'],
+    },
+    preview: { bg: '#fff8ee', card: '#ffffff', accent: '#c87820', text: '#1a0e00', border: '#f0d8b0' },
+  },
+  {
+    id:          'midnight',
+    label:       'Midnight',
+    description: 'Pure black & arctic white',
+    tagline:     'Bid Management',
+    chartColors: {
+      primary:   '#60a5fa',
+      secondary: '#34d399',
+      bar:       '#818cf8',
+      donut: {
+        draft:      '#4b5563',
+        proposed:   '#fbbf24',
+        contracted: '#34d399',
+        complete:   '#60a5fa',
+        lost:       '#f87171',
+      },
+      estimators: ['#60a5fa','#34d399','#fbbf24','#818cf8','#a78bfa','#38bdf8','#f472b6','#fb923c'],
+    },
+    preview: { bg: '#000000', card: '#111111', accent: '#60a5fa', text: '#ffffff', border: '#222222' },
+  },
+  {
     id:          'dusk',
     label:       'Dusk',
     description: 'Shadow grey & warm bone',
@@ -103,6 +143,26 @@ export const THEMES = [
     },
     preview: { bg: '#2d232e', card: '#474448', accent: '#e0ddcf', text: '#f1f0ea', border: '#534b52' },
   },
+  {
+    id:          'ashen',
+    label:       'Ashen',
+    description: 'Ember, ash & bonfire glow',
+    tagline:     'Praise the Sun',
+    chartColors: {
+      primary:   '#c87941',
+      secondary: '#7ab87a',
+      bar:       '#e09050',
+      donut: {
+        draft:      '#4a4540',
+        proposed:   '#c8a830',
+        contracted: '#7ab87a',
+        complete:   '#c87941',
+        lost:       '#c03020',
+      },
+      estimators: ['#c87941','#7ab87a','#c8a830','#e09050','#a85c28','#5a9860','#d4b050','#f0a060'],
+    },
+    preview: { bg: '#1a1714', card: '#242019', accent: '#c87941', text: '#d4c9b0', border: '#3a3530' },
+  },
 ]
 
 export function ThemeProvider({ children }) {
@@ -110,7 +170,7 @@ export function ThemeProvider({ children }) {
 
   useEffect(() => {
     const el = document.documentElement
-    el.classList.remove('theme-dark', 'theme-industrial', 'theme-harmony', 'theme-dusk')
+    el.classList.remove('theme-dark', 'theme-industrial', 'theme-harmony', 'theme-dusk', 'theme-sunstone', 'theme-midnight', 'theme-ashen')
     if (theme !== 'default') el.classList.add(`theme-${theme}`)
   }, [theme])
 
