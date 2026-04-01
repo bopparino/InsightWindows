@@ -94,15 +94,11 @@ def health():
 
 
 # Serve built React frontend — API routes above take priority
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse
 _DIST = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "dist")
 
 if os.path.isdir(_DIST):
-    # Serve static assets (JS, CSS, images) directly
-    app.mount("/assets", StaticFiles(directory=os.path.join(_DIST, "assets")), name="assets")
-
-    # Catch-all: serve index.html for any unmatched path (SPA routing)
-    @app.get("/{full_path:path}")
+    @app.get("/{full_path:path}", include_in_schema=False)
     async def serve_spa(full_path: str):
         file = os.path.join(_DIST, full_path)
         if os.path.isfile(file):
