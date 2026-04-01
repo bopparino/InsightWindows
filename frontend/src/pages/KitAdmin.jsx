@@ -375,12 +375,12 @@ export default function KitAdmin() {
 
       {/* Pricing formula note */}
       <div style={{
-        background: '#eff6ff',
-        border: '1px solid #bfdbfe',
+        background: 'var(--blue-light)',
+        border: '1px solid var(--blue-mid)',
         borderRadius: 8,
         padding: '10px 16px',
         fontSize: 13,
-        color: '#1e40af',
+        color: 'var(--blue-mid)',
         marginBottom: 20,
       }}>
         <strong>Pricing formula:</strong> Final price = base price + (per-ton adder x tonnage).

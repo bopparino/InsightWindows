@@ -239,8 +239,8 @@ export default function Files() {
               key={item.name}
               onClick={() => handleClick(item)}
               style={{
-                background: selected?.name === item.name ? 'var(--blue-light)' : 'white',
-                border: `1px solid ${selected?.name === item.name ? '#bfdbfe' : 'var(--gray-200)'}`,
+                background: selected?.name === item.name ? 'var(--blue-light)' : 'var(--card-bg)',
+                border: `1px solid ${selected?.name === item.name ? 'var(--blue-mid)' : 'var(--gray-200)'}`,
                 borderRadius: 10, padding: '16px 12px',
                 cursor: 'pointer', textAlign: 'center',
                 transition: 'all 0.15s', userSelect: 'none',
@@ -251,7 +251,7 @@ export default function Files() {
               }}
               onMouseLeave={e => {
                 if (selected?.name !== item.name)
-                  e.currentTarget.style.background = 'white'
+                  e.currentTarget.style.background = 'var(--card-bg)'
               }}>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
                 <FileIcon name={item.name} isFolder={item.type === 'folder'} />
@@ -313,7 +313,7 @@ export default function Files() {
       {/* Selected file panel */}
       {selected && (
         <div style={{ position: 'fixed', right: 24, bottom: 24,
-          background: 'white', border: '1px solid var(--gray-200)',
+          background: 'var(--card-bg)', border: '1px solid var(--gray-200)',
           borderRadius: 12, padding: 20, width: 260,
           boxShadow: '0 8px 30px rgba(0,0,0,0.12)', zIndex: 50 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between',

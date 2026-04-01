@@ -316,7 +316,7 @@ export default function KitCalculator({ planId, systemId, zoneName, onAddItems, 
 
           {/* Right — results */}
           <div style={{ flex: 1, overflowY: 'auto', padding: 20,
-            background: result ? 'white' : 'var(--gray-50)' }}>
+            background: result ? 'var(--card-bg)' : 'var(--gray-50)' }}>
 
             {!result ? (
               <div style={{ textAlign: 'center', padding: '60px 24px',

@@ -9,9 +9,9 @@ const ROLE_LABELS = {
   account_manager:   'Account Manager',
 }
 const ROLE_COLORS = {
-  admin:             { bg: '#fdf4ff', text: '#6b21a8', border: '#e9d5ff' },
-  account_executive: { bg: '#eff6ff', text: '#1e40af', border: '#bfdbfe' },
-  account_manager:   { bg: '#f0fdf4', text: '#166534', border: '#bbf7d0' },
+  admin:             { bg: 'rgba(139,92,246,0.12)', text: 'var(--blue-mid)', border: 'rgba(139,92,246,0.25)' },
+  account_executive: { bg: 'var(--blue-light)',     text: 'var(--blue-mid)', border: 'var(--blue-mid)'      },
+  account_manager:   { bg: 'rgba(52,211,153,0.12)', text: 'var(--blue-mid)', border: 'rgba(52,211,153,0.3)' },
 }
 
 function RoleBadge({ role }) {
