@@ -579,3 +579,101 @@ aside nav a:hover {
 .theme-eldenring ::-webkit-scrollbar-thumb { background: var(--nebula); border-radius: 3px; }
 .theme-eldenring ::-webkit-scrollbar-thumb:hover { background: var(--stardust); }
 .theme-eldenring select { color-scheme: dark; }
+
+/* ═══════════════════════════════════════════════════════════
+   ARCADIA THEME  — Stone, mauve & muted rose  ⊹  Still Waters
+═══════════════════════════════════════════════════════════ */
+.theme-arcadia {
+  --stone-light: #d3d0c6;
+  --rose-deep:   #7d4c5a;
+  --mauve:       #806d71;
+  --slate:       #6c6c6e;
+  --cobble:      #414143;
+  --earth:       #30302e;
+  --soil:        #252523;
+  --pebble:      #4a4548;
+  --grit:        #5a5558;
+  --rose-pale:   #c08898;
+
+  --body-bg:    var(--earth);
+  --card-bg:    var(--cobble);
+  --input-bg:   var(--soil);
+  --sidebar-bg: var(--soil);
+
+  --gray-50:   #3a3a38;
+  --gray-100:  var(--cobble);
+  --gray-200:  var(--pebble);
+  --gray-300:  var(--grit);
+  --gray-400:  var(--slate);
+  --gray-600:  #a09890;
+  --gray-800:  var(--stone-light);
+
+  --blue:      var(--rose-pale);
+  --blue-mid:  var(--rose-pale);
+  --blue-light:rgba(125,76,90,0.15);
+  --accent:    var(--rose-deep);
+  --success:   #6a9870;
+  --danger:    #c04030;
+
+  --text:      var(--stone-light);
+  --text-muted:var(--slate);
+  --border:    var(--pebble);
+
+  --shadow:    0 1px 4px rgba(0,0,0,0.6), 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.7);
+
+  --status-draft-bg:          rgba(108,108,110,0.15);
+  --status-draft-border:      rgba(108,108,110,0.4);
+  --status-draft-text:        #8a8a8c;
+  --status-draft-accent:      var(--slate);
+
+  --status-proposed-bg:       rgba(192,160,80,0.12);
+  --status-proposed-border:   rgba(192,160,80,0.35);
+  --status-proposed-text:     #c0a050;
+  --status-proposed-accent:   #b09040;
+
+  --status-contracted-bg:     rgba(106,152,112,0.12);
+  --status-contracted-border: rgba(106,152,112,0.35);
+  --status-contracted-text:   #6a9870;
+  --status-contracted-accent: #5a8860;
+
+  --status-complete-bg:       rgba(192,136,152,0.12);
+  --status-complete-border:   rgba(192,136,152,0.35);
+  --status-complete-text:     var(--rose-pale);
+  --status-complete-accent:   var(--rose-deep);
+
+  --status-lost-bg:           rgba(192,64,48,0.15);
+  --status-lost-border:       rgba(192,64,48,0.4);
+  --status-lost-text:         #e06050;
+  --status-lost-accent:       #c04030;
+}
+
+.theme-arcadia body { color: var(--stone-light); }
+.theme-arcadia .card { border-color: var(--pebble); box-shadow: 0 2px 8px rgba(0,0,0,0.55); }
+.theme-arcadia input, .theme-arcadia select, .theme-arcadia textarea {
+  border-color: var(--pebble); color: var(--stone-light); background: var(--soil);
+}
+.theme-arcadia input::placeholder, .theme-arcadia textarea::placeholder { color: var(--grit); }
+.theme-arcadia input:focus, .theme-arcadia select:focus, .theme-arcadia textarea:focus {
+  border-color: var(--rose-pale); box-shadow: 0 0 0 3px rgba(192,136,152,0.2);
+}
+.theme-arcadia select option { background: var(--cobble); }
+.theme-arcadia label { color: var(--slate); }
+.theme-arcadia .btn-primary { background: var(--rose-deep); color: var(--stone-light); font-weight: 700; }
+.theme-arcadia .btn-primary:hover { background: var(--rose-pale); color: var(--earth); }
+.theme-arcadia .btn-secondary { border-color: var(--pebble); color: var(--stone-light); background: var(--cobble); }
+.theme-arcadia .table th { background: var(--cobble); border-color: var(--pebble); color: var(--grit); }
+.theme-arcadia .table td { border-color: var(--pebble); color: var(--stone-light); }
+.theme-arcadia .table tbody tr:hover { background: rgba(125,76,90,0.06); }
+.theme-arcadia .badge-draft      { background: rgba(108,108,110,0.2);    color: #8a8a8c; }
+.theme-arcadia .badge-proposed   { background: rgba(192,160,80,0.15);    color: #c0a050; }
+.theme-arcadia .badge-contracted { background: rgba(106,152,112,0.15);   color: #6a9870; }
+.theme-arcadia .badge-complete   { background: rgba(192,136,152,0.15);   color: var(--rose-pale); }
+.theme-arcadia .badge-lost       { background: rgba(192,64,48,0.2);      color: #e06050; }
+.theme-arcadia .spinner { border-color: var(--pebble); border-top-color: var(--rose-pale); }
+.theme-arcadia a { color: var(--rose-pale); }
+.theme-arcadia ::-webkit-scrollbar { width: 6px; height: 6px; }
+.theme-arcadia ::-webkit-scrollbar-track { background: var(--soil); }
+.theme-arcadia ::-webkit-scrollbar-thumb { background: var(--pebble); border-radius: 3px; }
+.theme-arcadia ::-webkit-scrollbar-thumb:hover { background: var(--grit); }
+.theme-arcadia select { color-scheme: dark; }

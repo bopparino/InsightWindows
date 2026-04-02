@@ -25,6 +25,26 @@ export const THEMES = [
     preview: { bg: '#fff8ee', card: '#ffffff', accent: '#c87820', text: '#1a0e00', border: '#f0d8b0', sidebar: '#7a3e08' },
   },
   {
+    id:          'arcadia',
+    label:       'Arcadia',
+    description: 'Stone, mauve & muted rose',
+    tagline:     'Still Waters',
+    chartColors: {
+      primary:   '#c08898',
+      secondary: '#6a9870',
+      bar:       '#a07080',
+      donut: {
+        draft:      '#5a5558',
+        proposed:   '#c0a050',
+        contracted: '#6a9870',
+        complete:   '#c08898',
+        lost:       '#c04030',
+      },
+      estimators: ['#c08898','#6a9870','#c0a050','#a07080','#806d71','#5a8860','#d3d0c6','#9a6878'],
+    },
+    preview: { bg: '#30302e', card: '#414143', accent: '#c08898', text: '#d3d0c6', border: '#4a4548', sidebar: '#252523' },
+  },
+  {
     id:          'ashen',
     label:       'Ashen',
     description: 'Ember, ash & bonfire glow',
@@ -96,7 +116,7 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     const el = document.documentElement
     el.classList.remove('theme-dark', 'theme-industrial', 'theme-harmony', 'theme-dusk',
-      'theme-sunstone', 'theme-midnight', 'theme-ashen', 'theme-eldenring')
+      'theme-sunstone', 'theme-arcadia', 'theme-midnight', 'theme-ashen', 'theme-eldenring')
     el.classList.add(`theme-${theme}`)
   }, [theme])
 
