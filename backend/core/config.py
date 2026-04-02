@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
     ADMIN_PASSWORD:      str = ""
 
+    ALLOWED_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
+
     # Microsoft Entra ID (SSO)
     AZURE_CLIENT_ID: str = ""
     AZURE_TENANT_ID: str = ""
