@@ -6,7 +6,8 @@ title WHMetcalfe Bid System — Installer Builder
 :: Configuration
 :: ─────────────────────────────────────────────────────────────────────────────
 set ROOT=%~dp0..
-set BUILD=%~dp0build
+:: Use a short root path to avoid Windows MAX_PATH (260 char) errors during pip install
+set BUILD=C:\WMBuild
 set DIST=%~dp0..\dist
 set PYTHON_VER=3.12.9
 set PYTHON_ZIP=python-%PYTHON_VER%-embed-amd64.zip

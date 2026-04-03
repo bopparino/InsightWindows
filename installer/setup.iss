@@ -37,13 +37,13 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
 ; --- Python (embedded + pre-installed packages, built by build-installer.bat) ---
-Source: "build\python\*"; DestDir: "{app}\python"; Flags: recursesubdirs ignoreversion
+Source: "C:\WMBuild\python\*"; DestDir: "{app}\python"; Flags: recursesubdirs ignoreversion
 
 ; --- PostgreSQL binaries (zip extracted by build-installer.bat) ---
-Source: "build\pgsql\*"; DestDir: "{app}\pgsql"; Flags: recursesubdirs ignoreversion
+Source: "C:\WMBuild\pgsql\*"; DestDir: "{app}\pgsql"; Flags: recursesubdirs ignoreversion
 
 ; --- NSSM ---
-Source: "build\nssm\nssm.exe"; DestDir: "{app}\nssm"; Flags: ignoreversion
+Source: "C:\WMBuild\nssm\nssm.exe"; DestDir: "{app}\nssm"; Flags: ignoreversion
 
 ; --- Application code ---
 Source: "..\backend\*"; DestDir: "{app}\backend"; \
