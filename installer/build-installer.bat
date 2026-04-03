@@ -88,7 +88,7 @@ if errorlevel 1 ( echo [ERROR] Python extract failed & pause & exit /b 1 )
 
 :: Enable site-packages (uncomment 'import site' in the ._pth file)
 powershell -NoProfile -Command ^
-    "$pth = Get-ChildItem '%BUILD%\python\*.pth' | Select-Object -First 1; (Get-Content $pth.FullName) -replace '#import site','import site' | Set-Content $pth.FullName"
+    "$pth = Get-ChildItem '%BUILD%\python\*._pth' | Select-Object -First 1; if (-not $pth) { Write-Host 'FAIL: no ._pth file found'; exit 1 }; (Get-Content $pth.FullName) -replace '#import site','import site' | Set-Content $pth.FullName; Write-Host 'Patched' $pth.Name"
 if errorlevel 1 ( echo [ERROR] Python .pth patch failed & pause & exit /b 1 )
 
 :: Bootstrap pip
