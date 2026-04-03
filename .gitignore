@@ -31,3 +31,4 @@ Equipment History/
 
 # Claude session files (memory is in ~/.claude, not here)
 .claude/
+installer/
