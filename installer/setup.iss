@@ -235,19 +235,6 @@ begin
   end;
 end;
 
-[UninstallRun]
-; Stop and remove both services before files are deleted
-Filename: "sc.exe"; Parameters: "stop {#ServiceName}";  RunOnceId: "StopApp"; Flags: runhidden
-Filename: "sc.exe"; Parameters: "stop {#PGService}";    RunOnceId: "StopPG";  Flags: runhidden
-Filename: "{app}\nssm\nssm.exe"; Parameters: "remove {#ServiceName} confirm"; RunOnceId: "RemoveApp"; Flags: runhidden; AfterInstall:
-Filename: "{app}\nssm\nssm.exe"; Parameters: "remove {#PGService} confirm";   RunOnceId: "RemovePG";  Flags: runhidden
-
-[UninstallDelete]
-; Remove generated data directories (prompts user first via Code section)
-Type: filesandordirs; Name: "{app}\data"
-Type: filesandordirs; Name: "{app}\python\__pycache__"
-
-[Code]
 // Warn before uninstall that DB will be deleted
 function InitializeUninstall(): Boolean;
 begin
@@ -257,3 +244,14 @@ begin
     'Continue with uninstall?',
     mbConfirmation, MB_YESNO) = IDYES;
 end;
+
+[UninstallRun]
+; Stop and remove both services before files are deleted
+Filename: "sc.exe"; Parameters: "stop {#ServiceName}"; RunOnceId: "StopApp"; Flags: runhidden
+Filename: "sc.exe"; Parameters: "stop {#PGService}";   RunOnceId: "StopPG";  Flags: runhidden
+Filename: "{app}\nssm\nssm.exe"; Parameters: "remove {#ServiceName} confirm"; RunOnceId: "RemoveApp"; Flags: runhidden
+Filename: "{app}\nssm\nssm.exe"; Parameters: "remove {#PGService} confirm";   RunOnceId: "RemovePG";  Flags: runhidden
+
+[UninstallDelete]
+Type: filesandordirs; Name: "{app}\data"
+Type: filesandordirs; Name: "{app}\python\__pycache__"
