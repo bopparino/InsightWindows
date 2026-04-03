@@ -1,7 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { projects, builders } from '../api/client'
 import SearchSelect from '../components/SearchSelect'
+import Pagination from '../components/Pagination'
+
+const PAGE_SIZE = 50
 
 function ProjectForm({ initial = { code: '', name: '', builder_id: '' }, onSave, onCancel, saving, builderOptions }) {
   const [form, setForm] = useState(initial)
@@ -49,6 +52,9 @@ export default function Projects() {
   const [showNew, setShowNew] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [error, setError] = useState('')
+  const [page, setPage] = useState(1)
+
+  useEffect(() => { setPage(1) }, [search])
 
   const { data: projectList = [], isLoading, refetch } = useQuery({
     queryKey: ['projects'], queryFn: projects.list,
@@ -67,6 +73,8 @@ export default function Projects() {
     p.code.toLowerCase().includes(search.toLowerCase()) ||
     p.builder_name.toLowerCase().includes(search.toLowerCase())
   )
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   const createProject = useMutation({
     mutationFn: (data) => projects.create(data),
@@ -152,7 +160,7 @@ export default function Projects() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map(p => (
+              {paginated.map(p => (
                 <>
                   <tr key={p.id}
                     style={{ background: editingId === p.id ? 'var(--blue-light)' : undefined }}>
@@ -221,10 +229,8 @@ export default function Projects() {
         )}
       </div>
 
-      <div style={{ marginTop: 12, fontSize: 12, color: 'var(--gray-400)' }}>
-        {filtered.length} project{filtered.length !== 1 ? 's' : ''}
-        {search ? ` matching "${search}"` : ' total'}
-      </div>
+      <Pagination page={page} totalPages={totalPages} total={filtered.length}
+        pageSize={PAGE_SIZE} onChange={setPage} />
     </div>
   )
 }

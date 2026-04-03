@@ -1,6 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { builders } from '../api/client'
+import Pagination from '../components/Pagination'
+
+const PAGE_SIZE = 50
 
 const EMPTY_FORM = {
   code: '', name: '', contact_name: '', office_phone: '',
@@ -106,6 +109,9 @@ export default function Builders() {
   const [showNew, setShowNew] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [error, setError] = useState('')
+  const [page, setPage] = useState(1)
+
+  useEffect(() => { setPage(1) }, [search])
 
   const { data: builderList = [], isLoading, refetch } = useQuery({
     queryKey: ['builders'], queryFn: builders.list,
@@ -117,6 +123,8 @@ export default function Builders() {
     b.code.toLowerCase().includes(search.toLowerCase()) ||
     (b.contact_name || '').toLowerCase().includes(search.toLowerCase())
   )
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   const createBuilder = useMutation({
     mutationFn: (data) => builders.create(data),
@@ -207,7 +215,7 @@ export default function Builders() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map(b => (
+              {paginated.map(b => (
                 <>
                   <tr key={b.id}
                     style={{ background: editingId === b.id ? 'var(--blue-light)' : undefined }}>
@@ -280,10 +288,8 @@ export default function Builders() {
         )}
       </div>
 
-      <div style={{ marginTop: 12, fontSize: 12, color: 'var(--gray-400)' }}>
-        {filtered.length} builder{filtered.length !== 1 ? 's' : ''}
-        {search ? ` matching "${search}"` : ' total'}
-      </div>
+      <Pagination page={page} totalPages={totalPages} total={filtered.length}
+        pageSize={PAGE_SIZE} onChange={setPage} />
     </div>
   )
 }

@@ -3,6 +3,9 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import { plans } from '../api/client'
 import { useAuth } from '../context/AuthContext'
+import Pagination from '../components/Pagination'
+
+const PAGE_SIZE = 50
 
 const STATUSES = ['all', 'draft', 'proposed', 'contracted', 'complete', 'lost']
 
@@ -16,6 +19,9 @@ export default function PlansList() {
   const [search, setSearch] = useState('')
   const [builderFilter, setBuilderFilter] = useState('')
   const [estimatorFilter, setEstimatorFilter] = useState('')
+  const [page, setPage] = useState(1)
+
+  useEffect(() => { setPage(1) }, [search, builderFilter, estimatorFilter, statusFilter])
 
   // Sync status filter to URL
   useEffect(() => {
@@ -42,6 +48,8 @@ export default function PlansList() {
     if (estimatorFilter && p.estimator_name !== estimatorFilter) return false
     return true
   })
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   function setStatus(s) {
     setStatusFilter(s)
@@ -69,6 +77,7 @@ export default function PlansList() {
           <div style={{ fontSize: 13, color: 'var(--gray-400)', marginTop: 2 }}>
             {filtered.length} plan{filtered.length !== 1 ? 's' : ''}
             {statusFilter !== 'all' ? ` · ${statusFilter}` : ''}
+            {totalPages > 1 ? ` · page ${page} of ${totalPages}` : ''}
           </div>
         </div>
         <Link to="/plans/new">
@@ -155,7 +164,7 @@ export default function PlansList() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map(p => {
+              {paginated.map(p => {
                 const s = STATUS_STYLES[p.status] || STATUS_STYLES.draft
                 return (
                   <tr key={p.id}>
@@ -200,6 +209,8 @@ export default function PlansList() {
           </table>
         )}
       </div>
+      <Pagination page={page} totalPages={totalPages} total={filtered.length}
+        pageSize={PAGE_SIZE} onChange={setPage} />
     </div>
   )
 }
