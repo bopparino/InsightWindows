@@ -594,7 +594,7 @@ export default function PlanDetail() {
           </button>
           <button className="btn-secondary"
             style={{ background: 'var(--blue-light)', color: 'var(--blue)',
-              border: '1px solid #bfdbfe' }}
+              border: '1px solid var(--blue-mid)' }}
             onClick={async () => {
               await generateQuote.mutateAsync()
               await documents.download(id, `${plan.plan_number}_quote.pdf`)
@@ -864,7 +864,7 @@ export default function PlanDetail() {
                   </button>
                   <button className="btn-secondary btn-sm"
                     style={{ background: 'var(--blue-light)', color: 'var(--blue)',
-                      border: '1px solid #bfdbfe' }}
+                      border: '1px solid var(--blue-mid)' }}
                     onClick={() => setKitZone({
                       systemId: sys.id,
                       existingDescriptions: new Set(

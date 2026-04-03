@@ -151,7 +151,7 @@ export default function NewPlan() {
 
             {/* New builder form */}
             {newBuilder.show && (
-              <div style={{ background: 'white', border: '1px solid var(--gray-200)',
+              <div style={{ background: 'var(--card-bg)', border: '1px solid var(--gray-200)',
                 borderRadius: 'var(--radius)', padding: 16, marginBottom: 12 }}>
                 <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 12 }}>New Builder</div>
 

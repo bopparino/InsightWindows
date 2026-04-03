@@ -114,7 +114,7 @@ export default function Login() {
                   width: '100%', display: 'flex', alignItems: 'center',
                   justifyContent: 'center', gap: 10,
                   padding: '10px 16px', fontSize: 14, fontWeight: 500,
-                  background: 'white', color: '#1a1a1a',
+                  background: 'var(--card-bg)', color: 'var(--gray-800)',
                   border: '1px solid var(--gray-300)', borderRadius: 'var(--radius)',
                   cursor: msalLoading ? 'not-allowed' : 'pointer',
                   opacity: msalLoading ? 0.7 : 1,

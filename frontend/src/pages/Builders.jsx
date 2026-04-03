@@ -15,7 +15,7 @@ function BuilderForm({ initial = EMPTY_FORM, onSave, onCancel, saving, title }) 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
   return (
-    <div style={{ background: 'var(--blue-light)', border: '1px solid #bfdbfe',
+    <div style={{ background: 'var(--blue-light)', border: '1px solid var(--blue-mid)',
       borderRadius: 8, padding: 16 }}>
       {title && <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 14 }}>{title}</div>}
 

@@ -11,7 +11,7 @@ function ProjectForm({ initial = { code: '', name: '', builder_id: '' }, onSave,
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
   return (
-    <div style={{ background: 'var(--blue-light)', border: '1px solid #bfdbfe',
+    <div style={{ background: 'var(--blue-light)', border: '1px solid var(--blue-mid)',
       borderRadius: 8, padding: 16 }}>
       <div className="form-row form-row-2" style={{ marginBottom: 12 }}>
         <div>

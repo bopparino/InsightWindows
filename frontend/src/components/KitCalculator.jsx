@@ -200,7 +200,7 @@ export default function KitCalculator({ planId, systemId, zoneName, onAddItems, 
 
             {/* Tonnage */}
             <div style={{ marginBottom: 20, padding: 14, background: 'var(--blue-light)',
-              borderRadius: 8, border: '1px solid #bfdbfe' }}>
+              borderRadius: 8, border: '1px solid var(--blue-mid)' }}>
               <NumInput label="System tonnage" value={inputs.tonnage}
                 onChange={v => set('tonnage', v)} min={1} step={0.5} unit="tons" />
               <div style={{ fontSize: 11, color: 'var(--blue)', marginTop: 6 }}>

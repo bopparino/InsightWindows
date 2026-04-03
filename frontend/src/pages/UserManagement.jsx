@@ -197,7 +197,7 @@ export default function UserManagement() {
     mutationFn: () => authApi.createUser(form),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['users'] })
-      setForm({ username:'', full_name:'', initials:'', email:'', password:'', role:'estimator' })
+      setForm({ username:'', full_name:'', initials:'', email:'', password:'', role:'account_manager' })
       setShowForm(false)
       setError('')
     },
@@ -341,7 +341,7 @@ export default function UserManagement() {
                         <button
                           onClick={() => setEditing(u)}
                           style={{ background: 'var(--blue-light)', color: 'var(--blue)',
-                            border: '1px solid #bfdbfe', borderRadius: 6,
+                            border: '1px solid var(--blue-mid)', borderRadius: 6,
                             padding: '4px 12px', fontSize: 12, cursor: 'pointer',
                             fontWeight: 500 }}>
                           Edit
