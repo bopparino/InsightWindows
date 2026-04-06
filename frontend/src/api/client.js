@@ -49,6 +49,9 @@ export const plans = {
   delete:      (id)     => api.delete(`/plans/${id}`).then(r => r.data),
   performance: (params) => api.get('/plans/performance', { params }).then(r => r.data),
   activity:    (id)     => api.get(`/plans/${id}/activity`).then(r => r.data),
+  bulkStatus:  (ids, status) => api.post('/plans/bulk-status', { ids, status }).then(r => r.data),
+  bulkDelete:  (ids)    => api.post('/plans/bulk-delete', { ids }).then(r => r.data),
+  copyFrom:    (planId, sourceId) => api.post(`/plans/${planId}/copy-from/${sourceId}`).then(r => r.data),
 }
 
 export const equipment = {
@@ -62,17 +65,19 @@ export const equipment = {
 }
 
 export const builders = {
-  list:   () => api.get('/builders/').then(r => r.data),
-  create: (data) => api.post('/builders/', data).then(r => r.data),
-  update: (id, data) => api.patch(`/builders/${id}`, data).then(r => r.data),
-  delete: (id)   => api.delete(`/builders/${id}`).then(r => r.data),
+  list:       () => api.get('/builders/').then(r => r.data),
+  create:     (data) => api.post('/builders/', data).then(r => r.data),
+  update:     (id, data) => api.patch(`/builders/${id}`, data).then(r => r.data),
+  delete:     (id)   => api.delete(`/builders/${id}`).then(r => r.data),
+  bulkDelete: (ids)  => api.post('/builders/bulk-delete', { ids }).then(r => r.data),
 }
 
 export const projects = {
-  list:   () => api.get('/projects/').then(r => r.data),
-  create: (data) => api.post('/projects/', data).then(r => r.data),
-  delete: (id)   => api.delete(`/projects/${id}`).then(r => r.data),
-  update: (id, data) => api.patch(`/projects/${id}`, data).then(r => r.data),
+  list:       () => api.get('/projects/').then(r => r.data),
+  create:     (data) => api.post('/projects/', data).then(r => r.data),
+  delete:     (id)   => api.delete(`/projects/${id}`).then(r => r.data),
+  update:     (id, data) => api.patch(`/projects/${id}`, data).then(r => r.data),
+  bulkDelete: (ids)  => api.post('/projects/bulk-delete', { ids }).then(r => r.data),
 }
 
 const triggerDownload = (blob, filename) => {
@@ -117,6 +122,12 @@ export const houseTypes = {
 export const houseTypeApi = {
   duplicate: (planId, houseTypeId) =>
     api.post(`/plans/${planId}/house-types/${houseTypeId}/duplicate`).then(r => r.data),
+}
+
+export const draws = {
+  add:    (planId, htId, data) => api.post(`/plans/${planId}/house-types/${htId}/draws`, data).then(r => r.data),
+  update: (planId, htId, drawId, data) => api.patch(`/plans/${planId}/house-types/${htId}/draws/${drawId}`, data).then(r => r.data),
+  delete: (planId, htId, drawId) => api.delete(`/plans/${planId}/house-types/${htId}/draws/${drawId}`).then(r => r.data),
 }
 
 export const systems = {

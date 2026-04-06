@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import { plans } from '../api/client'
 import { useAuth } from '../context/AuthContext'
@@ -11,7 +11,9 @@ const STATUSES = ['all', 'draft', 'proposed', 'contracted', 'complete', 'lost']
 
 export default function PlansList() {
   const { user } = useAuth()
+  const isAdmin    = user?.role === 'admin'
   const isElevated = user?.role === 'admin' || user?.role === 'account_executive'
+  const qc = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const [statusFilter, setStatusFilter] = useState(
     searchParams.get('status') || 'all'
@@ -20,6 +22,7 @@ export default function PlansList() {
   const [builderFilter, setBuilderFilter] = useState('')
   const [estimatorFilter, setEstimatorFilter] = useState('')
   const [page, setPage] = useState(1)
+  const [selected, setSelected] = useState(new Set())
 
   useEffect(() => { setPage(1) }, [search, builderFilter, estimatorFilter, statusFilter])
 
@@ -33,6 +36,28 @@ export default function PlansList() {
     queryKey: ['plans', statusFilter],
     queryFn: () => plans.list(statusFilter === 'all' ? null : statusFilter),
   })
+
+  const bulkStatus = useMutation({
+    mutationFn: (status) => plans.bulkStatus([...selected], status),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ['plans'] })
+      setSelected(new Set())
+      if (res.errors?.length) alert(`Some plans skipped:\n${res.errors.join('\n')}`)
+    },
+  })
+  const bulkDelete = useMutation({
+    mutationFn: () => plans.bulkDelete([...selected]),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ['plans'] })
+      setSelected(new Set())
+      if (res.skipped_contracted?.length)
+        alert(`Skipped contracted plans: ${res.skipped_contracted.join(', ')}`)
+    },
+  })
+
+  const toggleOne    = (id) => setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
+  const toggleAll    = () => setSelected(s => s.size === paginated.length ? new Set() : new Set(paginated.map(p => p.id)))
+  const allSelected  = paginated.length > 0 && paginated.every(p => selected.has(p.id))
 
   const builders   = [...new Set(data.map(p => p.builder_name))].sort()
   const estimators = [...new Set(data.map(p => p.estimator_name).filter(Boolean))].sort()
@@ -130,6 +155,44 @@ export default function PlansList() {
         ))}
       </div>
 
+      {selected.size > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12,
+          background: 'var(--blue-light)', border: '1px solid var(--blue-mid)',
+          borderRadius: 'var(--radius)', padding: '8px 14px' }}>
+          <span style={{ fontSize: 13, color: 'var(--blue)', fontWeight: 600 }}>
+            {selected.size} selected
+          </span>
+          <span style={{ color: 'var(--blue-mid)' }}>·</span>
+          <span style={{ fontSize: 13, color: 'var(--gray-600)' }}>Mark as:</span>
+          {['proposed','contracted','complete','lost'].map(s => (
+            <button key={s} onClick={() => bulkStatus.mutate(s)}
+              disabled={bulkStatus.isPending}
+              style={{ fontSize: 12, padding: '3px 10px', borderRadius: 6,
+                background: 'white', border: '1px solid var(--blue-mid)',
+                color: 'var(--blue)', cursor: 'pointer' }}>
+              {s}
+            </button>
+          ))}
+          {isAdmin && (
+            <>
+              <span style={{ color: 'var(--blue-mid)', marginLeft: 4 }}>·</span>
+              <button onClick={() => { if (window.confirm(`Delete ${selected.size} plan(s)? Contracted plans will be skipped.`)) bulkDelete.mutate() }}
+                disabled={bulkDelete.isPending}
+                style={{ fontSize: 12, padding: '3px 10px', borderRadius: 6,
+                  background: 'white', border: '1px solid #fecaca',
+                  color: 'var(--danger)', cursor: 'pointer' }}>
+                Delete
+              </button>
+            </>
+          )}
+          <button onClick={() => setSelected(new Set())}
+            style={{ marginLeft: 'auto', fontSize: 12, background: 'none', border: 'none',
+              color: 'var(--gray-400)', cursor: 'pointer' }}>
+            Clear
+          </button>
+        </div>
+      )}
+
       <div className="card" style={{ padding: 0 }}>
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: 48 }}>
@@ -152,7 +215,11 @@ export default function PlansList() {
           <table className="table">
             <thead>
               <tr>
-                <th style={{ paddingLeft: 20 }}>Plan #</th>
+                <th style={{ paddingLeft: 12, width: 36 }}>
+                  <input type="checkbox" checked={allSelected} onChange={toggleAll}
+                    style={{ cursor: 'pointer' }} />
+                </th>
+                <th>Plan #</th>
                 <th>Project</th>
                 <th>Builder</th>
                 <th>House type</th>
@@ -166,8 +233,12 @@ export default function PlansList() {
               {paginated.map(p => {
                 const s = STATUS_STYLES[p.status] || STATUS_STYLES.draft
                 return (
-                  <tr key={p.id}>
-                    <td style={{ paddingLeft: 20 }}>
+                  <tr key={p.id} style={{ background: selected.has(p.id) ? 'var(--blue-light)' : undefined }}>
+                    <td style={{ paddingLeft: 12 }}>
+                      <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleOne(p.id)}
+                        style={{ cursor: 'pointer' }} />
+                    </td>
+                    <td>
                       <Link to={`/plans/${p.id}`}
                         style={{ fontWeight: 600, color: 'var(--blue-mid)' }}>
                         {p.plan_number}

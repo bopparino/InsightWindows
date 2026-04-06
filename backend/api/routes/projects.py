@@ -6,6 +6,10 @@ from core.database import get_db
 from core.security import get_current_user
 from models.models import Project, Builder, Plan, User
 
+
+class BulkDelete(BaseModel):
+    ids: list[int]
+
 router = APIRouter()
 
 
@@ -71,3 +75,17 @@ def update_project(project_id: int, data: ProjectIn, db: Session = Depends(get_d
         setattr(project, k, v)
     db.commit()
     return {"ok": True}
+
+
+@router.post("/bulk-delete")
+def bulk_delete_projects(data: BulkDelete, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+    project_list = db.query(Project).filter(Project.id.in_(data.ids)).all()
+    skipped = []
+    for p in project_list:
+        count = db.query(Plan).filter_by(project_id=p.id).count()
+        if count > 0:
+            skipped.append(p.name)
+            continue
+        db.delete(p)
+    db.commit()
+    return {"deleted": len(data.ids) - len(skipped), "skipped_with_plans": skipped}

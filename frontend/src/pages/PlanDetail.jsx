@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link, useNavigate, useBlocker } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { plans, documents, lineItems, houseTypes, equipment, houseTypeApi, systems } from '../api/client'
+import { plans, documents, lineItems, houseTypes, equipment, houseTypeApi, systems, draws as drawsApi } from '../api/client'
 
 // ── Email Quote modal ─────────────────────────────────────────
 function EmailQuoteModal({ plan, currentUser, onClose }) {
@@ -920,26 +920,7 @@ export default function PlanDetail() {
           ))}
 
           {/* Draws */}
-          {ht.draws.length > 0 && (
-            <div style={{ marginTop: 12, paddingTop: 12,
-              borderTop: '1px solid var(--gray-100)' }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-600)',
-                marginBottom: 8 }}>DRAW SCHEDULE</div>
-              <div style={{ display: 'flex', gap: 12 }}>
-                {ht.draws.map(d => (
-                  <div key={d.draw_number} style={{ background: 'var(--blue-light)',
-                    borderRadius: 'var(--radius)', padding: '8px 14px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 11, color: 'var(--blue)', fontWeight: 600,
-                      textTransform: 'uppercase' }}>Draw {d.draw_number}</div>
-                    <div style={{ fontWeight: 700, color: 'var(--blue)' }}>
-                      ${d.amount.toLocaleString()}
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--gray-600)' }}>{d.stage}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <DrawSchedule planId={parseInt(id)} houseTypeId={ht.id} draws={ht.draws} />
         </div>
       ))}
 
@@ -994,6 +975,131 @@ export default function PlanDetail() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function DrawSchedule({ planId, houseTypeId, draws }) {
+  const qc = useQueryClient()
+  const [adding, setAdding] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+  const [form, setForm] = useState({ stage: '', amount: '', draw_number: '' })
+  const setF = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['plan'] })
+
+  const addDraw = useMutation({
+    mutationFn: (data) => drawsApi.add(planId, houseTypeId, data),
+    onSuccess: () => { invalidate(); setAdding(false); setForm({ stage: '', amount: '', draw_number: '' }) },
+  })
+  const updateDraw = useMutation({
+    mutationFn: ({ drawId, data }) => drawsApi.update(planId, houseTypeId, drawId, data),
+    onSuccess: () => { invalidate(); setEditingId(null) },
+  })
+  const deleteDraw = useMutation({
+    mutationFn: (drawId) => drawsApi.delete(planId, houseTypeId, drawId),
+    onSuccess: invalidate,
+  })
+
+  const nextDrawNumber = draws.length > 0
+    ? Math.max(...draws.map(d => d.draw_number)) + 1
+    : 1
+
+  return (
+    <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--gray-100)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-600)' }}>DRAW SCHEDULE</div>
+        {!adding && (
+          <button onClick={() => { setAdding(true); setForm({ stage: '', amount: '', draw_number: String(nextDrawNumber) }) }}
+            style={{ fontSize: 11, background: 'none', border: '1px solid var(--gray-200)',
+              borderRadius: 6, padding: '2px 8px', color: 'var(--gray-600)', cursor: 'pointer' }}>
+            + Add draw
+          </button>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+        {draws.map(d => (
+          editingId === d.draw_number ? (
+            <div key={d.draw_number} style={{ background: 'var(--blue-light)', border: '1px solid var(--blue-mid)',
+              borderRadius: 'var(--radius)', padding: '8px 12px', minWidth: 140 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 6 }}>
+                <input placeholder="Draw #" type="number" value={form.draw_number}
+                  onChange={e => setF('draw_number', e.target.value)}
+                  style={{ fontSize: 12, padding: '3px 6px' }} />
+                <input placeholder="Amount" type="number" value={form.amount}
+                  onChange={e => setF('amount', e.target.value)}
+                  style={{ fontSize: 12, padding: '3px 6px' }} />
+              </div>
+              <input placeholder="Stage description" value={form.stage}
+                onChange={e => setF('stage', e.target.value)}
+                style={{ fontSize: 12, padding: '3px 6px', width: '100%', marginBottom: 6 }} />
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button className="btn-primary btn-sm" style={{ fontSize: 11 }}
+                  disabled={updateDraw.isPending}
+                  onClick={() => updateDraw.mutate({ drawId: d.draw_number, data: {
+                    stage: form.stage, amount: parseFloat(form.amount), draw_number: parseInt(form.draw_number),
+                  }})}>Save</button>
+                <button className="btn-secondary btn-sm" style={{ fontSize: 11 }}
+                  onClick={() => setEditingId(null)}>✕</button>
+              </div>
+            </div>
+          ) : (
+            <div key={d.draw_number} style={{ background: 'var(--blue-light)', border: '1px solid var(--blue-mid)',
+              borderRadius: 'var(--radius)', padding: '8px 14px', textAlign: 'center', position: 'relative' }}>
+              <div style={{ fontSize: 11, color: 'var(--blue)', fontWeight: 600, textTransform: 'uppercase' }}>
+                Draw {d.draw_number}
+              </div>
+              <div style={{ fontWeight: 700, color: 'var(--blue)', fontSize: 15 }}>
+                ${d.amount.toLocaleString()}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--gray-600)', marginBottom: 6 }}>{d.stage}</div>
+              <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+                <button onClick={() => { setEditingId(d.draw_number); setForm({ stage: d.stage, amount: String(d.amount), draw_number: String(d.draw_number) }) }}
+                  style={{ fontSize: 11, background: 'none', border: '1px solid var(--gray-200)',
+                    borderRadius: 4, padding: '1px 6px', cursor: 'pointer', color: 'var(--gray-500)' }}>
+                  Edit
+                </button>
+                <button onClick={() => { if (window.confirm('Delete this draw?')) deleteDraw.mutate(d.draw_number) }}
+                  style={{ fontSize: 11, background: 'none', border: '1px solid #fecaca',
+                    borderRadius: 4, padding: '1px 6px', cursor: 'pointer', color: 'var(--danger)' }}>
+                  ×
+                </button>
+              </div>
+            </div>
+          )
+        ))}
+
+        {adding && (
+          <div style={{ background: 'var(--gray-50)', border: '1px solid var(--gray-200)',
+            borderRadius: 'var(--radius)', padding: '8px 12px', minWidth: 160 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 6 }}>
+              <input placeholder="Draw #" type="number" value={form.draw_number}
+                onChange={e => setF('draw_number', e.target.value)}
+                style={{ fontSize: 12, padding: '3px 6px' }} autoFocus />
+              <input placeholder="Amount" type="number" value={form.amount}
+                onChange={e => setF('amount', e.target.value)}
+                style={{ fontSize: 12, padding: '3px 6px' }} />
+            </div>
+            <input placeholder="Stage description" value={form.stage}
+              onChange={e => setF('stage', e.target.value)}
+              style={{ fontSize: 12, padding: '3px 6px', width: '100%', marginBottom: 6 }} />
+            <div style={{ display: 'flex', gap: 4 }}>
+              <button className="btn-primary btn-sm" style={{ fontSize: 11 }}
+                disabled={!form.stage || !form.amount || addDraw.isPending}
+                onClick={() => addDraw.mutate({
+                  stage: form.stage, amount: parseFloat(form.amount), draw_number: parseInt(form.draw_number),
+                })}>Add</button>
+              <button className="btn-secondary btn-sm" style={{ fontSize: 11 }}
+                onClick={() => setAdding(false)}>✕</button>
+            </div>
+          </div>
+        )}
+
+        {draws.length === 0 && !adding && (
+          <span style={{ fontSize: 12, color: 'var(--gray-400)' }}>No draws scheduled.</span>
+        )}
+      </div>
     </div>
   )
 }

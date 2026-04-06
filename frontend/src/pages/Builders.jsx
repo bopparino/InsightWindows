@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { builders } from '../api/client'
 import Pagination from '../components/Pagination'
+import { useAuth } from '../context/AuthContext'
 
 const PAGE_SIZE = 50
 
@@ -105,11 +106,14 @@ function BuilderForm({ initial = EMPTY_FORM, onSave, onCancel, saving, title }) 
 
 export default function Builders() {
   const qc = useQueryClient()
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
   const [search, setSearch] = useState('')
   const [showNew, setShowNew] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [error, setError] = useState('')
   const [page, setPage] = useState(1)
+  const [selected, setSelected] = useState(new Set())
 
   useEffect(() => { setPage(1) }, [search])
 
@@ -123,8 +127,11 @@ export default function Builders() {
     b.code.toLowerCase().includes(search.toLowerCase()) ||
     (b.contact_name || '').toLowerCase().includes(search.toLowerCase())
   )
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
-  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const totalPages   = Math.ceil(filtered.length / PAGE_SIZE)
+  const paginated    = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const toggleOne    = (id) => setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
+  const toggleAll    = () => setSelected(s => s.size === paginated.length ? new Set() : new Set(paginated.map(b => b.id)))
+  const allSelected  = paginated.length > 0 && paginated.every(b => selected.has(b.id))
 
   const createBuilder = useMutation({
     mutationFn: (data) => builders.create(data),
@@ -150,6 +157,16 @@ export default function Builders() {
     mutationFn: (id) => builders.delete(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['builders'] }); refetch() },
     onError: (e) => alert(e.response?.data?.detail || 'Could not delete builder'),
+  })
+
+  const bulkDelete = useMutation({
+    mutationFn: () => builders.bulkDelete([...selected]),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ['builders'] }); refetch(); setSelected(new Set())
+      if (res.skipped_with_projects?.length)
+        alert(`Skipped (have projects): ${res.skipped_with_projects.join(', ')}`)
+    },
+    onError: (e) => alert(e.response?.data?.detail || 'Bulk delete failed'),
   })
 
   return (
@@ -187,6 +204,29 @@ export default function Builders() {
           style={{ maxWidth: 360 }} />
       </div>
 
+      {/* Bulk action bar */}
+      {selected.size > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12,
+          background: 'var(--blue-light)', border: '1px solid var(--blue-mid)',
+          borderRadius: 'var(--radius)', padding: '8px 14px' }}>
+          <span style={{ fontSize: 13, color: 'var(--blue)', fontWeight: 600 }}>
+            {selected.size} selected
+          </span>
+          <button onClick={() => { if (window.confirm(`Delete ${selected.size} builder(s)? Those with projects will be skipped.`)) bulkDelete.mutate() }}
+            disabled={bulkDelete.isPending}
+            style={{ fontSize: 12, padding: '3px 10px', borderRadius: 6,
+              background: 'white', border: '1px solid #fecaca',
+              color: 'var(--danger)', cursor: 'pointer' }}>
+            Delete selected
+          </button>
+          <button onClick={() => setSelected(new Set())}
+            style={{ marginLeft: 'auto', fontSize: 12, background: 'none', border: 'none',
+              color: 'var(--gray-400)', cursor: 'pointer' }}>
+            Clear
+          </button>
+        </div>
+      )}
+
       {/* Table */}
       <div className="card" style={{ padding: 0 }}>
         {isLoading ? (
@@ -205,7 +245,10 @@ export default function Builders() {
           <table className="table">
             <thead>
               <tr>
-                <th style={{ paddingLeft: 20 }}>Code</th>
+                <th style={{ paddingLeft: 12, width: 36 }}>
+                  <input type="checkbox" checked={allSelected} onChange={toggleAll} style={{ cursor: 'pointer' }} />
+                </th>
+                <th>Code</th>
                 <th>Company</th>
                 <th>Contact</th>
                 <th>Phone</th>
@@ -218,8 +261,11 @@ export default function Builders() {
               {paginated.map(b => (
                 <>
                   <tr key={b.id}
-                    style={{ background: editingId === b.id ? 'var(--blue-light)' : undefined }}>
-                    <td style={{ paddingLeft: 20, fontFamily: 'monospace',
+                    style={{ background: editingId === b.id || selected.has(b.id) ? 'var(--blue-light)' : undefined }}>
+                    <td style={{ paddingLeft: 12 }}>
+                      <input type="checkbox" checked={selected.has(b.id)} onChange={() => toggleOne(b.id)} style={{ cursor: 'pointer' }} />
+                    </td>
+                    <td style={{ fontFamily: 'monospace',
                       fontSize: 13, color: 'var(--blue-mid)', fontWeight: 600 }}>
                       {b.code}
                     </td>
@@ -261,7 +307,7 @@ export default function Builders() {
                   </tr>
                   {editingId === b.id && (
                     <tr key={`${b.id}-edit`}>
-                      <td colSpan={7} style={{ padding: '0 16px 16px' }}>
+                      <td colSpan={8} style={{ padding: '0 16px 16px' }}>
                         <BuilderForm
                           initial={{
                             code: b.code, name: b.name,

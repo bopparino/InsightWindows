@@ -11,6 +11,7 @@ export default function NewPlan() {
   const [form, setForm] = useState({
     project_id: '', house_type: '', number_of_zones: 1, notes: '',
   })
+  const [copyFromId, setCopyFromId] = useState('')
   const [newProject, setNewProject] = useState({
     show: false, code: '', name: '', builder_id: '',
   })
@@ -30,9 +31,22 @@ export default function NewPlan() {
   const set  = (k, v) => setForm(f => ({ ...f, [k]: v }))
   const setB = (k, v) => setNewBuilder(b => ({ ...b, [k]: v }))
 
+  const { data: plansList = [] } = useQuery({
+    queryKey: ['plans', null],
+    queryFn: () => plans.list(null),
+  })
+  const planOptions = plansList.map(p => ({
+    id: p.id, label: p.plan_number, sublabel: `${p.project_name} · ${p.builder_name}`,
+  }))
+
   const createPlan = useMutation({
     mutationFn: (data) => plans.create(data),
-    onSuccess: (data) => navigate(`/plans/${data.id}`),
+    onSuccess: async (data) => {
+      if (copyFromId) {
+        await plans.copyFrom(data.id, parseInt(copyFromId))
+      }
+      navigate(`/plans/${data.id}`)
+    },
     onError: (e) => setError(e.response?.data?.detail || 'Failed to create plan'),
   })
 
@@ -114,6 +128,21 @@ export default function NewPlan() {
             <input placeholder="Optional notes"
               value={form.notes} onChange={e => set('notes', e.target.value)} />
           </div>
+        </div>
+
+        <div style={{ marginBottom: 4 }}>
+          <label>Copy line items from existing plan <span style={{ fontWeight: 400, color: 'var(--gray-400)' }}>(optional)</span></label>
+          <SearchSelect
+            options={planOptions}
+            value={copyFromId}
+            onChange={v => setCopyFromId(v)}
+            placeholder="Search plan number or project..."
+          />
+          {copyFromId && (
+            <div style={{ fontSize: 12, color: 'var(--gray-500)', marginTop: 4 }}>
+              All house types and line items from the selected plan will be copied into this new plan.
+            </div>
+          )}
         </div>
 
         {/* New project form */}

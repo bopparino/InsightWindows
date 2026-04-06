@@ -53,6 +53,7 @@ export default function Projects() {
   const [editingId, setEditingId] = useState(null)
   const [error, setError] = useState('')
   const [page, setPage] = useState(1)
+  const [selected, setSelected] = useState(new Set())
 
   useEffect(() => { setPage(1) }, [search])
 
@@ -73,8 +74,11 @@ export default function Projects() {
     p.code.toLowerCase().includes(search.toLowerCase()) ||
     p.builder_name.toLowerCase().includes(search.toLowerCase())
   )
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
-  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const totalPages  = Math.ceil(filtered.length / PAGE_SIZE)
+  const paginated   = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const toggleOne   = (id) => setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
+  const toggleAll   = () => setSelected(s => s.size === paginated.length ? new Set() : new Set(paginated.map(p => p.id)))
+  const allSelected = paginated.length > 0 && paginated.every(p => selected.has(p.id))
 
   const createProject = useMutation({
     mutationFn: (data) => projects.create(data),
@@ -100,6 +104,16 @@ export default function Projects() {
     mutationFn: (id) => projects.delete(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['projects'] }); refetch() },
     onError: (e) => alert(e.response?.data?.detail || 'Could not delete project'),
+  })
+
+  const bulkDelete = useMutation({
+    mutationFn: () => projects.bulkDelete([...selected]),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ['projects'] }); refetch(); setSelected(new Set())
+      if (res.skipped_with_plans?.length)
+        alert(`Skipped (have plans): ${res.skipped_with_plans.join(', ')}`)
+    },
+    onError: (e) => alert(e.response?.data?.detail || 'Bulk delete failed'),
   })
 
   return (
@@ -144,6 +158,29 @@ export default function Projects() {
         />
       </div>
 
+      {/* Bulk action bar */}
+      {selected.size > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12,
+          background: 'var(--blue-light)', border: '1px solid var(--blue-mid)',
+          borderRadius: 'var(--radius)', padding: '8px 14px' }}>
+          <span style={{ fontSize: 13, color: 'var(--blue)', fontWeight: 600 }}>
+            {selected.size} selected
+          </span>
+          <button onClick={() => { if (window.confirm(`Delete ${selected.size} project(s)? Those with plans will be skipped.`)) bulkDelete.mutate() }}
+            disabled={bulkDelete.isPending}
+            style={{ fontSize: 12, padding: '3px 10px', borderRadius: 6,
+              background: 'white', border: '1px solid #fecaca',
+              color: 'var(--danger)', cursor: 'pointer' }}>
+            Delete selected
+          </button>
+          <button onClick={() => setSelected(new Set())}
+            style={{ marginLeft: 'auto', fontSize: 12, background: 'none', border: 'none',
+              color: 'var(--gray-400)', cursor: 'pointer' }}>
+            Clear
+          </button>
+        </div>
+      )}
+
       {/* Table */}
       <div className="card" style={{ padding: 0 }}>
         {isLoading ? (
@@ -158,7 +195,10 @@ export default function Projects() {
           <table className="table">
             <thead>
               <tr>
-                <th style={{ paddingLeft: 20 }}>Code</th>
+                <th style={{ paddingLeft: 12, width: 36 }}>
+                  <input type="checkbox" checked={allSelected} onChange={toggleAll} style={{ cursor: 'pointer' }} />
+                </th>
+                <th>Code</th>
                 <th>Project name</th>
                 <th>Builder</th>
                 <th style={{ width: 100 }}></th>
@@ -168,8 +208,11 @@ export default function Projects() {
               {paginated.map(p => (
                 <>
                   <tr key={p.id}
-                    style={{ background: editingId === p.id ? 'var(--blue-light)' : undefined }}>
-                    <td style={{ paddingLeft: 20, fontFamily: 'monospace',
+                    style={{ background: editingId === p.id || selected.has(p.id) ? 'var(--blue-light)' : undefined }}>
+                    <td style={{ paddingLeft: 12 }}>
+                      <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleOne(p.id)} style={{ cursor: 'pointer' }} />
+                    </td>
+                    <td style={{ fontFamily: 'monospace',
                       fontSize: 13, color: 'var(--blue-mid)', fontWeight: 600 }}>
                       {p.code}
                     </td>
@@ -205,7 +248,7 @@ export default function Projects() {
                   </tr>
                   {editingId === p.id && (
                     <tr key={`${p.id}-edit`}>
-                      <td colSpan={4} style={{ padding: '0 16px 16px' }}>
+                      <td colSpan={5} style={{ padding: '0 16px 16px' }}>
                         <ProjectForm
                           builderOptions={builderOptions}
                           initial={{

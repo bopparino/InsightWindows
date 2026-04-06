@@ -56,6 +56,13 @@ class DrawIn(BaseModel):
     amount: float
     draw_number: int
 
+class BulkStatusUpdate(BaseModel):
+    ids: list[int]
+    status: str
+
+class BulkDelete(BaseModel):
+    ids: list[int]
+
 class HouseTypeIn(BaseModel):
     house_number: str = "01"
     name: str
@@ -366,6 +373,61 @@ def create_plan(data: PlanCreate, db: Session = Depends(get_db),
     log_event(db, plan.id, "plan_created", f"Plan {plan_number} created", current_user.username)
     db.commit()
     return {"id": plan.id, "plan_number": plan_number}
+
+
+@router.post("/bulk-status")
+def bulk_update_status(data: BulkStatusUpdate, db: Session = Depends(get_db),
+                       current_user: User = Depends(get_current_user)):
+    VALID_TRANSITIONS = {
+        "draft":      {"proposed", "lost"},
+        "proposed":   {"contracted", "lost", "draft"},
+        "contracted": {"complete"},
+        "complete":   set(),
+        "lost":       {"draft"},
+    }
+    plans_list = db.query(Plan).filter(Plan.id.in_(data.ids)).all()
+    errors, updated = [], 0
+    for plan in plans_list:
+        if data.status not in VALID_TRANSITIONS.get(plan.status, set()):
+            errors.append(f"{plan.plan_number}: cannot move from '{plan.status}' to '{data.status}'")
+            continue
+        plan.status = data.status
+        if data.status == "contracted":
+            plan.contracted_at = datetime.now()
+        updated += 1
+    db.commit()
+    return {"updated": updated, "errors": errors}
+
+
+@router.post("/bulk-delete")
+def bulk_delete_plans(data: BulkDelete, db: Session = Depends(get_db),
+                      current_user: User = Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(403, "Only admins can bulk delete plans")
+    plans_list = db.query(Plan).options(
+        joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.line_items),
+        joinedload(Plan.house_types).joinedload(HouseType.draws),
+        joinedload(Plan.documents),
+    ).filter(Plan.id.in_(data.ids)).all()
+    skipped = []
+    for plan in plans_list:
+        if plan.status == "contracted":
+            skipped.append(plan.plan_number)
+            continue
+        for ht in plan.house_types:
+            for sys in ht.systems:
+                for li in sys.line_items:
+                    db.delete(li)
+                db.delete(sys)
+            for draw in ht.draws:
+                db.delete(draw)
+            db.delete(ht)
+        for doc in plan.documents:
+            db.delete(doc)
+        db.query(EventLog).filter_by(plan_id=plan.id).delete()
+        db.delete(plan)
+    db.commit()
+    return {"deleted": len(data.ids) - len(skipped), "skipped_contracted": skipped}
 
 
 @router.get("/{plan_id}")
@@ -725,5 +787,96 @@ def update_system(plan_id: int, system_id: int, data: SystemCreate, db: Session 
         raise HTTPException(404, "System not found")
     for k, v in data.model_dump(exclude_none=True).items():
         setattr(system, k, v)
+    db.commit()
+    return {"ok": True}
+
+
+@router.post("/{plan_id}/copy-from/{source_plan_id}", status_code=201)
+def copy_from_plan(plan_id: int, source_plan_id: int, db: Session = Depends(get_db),
+                   current_user: User = Depends(get_current_user)):
+    plan = db.query(Plan).filter_by(id=plan_id).first()
+    source = db.query(Plan).options(
+        joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.line_items),
+        joinedload(Plan.house_types).joinedload(HouseType.draws),
+    ).filter_by(id=source_plan_id).first()
+    if not plan or not source:
+        raise HTTPException(404, "Plan not found")
+    for ht in source.house_types:
+        new_ht = HouseType(
+            plan_id=plan_id,
+            house_number=ht.house_number,
+            name=ht.name,
+            bid_hours=ht.bid_hours,
+            pwk_sheet_metal=ht.pwk_sheet_metal,
+            notes=ht.notes,
+        )
+        db.add(new_ht)
+        db.flush()
+        for sys in ht.systems:
+            new_sys = System(
+                house_type_id=new_ht.id,
+                system_number=sys.system_number,
+                zone_label=sys.zone_label,
+                equipment_system_id=sys.equipment_system_id,
+            )
+            db.add(new_sys)
+            db.flush()
+            for li in sys.line_items:
+                db.add(LineItem(
+                    system_id=new_sys.id,
+                    sort_order=li.sort_order,
+                    pricing_flag=li.pricing_flag,
+                    description=li.description,
+                    quantity=li.quantity,
+                    unit_price=li.unit_price,
+                    pwk_price=li.pwk_price,
+                    draw_stage=li.draw_stage,
+                    part_number=li.part_number,
+                ))
+        for draw in ht.draws:
+            db.add(Draw(
+                house_type_id=new_ht.id,
+                stage=draw.stage,
+                amount=draw.amount,
+                draw_number=draw.draw_number,
+            ))
+    db.commit()
+    log_event(db, plan_id, "house_types_copied",
+              f"House types copied from plan {source.plan_number}", current_user.username)
+    db.commit()
+    return {"ok": True}
+
+
+@router.post("/{plan_id}/house-types/{house_type_id}/draws", status_code=201)
+def add_draw(plan_id: int, house_type_id: int, data: DrawIn,
+             db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    ht = db.query(HouseType).filter_by(id=house_type_id, plan_id=plan_id).first()
+    if not ht:
+        raise HTTPException(404, "House type not found")
+    draw = Draw(house_type_id=house_type_id, **data.model_dump())
+    db.add(draw)
+    db.commit()
+    return {"id": draw.id}
+
+
+@router.patch("/{plan_id}/house-types/{house_type_id}/draws/{draw_id}")
+def update_draw(plan_id: int, house_type_id: int, draw_id: int, data: DrawIn,
+                db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    draw = db.query(Draw).filter_by(id=draw_id, house_type_id=house_type_id).first()
+    if not draw:
+        raise HTTPException(404, "Draw not found")
+    for k, v in data.model_dump().items():
+        setattr(draw, k, v)
+    db.commit()
+    return {"ok": True}
+
+
+@router.delete("/{plan_id}/house-types/{house_type_id}/draws/{draw_id}")
+def delete_draw(plan_id: int, house_type_id: int, draw_id: int,
+                db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    draw = db.query(Draw).filter_by(id=draw_id, house_type_id=house_type_id).first()
+    if not draw:
+        raise HTTPException(404, "Draw not found")
+    db.delete(draw)
     db.commit()
     return {"ok": True}
