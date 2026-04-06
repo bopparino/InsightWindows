@@ -167,15 +167,14 @@ def get_performance(
 ):
     """
     Per-account-manager performance summary + monthly contracted revenue series.
-    Pulls from real User records (excludes admin role and initials AC).
+    Pulls from real User records (excludes admin role).
     account_manager: only their own row.
     account_executive / admin: all account managers.
     """
-    # --- Eligible users: active, non-admin, not AC ---
+    # --- Eligible users: active, non-admin ---
     user_q = db.query(User).filter(
         User.active == True,
         User.role != "admin",
-        User.initials != "AC",
     )
     if current_user.role == "account_manager":
         user_q = user_q.filter(User.initials == current_user.initials)
@@ -409,7 +408,10 @@ def get_plan(plan_id: int, db: Session = Depends(get_db),
                 "name": ht.name,
                 "bid_hours": float(ht.bid_hours or 0),
                 "pwk_sheet_metal": float(ht.pwk_sheet_metal or 0),
-                "total_bid": float(ht.total_bid or 0),
+                "total_bid": float(sum(
+                    li.quantity * li.unit_price
+                    for s in ht.systems for li in s.line_items
+                )),
                 "notes": ht.notes,
                 "draws": [
                     {"stage": d.stage, "amount": float(d.amount), "draw_number": d.draw_number}
@@ -426,22 +428,6 @@ def get_plan(plan_id: int, db: Session = Depends(get_db),
                             "bid_price": float(s.equipment_system.bid_price),
                         } if s.equipment_system else None,
                         "line_items": [
-                            {
-                                "id": li.id,
-                                "sort_order": li.sort_order,
-                                "pricing_flag": li.pricing_flag,
-                                "description": li.description,
-                                "quantity": float(li.quantity),
-                                "unit_price": float(li.unit_price),
-                                "extended_price": float(li.quantity * li.unit_price),
-                                "pwk_price": float(li.pwk_price or 0),
-                                "draw_stage": li.draw_stage,
-                                "part_number": li.part_number,
-                            }
-                            for li in sorted(ht.line_items if hasattr(ht, 'line_items') else
-                                           [li for s2 in ht.systems for li in s2.line_items],
-                                           key=lambda x: x.sort_order)
-                        ] if False else [
                             {
                                 "id": li.id,
                                 "sort_order": li.sort_order,
@@ -472,7 +458,17 @@ def update_plan(plan_id: int, data: PlanUpdate, db: Session = Depends(get_db),
     if not plan:
         raise HTTPException(404, "Plan not found")
 
+    VALID_TRANSITIONS = {
+        "draft":      {"proposed", "lost"},
+        "proposed":   {"contracted", "lost", "draft"},
+        "contracted": {"complete"},
+        "complete":   set(),
+        "lost":       {"draft"},
+    }
     if data.status:
+        allowed = VALID_TRANSITIONS.get(plan.status, set())
+        if data.status not in allowed:
+            raise HTTPException(400, f"Cannot move plan from '{plan.status}' to '{data.status}'")
         plan.status = data.status
         if data.status == "contracted":
             plan.contracted_at = datetime.now()
