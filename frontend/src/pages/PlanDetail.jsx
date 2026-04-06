@@ -542,14 +542,19 @@ export default function PlanDetail() {
     queryFn: () => plans.get(id),
   })
 
+  const invalidatePlan = () => {
+    qc.invalidateQueries({ queryKey: ['plan', id] })
+    qc.invalidateQueries({ queryKey: ['plan-activity', id] })
+  }
+
   const updateStatus = useMutation({
     mutationFn: (status) => plans.update(id, { status }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['plan', id] }),
+    onSuccess: invalidatePlan,
   })
 
   const generateQuote = useMutation({
     mutationFn: () => documents.generate(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['plan', id] }),
+    onSuccess: invalidatePlan,
   })
 
   const generateFieldSheet = useMutation({
@@ -986,7 +991,7 @@ function DrawSchedule({ planId, houseTypeId, draws }) {
   const [form, setForm] = useState({ stage: '', amount: '', draw_number: '' })
   const setF = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: ['plan'] })
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['plan', String(planId)] })
 
   const addDraw = useMutation({
     mutationFn: (data) => drawsApi.add(planId, houseTypeId, data),
@@ -1106,7 +1111,7 @@ function DrawSchedule({ planId, houseTypeId, draws }) {
 
 function ActivityLog({ planId }) {
   const { data: events = [], isLoading } = useQuery({
-    queryKey: ['plan-activity', planId],
+    queryKey: ['plan-activity', String(planId)],
     queryFn: () => plans.activity(planId),
   })
 

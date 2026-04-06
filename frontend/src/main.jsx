@@ -7,7 +7,7 @@ import './index.css'
 import { getMsalInstance } from './auth/msalConfig'
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 1, staleTime: 30_000 } }
+  defaultOptions: { queries: { retry: 1, staleTime: 0 } }
 })
 
 // Kick off MSAL initialization early (fire-and-forget).

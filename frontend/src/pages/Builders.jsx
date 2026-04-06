@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { builders } from '../api/client'
 import Pagination from '../components/Pagination'
@@ -259,7 +259,7 @@ export default function Builders() {
             </thead>
             <tbody>
               {paginated.map(b => (
-                <>
+                <Fragment key={b.id}>
                   <tr key={b.id}
                     style={{ background: editingId === b.id || selected.has(b.id) ? 'var(--blue-light)' : undefined }}>
                     <td style={{ paddingLeft: 12 }}>
@@ -327,7 +327,7 @@ export default function Builders() {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>

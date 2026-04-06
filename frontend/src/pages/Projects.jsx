@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { projects, builders } from '../api/client'
 import SearchSelect from '../components/SearchSelect'
@@ -206,7 +206,7 @@ export default function Projects() {
             </thead>
             <tbody>
               {paginated.map(p => (
-                <>
+                <Fragment key={p.id}>
                   <tr key={p.id}
                     style={{ background: editingId === p.id || selected.has(p.id) ? 'var(--blue-light)' : undefined }}>
                     <td style={{ paddingLeft: 12 }}>
@@ -270,7 +270,7 @@ export default function Projects() {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>

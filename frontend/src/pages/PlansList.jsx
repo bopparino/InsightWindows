@@ -42,6 +42,7 @@ export default function PlansList() {
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['plans'] })
       setSelected(new Set())
+      setPage(1)
       if (res.errors?.length) alert(`Some plans skipped:\n${res.errors.join('\n')}`)
     },
   })
@@ -50,6 +51,7 @@ export default function PlansList() {
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['plans'] })
       setSelected(new Set())
+      setPage(1)
       if (res.skipped_contracted?.length)
         alert(`Skipped contracted plans: ${res.skipped_contracted.join(', ')}`)
     },
