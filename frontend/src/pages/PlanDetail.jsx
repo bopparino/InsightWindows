@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useState, useEffect, useCallback } from 'react'
+import { useParams, Link, useNavigate, useBlocker } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { plans, documents, lineItems, houseTypes, equipment, houseTypeApi, systems } from '../api/client'
 
@@ -215,7 +215,7 @@ function EquipmentPicker({ planId, systemId, onSelect, onClose }) {
 }
 
 // ── Inline edit row ───────────────────────────────────────────
-function EditableLineItemRow({ planId, li, onDelete }) {
+function EditableLineItemRow({ planId, li, onDelete, onEditingChange }) {
   const qc = useQueryClient()
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState({
@@ -225,11 +225,14 @@ function EditableLineItemRow({ planId, li, onDelete }) {
     pricing_flag: li.pricing_flag,
   })
 
+  const startEditing = () => { setEditing(true);  onEditingChange?.(true)  }
+  const stopEditing  = () => { setEditing(false); onEditingChange?.(false) }
+
   const save = useMutation({
     mutationFn: () => lineItems.update(planId, li.id, form),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['plan', String(planId)] })
-      setEditing(false)
+      stopEditing()
     },
   })
 
@@ -274,7 +277,7 @@ function EditableLineItemRow({ planId, li, onDelete }) {
             {save.isPending ? '…' : 'Save'}
           </button>
           <button className="btn-secondary btn-sm"
-            onClick={() => setEditing(false)}
+            onClick={stopEditing}
             style={{ fontSize: 12, padding: '3px 10px' }}>
             ✕
           </button>
@@ -284,7 +287,7 @@ function EditableLineItemRow({ planId, li, onDelete }) {
   }
 
   return (
-    <tr key={li.id} onDoubleClick={() => setEditing(true)}
+    <tr key={li.id} onDoubleClick={startEditing}
       title="Double-click to edit" style={{ cursor: 'default' }}>
       <td style={{ color: 'var(--gray-400)', fontSize: 11 }}>{li.sort_order}</td>
       <td>
@@ -312,7 +315,7 @@ function EditableLineItemRow({ planId, li, onDelete }) {
         </span>
       </td>
       <td style={{ whiteSpace: 'nowrap' }}>
-        <button onClick={() => setEditing(true)}
+        <button onClick={startEditing}
           style={{ background: 'none', color: 'var(--gray-400)',
             padding: '2px 5px', fontSize: 13, lineHeight: 1, marginRight: 2 }}
           title="Edit">✎</button>
@@ -509,6 +512,22 @@ export default function PlanDetail() {
   const [addingHouseType, setAddingHouseType] = useState(false)
   const [addingLineItemTo, setAddingLineItemTo] = useState(null)
   const [kitZone, setKitZone] = useState(null)  // { systemId, zoneName }
+  const [dirtyRows, setDirtyRows] = useState(0)
+
+  const onRowEditingChange = useCallback((active) => {
+    setDirtyRows(n => Math.max(0, n + (active ? 1 : -1)))
+  }, [])
+
+  // Block SPA navigation when a line item row is open for editing
+  const blocker = useBlocker(dirtyRows > 0)
+
+  // Block browser refresh / tab close
+  useEffect(() => {
+    if (dirtyRows === 0) return
+    const handler = (e) => { e.preventDefault(); e.returnValue = '' }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [dirtyRows])
 
   const { data: plan, isLoading } = useQuery({
     queryKey: ['plan', id],
@@ -833,6 +852,7 @@ export default function PlanDetail() {
                         planId={parseInt(id)}
                         li={li}
                         onDelete={(liId) => deleteLineItem.mutate(liId)}
+                        onEditingChange={onRowEditingChange}
                       />
                     ))}
                   </tbody>
@@ -927,6 +947,32 @@ export default function PlanDetail() {
 
       {/* Activity */}
       <ActivityLog planId={parseInt(id)} />
+
+      {/* Unsaved changes blocker modal */}
+      {blocker.state === 'blocked' && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+          zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'var(--surface)', borderRadius: 'var(--radius)',
+            padding: 28, width: 380, boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
+            <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 10 }}>
+              Unsaved changes
+            </div>
+            <div style={{ fontSize: 14, color: 'var(--gray-600)', marginBottom: 24 }}>
+              You have a line item open for editing. If you leave now your changes will be lost.
+            </div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button className="btn-secondary" onClick={() => blocker.reset()}>
+                Stay & keep editing
+              </button>
+              <button className="btn-primary"
+                style={{ background: 'var(--danger)', borderColor: 'var(--danger)' }}
+                onClick={() => blocker.proceed()}>
+                Leave anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
