@@ -77,7 +77,6 @@ export default function PlansList() {
           <div style={{ fontSize: 13, color: 'var(--gray-400)', marginTop: 2 }}>
             {filtered.length} plan{filtered.length !== 1 ? 's' : ''}
             {statusFilter !== 'all' ? ` · ${statusFilter}` : ''}
-            {totalPages > 1 ? ` · page ${page} of ${totalPages}` : ''}
           </div>
         </div>
         <Link to="/plans/new">

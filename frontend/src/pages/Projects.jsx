@@ -105,7 +105,12 @@ export default function Projects() {
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">Projects</h1>
+        <div>
+          <h1 className="page-title">Projects</h1>
+          <div style={{ fontSize: 13, color: 'var(--gray-400)', marginTop: 2 }}>
+            {projectList.length} project{projectList.length !== 1 ? 's' : ''} on file
+          </div>
+        </div>
         <button className="btn-primary"
           onClick={() => { setShowNew(s => !s); setEditingId(null) }}>
           {showNew ? 'Cancel' : '+ New Project'}
