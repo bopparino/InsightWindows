@@ -595,9 +595,9 @@ export default function PlanDetail() {
   const statusIdx  = STATUS_FLOW.indexOf(plan.status)
   const nextStatus = statusIdx >= 0 ? STATUS_FLOW[statusIdx + 1] : null
   const prevStatus = statusIdx > 0  ? STATUS_FLOW[statusIdx - 1]  : null
-  const totalBid = plan.house_types.reduce((sum, ht) =>
-    sum + ht.systems.reduce((s2, sys) =>
-      s2 + sys.line_items.reduce((s3, li) => s3 + li.extended_price, 0), 0), 0)
+  const totalBid = (plan.house_types ?? []).reduce((sum, ht) =>
+    sum + (ht.systems ?? []).reduce((s2, sys) =>
+      s2 + (sys.line_items ?? []).reduce((s3, li) => s3 + li.extended_price, 0), 0), 0)
 
   return (
     <div>

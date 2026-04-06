@@ -58,6 +58,20 @@ def create_builder(data: BuilderIn, db: Session = Depends(get_db), _: User = Dep
     return {"id": b.id, "code": b.code}
 
 
+@router.post("/bulk-delete")
+def bulk_delete_builders(data: BulkDelete, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+    builders = db.query(Builder).filter(Builder.id.in_(data.ids)).all()
+    skipped = []
+    for b in builders:
+        count = db.query(Project).filter_by(builder_id=b.id).count()
+        if count > 0:
+            skipped.append(b.name)
+            continue
+        db.delete(b)
+    db.commit()
+    return {"deleted": len(data.ids) - len(skipped), "skipped_with_projects": skipped}
+
+
 @router.patch("/{builder_id}")
 def update_builder(builder_id: int, data: BuilderIn, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
     b = db.query(Builder).filter_by(id=builder_id).first()
@@ -82,17 +96,3 @@ def delete_builder(builder_id: int, db: Session = Depends(get_db), _: User = Dep
     db.delete(builder)
     db.commit()
     return {"ok": True}
-
-
-@router.post("/bulk-delete")
-def bulk_delete_builders(data: BulkDelete, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
-    builders = db.query(Builder).filter(Builder.id.in_(data.ids)).all()
-    skipped = []
-    for b in builders:
-        count = db.query(Project).filter_by(builder_id=b.id).count()
-        if count > 0:
-            skipped.append(b.name)
-            continue
-        db.delete(b)
-    db.commit()
-    return {"deleted": len(data.ids) - len(skipped), "skipped_with_projects": skipped}

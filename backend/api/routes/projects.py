@@ -50,20 +50,18 @@ def create_project(data: ProjectIn, db: Session = Depends(get_db), _: User = Dep
     return {"id": p.id, "code": p.code}
 
 
-@router.delete("/{project_id}")
-def delete_project(project_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
-    project = db.query(Project).filter_by(id=project_id).first()
-    if not project:
-        raise HTTPException(404, "Project not found")
-    # Check for plans referencing this project
-    plan_count = db.query(Plan).filter_by(project_id=project_id).count()
-    if plan_count > 0:
-        raise HTTPException(400,
-            f"Cannot delete — {plan_count} plan(s) reference this project. "
-            "Delete or reassign those plans first.")
-    db.delete(project)
+@router.post("/bulk-delete")
+def bulk_delete_projects(data: BulkDelete, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+    project_list = db.query(Project).filter(Project.id.in_(data.ids)).all()
+    skipped = []
+    for p in project_list:
+        count = db.query(Plan).filter_by(project_id=p.id).count()
+        if count > 0:
+            skipped.append(p.name)
+            continue
+        db.delete(p)
     db.commit()
-    return {"ok": True}
+    return {"deleted": len(data.ids) - len(skipped), "skipped_with_plans": skipped}
 
 
 @router.patch("/{project_id}")
@@ -77,15 +75,16 @@ def update_project(project_id: int, data: ProjectIn, db: Session = Depends(get_d
     return {"ok": True}
 
 
-@router.post("/bulk-delete")
-def bulk_delete_projects(data: BulkDelete, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
-    project_list = db.query(Project).filter(Project.id.in_(data.ids)).all()
-    skipped = []
-    for p in project_list:
-        count = db.query(Plan).filter_by(project_id=p.id).count()
-        if count > 0:
-            skipped.append(p.name)
-            continue
-        db.delete(p)
+@router.delete("/{project_id}")
+def delete_project(project_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+    project = db.query(Project).filter_by(id=project_id).first()
+    if not project:
+        raise HTTPException(404, "Project not found")
+    plan_count = db.query(Plan).filter_by(project_id=project_id).count()
+    if plan_count > 0:
+        raise HTTPException(400,
+            f"Cannot delete — {plan_count} plan(s) reference this project. "
+            "Delete or reassign those plans first.")
+    db.delete(project)
     db.commit()
-    return {"deleted": len(data.ids) - len(skipped), "skipped_with_plans": skipped}
+    return {"ok": True}

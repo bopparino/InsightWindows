@@ -21,10 +21,10 @@ export default function NewPlan() {
   })
   const [error, setError] = useState('')
 
-  const { data: projectList = [], refetch: refetchProjects } = useQuery({
+  const { data: projectList = [] } = useQuery({
     queryKey: ['projects'], queryFn: projects.list,
   })
-  const { data: builderList = [], refetch: refetchBuilders } = useQuery({
+  const { data: builderList = [] } = useQuery({
     queryKey: ['builders'], queryFn: builders.list,
   })
 
@@ -32,7 +32,7 @@ export default function NewPlan() {
   const setB = (k, v) => setNewBuilder(b => ({ ...b, [k]: v }))
 
   const { data: plansList = [] } = useQuery({
-    queryKey: ['plans', null],
+    queryKey: ['plans', 'all'],
     queryFn: () => plans.list(null),
   })
   const planOptions = plansList.map(p => ({
@@ -43,8 +43,20 @@ export default function NewPlan() {
     mutationFn: (data) => plans.create(data),
     onSuccess: async (data) => {
       if (copyFromId) {
-        await plans.copyFrom(data.id, parseInt(copyFromId))
+        try {
+          await plans.copyFrom(data.id, parseInt(copyFromId))
+        } catch (e) {
+          setError(
+            'Plan was created, but line items could not be copied: ' +
+            (e.response?.data?.detail || 'unknown error') +
+            ' — you can copy them manually from the plan page.'
+          )
+          qc.invalidateQueries({ queryKey: ['plans'] })
+          navigate(`/plans/${data.id}`)
+          return
+        }
       }
+      qc.invalidateQueries({ queryKey: ['plans'] })
       navigate(`/plans/${data.id}`)
     },
     onError: (e) => setError(e.response?.data?.detail || 'Failed to create plan'),
@@ -52,8 +64,7 @@ export default function NewPlan() {
 
   const createBuilder = useMutation({
     mutationFn: (data) => builders.create(data),
-    onSuccess: async () => {
-      await refetchBuilders()
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['builders'] })
       setNewBuilder({
         show: false, code: '', name: '', contact_name: '', office_phone: '',
@@ -66,8 +77,7 @@ export default function NewPlan() {
 
   const createProject = useMutation({
     mutationFn: (data) => projects.create(data),
-    onSuccess: async (data) => {
-      await refetchProjects()
+    onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['projects'] })
       setForm(f => ({ ...f, project_id: data.id }))
       setNewProject({ show: false, code: '', name: '', builder_id: '' })
