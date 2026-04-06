@@ -94,7 +94,7 @@ def health():
 
 
 # Serve built React frontend — API routes above take priority
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 _DIST = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "dist")
 
 if os.path.isdir(_DIST):
@@ -102,5 +102,12 @@ if os.path.isdir(_DIST):
     async def serve_spa(full_path: str):
         file = os.path.join(_DIST, full_path)
         if os.path.isfile(file):
+            # Hashed assets (JS/CSS/images) can be cached long-term
+            if full_path.startswith("assets/"):
+                return FileResponse(file, headers={"Cache-Control": "public, max-age=31536000, immutable"})
             return FileResponse(file)
-        return FileResponse(os.path.join(_DIST, "index.html"))
+        # index.html must never be cached so browsers always fetch the latest bundle
+        return FileResponse(
+            os.path.join(_DIST, "index.html"),
+            headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
+        )
