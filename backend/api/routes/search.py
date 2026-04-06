@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from core.database import get_db
 from core.security import get_current_user
@@ -17,7 +18,7 @@ def search(
     like = f"%{q}%"
     results = []
 
-    ops_roles = {"admin", "account_manager"}
+    ops_roles = {"admin", "account_manager", "account_executive"}
 
     # ── Plans ─────────────────────────────────────────────────────────────────
     if current_user.role in ops_roles:
@@ -137,3 +138,29 @@ def search(
             })
 
     return results
+
+
+@router.get("/line-items")
+def line_item_suggestions(
+    q: str = Query(..., min_length=2, max_length=100),
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    """Return aggregated pricing suggestions from historical line items."""
+    like = f"%{q}%"
+    rows = (
+        db.query(
+            LineItem.description,
+            func.avg(LineItem.unit_price).label("avg_price"),
+            func.count(LineItem.id).label("use_count"),
+        )
+        .filter(LineItem.description.ilike(like), LineItem.unit_price > 0)
+        .group_by(LineItem.description)
+        .order_by(func.count(LineItem.id).desc())
+        .limit(6)
+        .all()
+    )
+    return [
+        {"description": r.description, "avg_price": round(float(r.avg_price), 2), "count": r.use_count}
+        for r in rows
+    ]

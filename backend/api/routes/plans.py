@@ -546,6 +546,33 @@ def update_plan(plan_id: int, data: PlanUpdate, db: Session = Depends(get_db),
     return {"ok": True}
 
 
+@router.get("/{plan_id}/emails")
+def get_plan_emails(plan_id: int, db: Session = Depends(get_db),
+                    current_user: User = Depends(get_current_user)):
+    import json
+    events = (
+        db.query(EventLog)
+        .filter(EventLog.plan_id == plan_id, EventLog.event_type == "email_sent")
+        .order_by(EventLog.event_at.desc())
+        .all()
+    )
+    result = []
+    for e in events:
+        try:
+            data = json.loads(e.description)
+        except Exception:
+            data = {}
+        result.append({
+            "id":       e.id,
+            "sent_at":  e.event_at.isoformat() if e.event_at else None,
+            "sent_by":  e.username,
+            "to":       data.get("to", ""),
+            "subject":  data.get("subject", ""),
+            "filename": data.get("filename", ""),
+        })
+    return result
+
+
 @router.get("/{plan_id}/activity")
 def get_plan_activity(plan_id: int, db: Session = Depends(get_db),
                       current_user: User = Depends(get_current_user)):

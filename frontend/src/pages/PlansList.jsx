@@ -12,7 +12,6 @@ const STATUSES = ['all', 'draft', 'proposed', 'contracted', 'complete', 'lost']
 export default function PlansList() {
   const { user } = useAuth()
   const isAdmin    = user?.role === 'admin'
-  const isElevated = user?.role === 'admin' || user?.role === 'account_executive'
   const qc = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const [statusFilter, setStatusFilter] = useState(
@@ -126,7 +125,7 @@ export default function PlansList() {
             {builders.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
         )}
-        {isElevated && estimators.length > 1 && (
+        {isAdmin && estimators.length > 1 && (
           <select value={estimatorFilter} onChange={e => setEstimatorFilter(e.target.value)}
             style={{ maxWidth: 180 }}>
             <option value="">All account managers</option>

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   ResponsiveContainer,
@@ -27,6 +27,7 @@ const DATE_RANGES = [
   { id: 'quarter', label: 'This Quarter' },
   { id: 'ytd',     label: 'Year to Date' },
   { id: 'all',     label: 'All Time' },
+  { id: 'custom',  label: 'Custom' },
 ]
 
 function getDateBounds(rangeId) {
@@ -221,20 +222,21 @@ function ChartTooltip({ active, payload, label }) {
 export default function Performance() {
   const { user } = useAuth()
   const { theme } = useTheme()
-  const [range, setRange] = useState('ytd')
+  const [range, setRange]         = useState('ytd')
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo,   setCustomTo]   = useState('')
   const isAccountManager = user?.role === 'account_manager'
 
   const [dateFrom, dateTo] = useMemo(() => {
+    if (range === 'custom') return [customFrom || undefined, customTo || undefined]
     const [from] = getDateBounds(range)
-    return [
-      from ? from.toISOString().split('T')[0] : undefined,
-      undefined,
-    ]
-  }, [range])
+    return [from ? from.toISOString().split('T')[0] : undefined, undefined]
+  }, [range, customFrom, customTo])
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['performance', range],
-    queryFn: () => plansApi.performance({ date_from: dateFrom, date_to: dateTo }),
+    queryKey: ['performance', range, range === 'custom' ? `${customFrom}:${customTo}` : null],
+    queryFn:  () => plansApi.performance({ date_from: dateFrom, date_to: dateTo }),
+    enabled:  range !== 'custom' || !!(customFrom || customTo),
   })
 
   const summary = data?.summary || []
@@ -279,21 +281,32 @@ export default function Performance() {
         </div>
 
         {/* Date range selector */}
-        <div style={{ display: 'flex', gap: 4, background: 'var(--gray-100)',
-          borderRadius: 8, padding: 3 }}>
-          {DATE_RANGES.map(r => (
-            <button key={r.id} onClick={() => setRange(r.id)}
-              style={{
-                background: range === r.id ? 'var(--card-bg)' : 'transparent',
-                border: 'none', borderRadius: 6,
-                padding: '5px 12px', fontSize: 12, fontWeight: range === r.id ? 600 : 400,
-                color: range === r.id ? 'var(--gray-800)' : 'var(--gray-400)',
-                cursor: 'pointer', transition: 'all 0.15s',
-                boxShadow: range === r.id ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-              }}>
-              {r.label}
-            </button>
-          ))}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 4, background: 'var(--gray-100)',
+            borderRadius: 8, padding: 3 }}>
+            {DATE_RANGES.map(r => (
+              <button key={r.id} onClick={() => setRange(r.id)}
+                style={{
+                  background: range === r.id ? 'var(--card-bg)' : 'transparent',
+                  border: 'none', borderRadius: 6,
+                  padding: '5px 12px', fontSize: 12, fontWeight: range === r.id ? 600 : 400,
+                  color: range === r.id ? 'var(--gray-800)' : 'var(--gray-400)',
+                  cursor: 'pointer', transition: 'all 0.15s',
+                  boxShadow: range === r.id ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                }}>
+                {r.label}
+              </button>
+            ))}
+          </div>
+          {range === 'custom' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+              <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
+                style={{ fontSize: 12, padding: '4px 8px' }} />
+              <span style={{ color: 'var(--gray-400)' }}>to</span>
+              <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
+                style={{ fontSize: 12, padding: '4px 8px' }} />
+            </div>
+          )}
         </div>
       </div>
 

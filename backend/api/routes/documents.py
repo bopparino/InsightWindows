@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session, joinedload
 from core.database import get_db
 from core.config import settings
 from core.security import get_current_user
-from models.models import Plan, Document, HouseType, System, Project, User
-import os, datetime, base64, smtplib, logging
+from models.models import Plan, Document, HouseType, System, Project, User, EventLog
+import os, datetime, base64, smtplib, logging, json
 
 logger = logging.getLogger(__name__)
 from email.mime.multipart import MIMEMultipart
@@ -474,6 +474,14 @@ def email_quote(
         raise HTTPException(502, "SMTP authentication failed — check SMTP_USER/SMTP_PASSWORD in .env.")
     except Exception as e:
         raise HTTPException(502, f"Failed to send email: {e}")
+
+    db.add(EventLog(
+        username=current_user.username,
+        plan_id=plan_id,
+        event_type="email_sent",
+        description=json.dumps({"to": body.to, "subject": body.subject, "filename": filename}),
+    ))
+    db.commit()
 
     return {"sent": True, "to": body.to, "filename": filename}
 

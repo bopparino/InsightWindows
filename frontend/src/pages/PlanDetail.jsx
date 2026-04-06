@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { plans, documents, lineItems, houseTypes, equipment, houseTypeApi, systems, draws as drawsApi } from '../api/client'
+import { plans, documents, lineItems, houseTypes, equipment, houseTypeApi, systems, draws as drawsApi, search } from '../api/client'
 
 // ── Email Quote modal ─────────────────────────────────────────
-function EmailQuoteModal({ plan, currentUser, onClose }) {
+function EmailQuoteModal({ plan, currentUser, onClose, onSent }) {
   const builderEmail = plan.project?.builder?.email || ''
   const [to,      setTo]      = useState(builderEmail)
   const [subject, setSubject] = useState(
@@ -20,6 +20,7 @@ function EmailQuoteModal({ plan, currentUser, onClose }) {
     try {
       await documents.emailQuote(plan.id, { to: to.trim(), subject, message })
       setStatus('sent')
+      onSent?.()
     } catch (e) {
       setErrMsg(e.response?.data?.detail || 'Failed to send. Check server logs.')
       setStatus('error')
@@ -231,9 +232,22 @@ function EditableLineItemRow({ planId, li, onDelete, onEditingChange }) {
     unit_price:  li.unit_price,
     pricing_flag: li.pricing_flag,
   })
+  const [suggestions, setSuggestions] = useState([])
 
   const startEditing = () => { setEditing(true);  onEditingChange?.(true)  }
-  const stopEditing  = () => { setEditing(false); onEditingChange?.(false) }
+  const stopEditing  = () => { setEditing(false); onEditingChange?.(false); setSuggestions([]) }
+
+  useEffect(() => {
+    if (!editing) return
+    const q = form.description.trim()
+    if (q.length < 3) { setSuggestions([]); return }
+    const timer = setTimeout(() => {
+      search.lineItemSuggestions(q)
+        .then(data => setSuggestions(data.filter(s => s.description !== form.description)))
+        .catch(() => setSuggestions([]))
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [form.description, editing])
 
   const save = useMutation({
     mutationFn: () => lineItems.update(planId, li.id, form),
@@ -251,9 +265,28 @@ function EditableLineItemRow({ planId, li, onDelete, onEditingChange }) {
         <td style={{ color: 'var(--gray-400)', fontSize: 11, paddingTop: 6, paddingBottom: 6 }}>
           {li.sort_order}
         </td>
-        <td>
+        <td style={{ position: 'relative' }}>
           <input value={form.description} onChange={e => set('description', e.target.value)}
-            style={{ fontSize: 13, padding: '4px 8px' }} autoFocus />
+            style={{ fontSize: 13, padding: '4px 8px', width: '100%' }} autoFocus />
+          {suggestions.length > 0 && (
+            <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 50,
+              background: 'var(--card-bg)', border: '1px solid var(--gray-200)',
+              borderRadius: 6, boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              minWidth: 340, maxHeight: 200, overflowY: 'auto' }}>
+              {suggestions.map((s, i) => (
+                <div key={i}
+                  onMouseDown={() => { set('description', s.description); set('unit_price', s.avg_price); setSuggestions([]) }}
+                  style={{ padding: '7px 12px', cursor: 'pointer', fontSize: 13,
+                    borderBottom: '1px solid var(--gray-100)',
+                    display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                  <span>{s.description}</span>
+                  <span style={{ color: 'var(--gray-400)', fontSize: 12, whiteSpace: 'nowrap' }}>
+                    ${s.avg_price.toFixed(2)} · {s.count}×
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </td>
         <td style={{ textAlign: 'center' }}>
           <input type="number" min="0" step="0.5" value={form.quantity}
@@ -341,10 +374,22 @@ function EditableLineItemRow({ planId, li, onDelete, onEditingChange }) {
 function AddLineItemForm({ planId, systemId, onDone }) {
   const qc = useQueryClient()
   const [showPicker, setShowPicker] = useState(false)
+  const [suggestions, setSuggestions] = useState([])
   const [form, setForm] = useState({
     description: '', quantity: 1, unit_price: 0,
     pricing_flag: 'standard', draw_stage: '', part_number: '', sort_order: '20',
   })
+
+  useEffect(() => {
+    const q = form.description.trim()
+    if (q.length < 3) { setSuggestions([]); return }
+    const timer = setTimeout(() => {
+      search.lineItemSuggestions(q)
+        .then(setSuggestions)
+        .catch(() => setSuggestions([]))
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [form.description])
 
   const add = useMutation({
     mutationFn: (data) => lineItems.add(planId, systemId, data),
@@ -397,13 +442,32 @@ function AddLineItemForm({ planId, systemId, onDone }) {
         </div>
 
         <div className="form-row" style={{ marginBottom: 10 }}>
-          <div>
+          <div style={{ position: 'relative' }}>
             <label>Description *</label>
             <input
               placeholder="e.g. Rough In Draw, FLOAT SWITCH (Zone 1)"
               value={form.description}
               onChange={e => set('description', e.target.value)}
             />
+            {suggestions.length > 0 && (
+              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+                background: 'var(--card-bg)', border: '1px solid var(--gray-200)',
+                borderRadius: 6, boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                maxHeight: 200, overflowY: 'auto' }}>
+                {suggestions.map((s, i) => (
+                  <div key={i}
+                    onMouseDown={() => { set('description', s.description); set('unit_price', s.avg_price); setSuggestions([]) }}
+                    style={{ padding: '7px 12px', cursor: 'pointer', fontSize: 13,
+                      borderBottom: '1px solid var(--gray-100)',
+                      display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                    <span>{s.description}</span>
+                    <span style={{ color: 'var(--gray-400)', fontSize: 12, whiteSpace: 'nowrap' }}>
+                      ${s.avg_price.toFixed(2)} · {s.count}×
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -461,6 +525,39 @@ function AddLineItemForm({ planId, systemId, onDone }) {
         </div>
       </div>
     </>
+  )
+}
+
+// ── Email history ─────────────────────────────────────────────
+function EmailHistory({ planId }) {
+  const { data: emails = [] } = useQuery({
+    queryKey: ['plan-emails', String(planId)],
+    queryFn:  () => plans.emails(planId),
+  })
+  if (emails.length === 0) return null
+  return (
+    <div className="card" style={{ marginTop: 16 }}>
+      <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 12,
+        color: 'var(--gray-600)', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: 11 }}>
+        Emails Sent
+      </div>
+      {emails.map(e => (
+        <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between',
+          alignItems: 'flex-start', padding: '8px 0',
+          borderBottom: '1px solid var(--gray-100)' }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 500 }}>{e.to}</div>
+            <div style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 2 }}>{e.subject}</div>
+          </div>
+          <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 16 }}>
+            <div style={{ fontSize: 12, color: 'var(--gray-500)' }}>
+              {new Date(e.sent_at).toLocaleDateString()} {new Date(e.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 1 }}>by {e.sent_by}</div>
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }
 
@@ -602,7 +699,12 @@ export default function PlanDetail() {
   return (
     <div>
       {showEmailModal && (
-        <EmailQuoteModal plan={plan} currentUser={user} onClose={() => setShowEmailModal(false)} />
+        <EmailQuoteModal
+          plan={plan}
+          currentUser={user}
+          onClose={() => setShowEmailModal(false)}
+          onSent={() => qc.invalidateQueries({ queryKey: ['plan-emails', id] })}
+        />
       )}
 
       {/* Header */}
@@ -951,6 +1053,9 @@ export default function PlanDetail() {
 
       {/* Activity */}
       <ActivityLog planId={parseInt(id)} />
+
+      {/* Email history */}
+      <EmailHistory planId={parseInt(id)} />
 
     </div>
   )

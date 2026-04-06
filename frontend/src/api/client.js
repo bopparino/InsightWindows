@@ -49,6 +49,7 @@ export const plans = {
   delete:      (id)     => api.delete(`/plans/${id}`).then(r => r.data),
   performance: (params) => api.get('/plans/performance', { params }).then(r => r.data),
   activity:    (id)     => api.get(`/plans/${id}/activity`).then(r => r.data),
+  emails:      (id)     => api.get(`/plans/${id}/emails`).then(r => r.data),
   bulkStatus:  (ids, status) => api.post('/plans/bulk-status', { ids, status }).then(r => r.data),
   bulkDelete:  (ids)    => api.post('/plans/bulk-delete', { ids }).then(r => r.data),
   copyFrom:    (planId, sourceId) => api.post(`/plans/${planId}/copy-from/${sourceId}`).then(r => r.data),
@@ -135,7 +136,8 @@ export const systems = {
 }
 
 export const search = {
-  query: (q) => api.get('/search/', { params: { q } }).then(r => r.data),
+  query:               (q) => api.get('/search/', { params: { q } }).then(r => r.data),
+  lineItemSuggestions: (q) => api.get('/search/line-items', { params: { q } }).then(r => r.data),
 }
 
 export const kit = {
