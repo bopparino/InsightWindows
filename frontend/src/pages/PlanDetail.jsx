@@ -924,6 +924,67 @@ export default function PlanDetail() {
           <p style={{ fontSize: 14, color: 'var(--gray-600)' }}>{plan.notes}</p>
         </div>
       )}
+
+      {/* Activity */}
+      <ActivityLog planId={parseInt(id)} />
+    </div>
+  )
+}
+
+function ActivityLog({ planId }) {
+  const { data: events = [], isLoading } = useQuery({
+    queryKey: ['plan-activity', planId],
+    queryFn: () => plans.activity(planId),
+  })
+
+  const EVENT_ICONS = {
+    plan_created:          '✦',
+    plan_contracted:       '★',
+    plan_lost:             '✕',
+    house_type_added:      '+',
+    house_type_duplicated: '⧉',
+    document_generated:    '⬇',
+    quote_emailed:         '✉',
+  }
+
+  return (
+    <div className="card" style={{ marginTop: 16 }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-600)',
+        marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+        Activity
+      </div>
+      {isLoading ? (
+        <div style={{ textAlign: 'center', padding: 16 }}><span className="spinner" /></div>
+      ) : events.length === 0 ? (
+        <div style={{ fontSize: 13, color: 'var(--gray-400)' }}>No activity recorded.</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+          {events.map((e, i) => (
+            <div key={e.id} style={{
+              display: 'flex', gap: 12, alignItems: 'flex-start',
+              paddingBottom: i < events.length - 1 ? 12 : 0,
+              marginBottom: i < events.length - 1 ? 12 : 0,
+              borderBottom: i < events.length - 1 ? '1px solid var(--gray-100)' : 'none',
+            }}>
+              <div style={{
+                width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                background: 'var(--blue-light)', border: '1px solid var(--blue-mid)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 11, color: 'var(--blue)', fontWeight: 700,
+              }}>
+                {EVENT_ICONS[e.event_type] || '·'}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, color: 'var(--gray-700)' }}>{e.description}</div>
+                <div style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 2 }}>
+                  {e.username && e.username !== 'system' ? `${e.username} · ` : ''}
+                  {e.event_at ? new Date(e.event_at).toLocaleString() : ''}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

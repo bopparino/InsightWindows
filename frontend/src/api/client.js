@@ -48,6 +48,7 @@ export const plans = {
   update:      (id, data) => api.patch(`/plans/${id}`, data).then(r => r.data),
   delete:      (id)     => api.delete(`/plans/${id}`).then(r => r.data),
   performance: (params) => api.get('/plans/performance', { params }).then(r => r.data),
+  activity:    (id)     => api.get(`/plans/${id}/activity`).then(r => r.data),
 }
 
 export const equipment = {

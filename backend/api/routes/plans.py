@@ -484,6 +484,27 @@ def update_plan(plan_id: int, data: PlanUpdate, db: Session = Depends(get_db),
     return {"ok": True}
 
 
+@router.get("/{plan_id}/activity")
+def get_plan_activity(plan_id: int, db: Session = Depends(get_db),
+                      current_user: User = Depends(get_current_user)):
+    events = (
+        db.query(EventLog)
+        .filter(EventLog.plan_id == plan_id)
+        .order_by(EventLog.event_at.desc())
+        .all()
+    )
+    return [
+        {
+            "id":          e.id,
+            "event_at":    e.event_at.isoformat() if e.event_at else None,
+            "username":    e.username,
+            "event_type":  e.event_type,
+            "description": e.description,
+        }
+        for e in events
+    ]
+
+
 @router.delete("/{plan_id}")
 def delete_plan(plan_id: int, db: Session = Depends(get_db),
                 current_user: User = Depends(get_current_user)):
