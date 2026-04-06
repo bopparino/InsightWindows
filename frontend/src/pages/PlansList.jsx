@@ -57,10 +57,6 @@ export default function PlansList() {
     },
   })
 
-  const toggleOne    = (id) => setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
-  const toggleAll    = () => setSelected(s => s.size === paginated.length ? new Set() : new Set(paginated.map(p => p.id)))
-  const allSelected  = paginated.length > 0 && paginated.every(p => selected.has(p.id))
-
   const builders   = [...new Set(data.map(p => p.builder_name))].sort()
   const estimators = [...new Set(data.map(p => p.estimator_name).filter(Boolean))].sort()
 
@@ -77,6 +73,10 @@ export default function PlansList() {
   })
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  const toggleOne    = (id) => setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
+  const toggleAll    = () => setSelected(s => s.size === paginated.length ? new Set() : new Set(paginated.map(p => p.id)))
+  const allSelected  = paginated.length > 0 && paginated.every(p => selected.has(p.id))
 
   function setStatus(s) {
     setStatusFilter(s)
