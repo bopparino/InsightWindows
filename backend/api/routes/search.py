@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from core.database import get_db
 from core.security import get_current_user
-from models.models import Plan, Project, Builder, EquipmentSystem, EquipmentManufacturer, User
+from models.models import Plan, Project, Builder, EquipmentSystem, EquipmentManufacturer, User, LineItem, System, HouseType
 
 router = APIRouter()
 
@@ -84,6 +84,35 @@ def search(
                 "sub":   b.contact_name or b.code,
                 "url":   "/builders",
             })
+
+    # ── Line items ────────────────────────────────────────────────────────────
+    if current_user.role in ops_roles:
+        liq = (
+            db.query(LineItem)
+            .join(LineItem.system)
+            .join(System.house_type)
+            .join(HouseType.plan)
+            .join(Plan.project)
+            .join(Project.builder)
+            .filter(LineItem.description.ilike(like))
+        )
+        if current_user.role == "account_manager":
+            liq = liq.filter(Plan.estimator_initials == current_user.initials)
+        seen_plans = set()
+        for li in liq.order_by(Plan.created_at.desc()).limit(20).all():
+            plan_obj = li.system.house_type.plan
+            if plan_obj.id in seen_plans:
+                continue
+            seen_plans.add(plan_obj.id)
+            results.append({
+                "type":  "plan",
+                "id":    plan_obj.id,
+                "label": plan_obj.plan_number,
+                "sub":   f"{li.description} · {plan_obj.project.name}",
+                "url":   f"/plans/{plan_obj.id}",
+            })
+            if len(seen_plans) >= 4:
+                break
 
     # ── Equipment ─────────────────────────────────────────────────────────────
     if current_user.role in ops_roles:

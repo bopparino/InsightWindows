@@ -73,7 +73,7 @@ export default function NewPlan() {
   return (
     <div style={{ maxWidth: 680 }}>
       <div className="page-header">
-        <h1 className="page-title">Login a New Plan</h1>
+        <h1 className="page-title">Create a New Plan</h1>
       </div>
 
       {error && <div className="error-msg">{error}</div>}

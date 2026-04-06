@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { plans, documents, lineItems, houseTypes, equipment, houseTypeApi, systems } from '../api/client'
 
 // ── Email Quote modal ─────────────────────────────────────────
-function EmailQuoteModal({ plan, onClose }) {
+function EmailQuoteModal({ plan, currentUser, onClose }) {
   const builderEmail = plan.project?.builder?.email || ''
   const [to,      setTo]      = useState(builderEmail)
   const [subject, setSubject] = useState(
@@ -53,6 +53,13 @@ function EmailQuoteModal({ plan, onClose }) {
           </div>
         ) : (
           <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {!currentUser?.email && (
+              <div style={{ background: '#fefce8', border: '1px solid #fde68a',
+                borderRadius: 6, padding: '8px 12px', fontSize: 13, color: '#92400e' }}>
+                Your account has no email address — builder replies will go to the shared
+                SMTP inbox instead of you. Ask an admin to add your email in User Management.
+              </div>
+            )}
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-600)',
                 display: 'block', marginBottom: 4 }}>To</label>
@@ -513,6 +520,7 @@ export default function PlanDetail() {
   const [addingLineItemTo, setAddingLineItemTo] = useState(null)
   const [kitZone, setKitZone] = useState(null)  // { systemId, zoneName }
   const [dirtyRows, setDirtyRows] = useState(0)
+  const [copied, setCopied] = useState(false)
 
   const onRowEditingChange = useCallback((active) => {
     setDirtyRows(n => Math.max(0, n + (active ? 1 : -1)))
@@ -592,7 +600,7 @@ export default function PlanDetail() {
   return (
     <div>
       {showEmailModal && (
-        <EmailQuoteModal plan={plan} onClose={() => setShowEmailModal(false)} />
+        <EmailQuoteModal plan={plan} currentUser={user} onClose={() => setShowEmailModal(false)} />
       )}
 
       {/* Header */}
@@ -601,7 +609,20 @@ export default function PlanDetail() {
           <div style={{ fontSize: 13, color: 'var(--gray-400)', marginBottom: 4 }}>
             <Link to="/plans">Plans</Link> / {plan.plan_number}
           </div>
-          <h1 className="page-title">{plan.plan_number}</h1>
+          <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {plan.plan_number}
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(plan.plan_number)
+                setCopied(true)
+                setTimeout(() => setCopied(false), 1500)
+              }}
+              title="Copy plan number"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px',
+                fontSize: 13, color: copied ? 'var(--blue)' : 'var(--gray-400)', lineHeight: 1 }}>
+              {copied ? '✓' : '⧉'}
+            </button>
+          </h1>
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <button className="btn-secondary"
