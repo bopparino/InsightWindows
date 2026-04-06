@@ -1,4 +1,5 @@
 import { useState, useEffect, Fragment } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { builders } from '../api/client'
 import Pagination from '../components/Pagination'
@@ -108,7 +109,8 @@ export default function Builders() {
   const qc = useQueryClient()
   const { user } = useAuth()
   const isAdmin = user?.role === 'admin'
-  const [search, setSearch] = useState('')
+  const [searchParams] = useSearchParams()
+  const [search, setSearch] = useState(() => searchParams.get('q') || '')
   const [showNew, setShowNew] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [error, setError] = useState('')
@@ -117,7 +119,7 @@ export default function Builders() {
 
   useEffect(() => { setPage(1) }, [search])
 
-  const { data: builderList = [], isLoading, refetch } = useQuery({
+  const { data: builderList = [], isLoading } = useQuery({
     queryKey: ['builders'], queryFn: builders.list,
   })
 
@@ -135,8 +137,7 @@ export default function Builders() {
 
   const createBuilder = useMutation({
     mutationFn: (data) => builders.create(data),
-    onSuccess: async () => {
-      await refetch()
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['builders'] })
       setShowNew(false)
       setError('')
@@ -155,14 +156,14 @@ export default function Builders() {
 
   const deleteBuilder = useMutation({
     mutationFn: (id) => builders.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['builders'] }); refetch() },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['builders'] }) },
     onError: (e) => alert(e.response?.data?.detail || 'Could not delete builder'),
   })
 
   const bulkDelete = useMutation({
     mutationFn: () => builders.bulkDelete([...selected]),
     onSuccess: (res) => {
-      qc.invalidateQueries({ queryKey: ['builders'] }); refetch(); setSelected(new Set())
+      qc.invalidateQueries({ queryKey: ['builders'] }); setSelected(new Set())
       if (res.skipped_with_projects?.length)
         alert(`Skipped (have projects): ${res.skipped_with_projects.join(', ')}`)
     },

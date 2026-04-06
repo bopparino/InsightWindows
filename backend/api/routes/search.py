@@ -60,7 +60,7 @@ def search(
                 "id":    p.id,
                 "label": p.name,
                 "sub":   p.code,
-                "url":   "/projects",
+                "url":   f"/projects?q={p.name}",
             })
 
     # ── Builders ──────────────────────────────────────────────────────────────
@@ -82,7 +82,7 @@ def search(
                 "id":    b.id,
                 "label": b.name,
                 "sub":   b.contact_name or b.code,
-                "url":   "/builders",
+                "url":   f"/builders?q={b.name}",
             })
 
     # ── Line items ────────────────────────────────────────────────────────────
@@ -133,7 +133,7 @@ def search(
                 "id":    e.id,
                 "label": e.system_code,
                 "sub":   e.manufacturer.name if e.manufacturer else "",
-                "url":   "/equipment",
+                "url":   f"/equipment?q={e.system_code}",
             })
 
     return results

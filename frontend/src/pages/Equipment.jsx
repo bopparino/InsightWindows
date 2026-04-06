@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { equipment, kit } from '../api/client'
 import { useAuth } from '../context/AuthContext'
@@ -490,8 +491,9 @@ function ConsumablesTab() {
 
 // ── Main page ─────────────────────────────────────────────────
 export default function Equipment() {
+  const [searchParams] = useSearchParams()
   const [tab, setTab]               = useState('systems')
-  const [globalSearch, setGlobalSearch] = useState('')
+  const [globalSearch, setGlobalSearch] = useState(() => searchParams.get('q') || '')
   const [manageMode, setManageMode] = useState(false)
   const [selected, setSelected]     = useState(new Set())
   const [showAddMfr, setShowAddMfr] = useState(false)

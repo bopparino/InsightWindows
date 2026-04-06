@@ -1,4 +1,5 @@
 import { useState, useEffect, Fragment } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { projects, builders } from '../api/client'
 import SearchSelect from '../components/SearchSelect'
@@ -48,7 +49,8 @@ function ProjectForm({ initial = { code: '', name: '', builder_id: '' }, onSave,
 
 export default function Projects() {
   const qc = useQueryClient()
-  const [search, setSearch] = useState('')
+  const [searchParams] = useSearchParams()
+  const [search, setSearch] = useState(() => searchParams.get('q') || '')
   const [showNew, setShowNew] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [error, setError] = useState('')
@@ -57,7 +59,7 @@ export default function Projects() {
 
   useEffect(() => { setPage(1) }, [search])
 
-  const { data: projectList = [], isLoading, refetch } = useQuery({
+  const { data: projectList = [], isLoading } = useQuery({
     queryKey: ['projects'], queryFn: projects.list,
   })
   const { data: builderList = [] } = useQuery({
@@ -102,14 +104,14 @@ export default function Projects() {
 
   const deleteProject = useMutation({
     mutationFn: (id) => projects.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['projects'] }); refetch() },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['projects'] }) },
     onError: (e) => alert(e.response?.data?.detail || 'Could not delete project'),
   })
 
   const bulkDelete = useMutation({
     mutationFn: () => projects.bulkDelete([...selected]),
     onSuccess: (res) => {
-      qc.invalidateQueries({ queryKey: ['projects'] }); refetch(); setSelected(new Set())
+      qc.invalidateQueries({ queryKey: ['projects'] }); setSelected(new Set())
       if (res.skipped_with_plans?.length)
         alert(`Skipped (have plans): ${res.skipped_with_plans.join(', ')}`)
     },
