@@ -105,9 +105,16 @@ export default function PlansList() {
             {statusFilter !== 'all' ? ` · ${statusFilter}` : ''}
           </div>
         </div>
-        <Link to="/plans/new">
-          <button className="btn-primary">+ New Plan</button>
-        </Link>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn-secondary"
+            onClick={() => plans.exportCsv(statusFilter === 'all' ? null : statusFilter)}
+            style={{ fontSize: 13 }}>
+            ⬇ Export CSV
+          </button>
+          <Link to="/plans/new">
+            <button className="btn-primary">+ New Plan</button>
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}

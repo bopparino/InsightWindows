@@ -50,9 +50,14 @@ export const plans = {
   performance: (params) => api.get('/plans/performance', { params }).then(r => r.data),
   activity:    (id)     => api.get(`/plans/${id}/activity`).then(r => r.data),
   emails:      (id)     => api.get(`/plans/${id}/emails`).then(r => r.data),
+  exportCsv:   (status) => api.get('/plans/export-csv', {
+    params: status ? { status } : {},
+    responseType: 'blob',
+  }).then(r => triggerDownload(r.data, `plans${status ? '_' + status : ''}.csv`)),
   bulkStatus:  (ids, status) => api.post('/plans/bulk-status', { ids, status }).then(r => r.data),
   bulkDelete:  (ids)    => api.post('/plans/bulk-delete', { ids }).then(r => r.data),
   copyFrom:    (planId, sourceId) => api.post(`/plans/${planId}/copy-from/${sourceId}`).then(r => r.data),
+  templates:   ()                => api.get('/plans/templates').then(r => r.data),
 }
 
 export const equipment = {
@@ -100,7 +105,9 @@ export const documents = {
   generateFieldSheet: (planId) => api.post(`/documents/${planId}/field-sheet/generate`).then(r => r.data),
   fieldSheetDownload: (planId, filename) => api.get(`/documents/${planId}/field-sheet/download`, { responseType: 'blob' })
                                      .then(r => triggerDownload(r.data, filename)),
-  emailQuote: (planId, data) => api.post(`/documents/${planId}/email-quote`, data).then(r => r.data),
+  emailQuote:      (planId, data)         => api.post(`/documents/${planId}/email-quote`, data).then(r => r.data),
+  downloadVersion: (planId, docId, fname) => api.get(`/documents/${planId}/history/${docId}/download`, { responseType: 'blob' })
+                                               .then(r => triggerDownload(r.data, fname)),
 }
 
 export const filesApi = {
@@ -146,6 +153,11 @@ export const kit = {
   update:    (id, data) => api.patch(`/kit/${id}`, data).then(r => r.data),
   create:    (data) => api.post('/kit/', data).then(r => r.data),
   remove:    (id)   => api.delete(`/kit/${id}`).then(r => r.data),
+}
+
+export const companyApi = {
+  get:    ()     => api.get('/company/').then(r => r.data),
+  update: (data) => api.patch('/company/', data).then(r => r.data),
 }
 
 export const feedbackApi = {

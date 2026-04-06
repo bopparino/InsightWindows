@@ -8,9 +8,9 @@ from core.database import engine, Base
 from models.models import (  # noqa — registers all models
     Builder, County, Project, EquipmentManufacturer,
     EquipmentSystem, Plan, HouseType, System,
-    LineItem, Draw, Document, EventLog, User, Suggestion
+    LineItem, Draw, Document, EventLog, User, Suggestion, CompanySettings
 )
-from api.routes import plans, equipment, builders, projects, documents, kit, auth, files, search, feedback
+from api.routes import plans, equipment, builders, projects, documents, kit, auth, files, search, feedback, company
 
 # Optional integrations — only activated when env vars are present
 _ENTRA_ENABLED = all(os.getenv(k) for k in ["AZURE_TENANT_ID", "AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET"])
@@ -78,6 +78,7 @@ app.include_router(auth.router,      prefix="/api/auth",      tags=["auth"])
 app.include_router(files.router,     prefix="/api/files",     tags=["files"])
 app.include_router(search.router,    prefix="/api/search",    tags=["search"])
 app.include_router(feedback.router,  prefix="/api/feedback",  tags=["feedback"])
+app.include_router(company.router,   prefix="/api/company",   tags=["company"])
 
 if _ENTRA_ENABLED:
     app.include_router(entra_router)

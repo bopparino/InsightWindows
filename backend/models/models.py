@@ -93,6 +93,7 @@ class Plan(Base):
     number_of_zones    = Column(SmallInteger, default=1)
     house_type         = Column(String(100))
     notes              = Column(Text)
+    is_template        = Column(Boolean, default=False, nullable=False)
     contracted_at      = Column(DateTime, index=True)
     created_at         = Column(DateTime, server_default=func.now(), index=True)
     updated_at         = Column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -160,6 +161,7 @@ class Document(Base):
     id           = Column(Integer, primary_key=True)
     plan_id      = Column(Integer, ForeignKey("plans.id"), nullable=False, index=True)
     doc_type     = Column(String(30), nullable=False, index=True)
+    version      = Column(Integer, nullable=False, default=1)
     storage_path = Column(String(500))
     generated_at = Column(DateTime, server_default=func.now())
     notes        = Column(Text)
@@ -198,6 +200,23 @@ class Suggestion(Base):
     subject      = Column(String(200), nullable=False)
     message      = Column(Text, nullable=False)
     status       = Column(String(20), default="open")
+
+
+class CompanySettings(Base):
+    """Single-row table holding branding/company info editable from the UI."""
+    __tablename__ = "company_settings"
+    id           = Column(Integer, primary_key=True)
+    company_name = Column(String(100), nullable=False, default="Insight HVAC")
+    phone        = Column(String(30))
+    email        = Column(String(200))
+    address      = Column(String(200))
+    city         = Column(String(100))
+    state        = Column(String(2))
+    zip_code     = Column(String(15))
+    website      = Column(String(200))
+    quote_footer = Column(Text)          # custom footer text on quotes
+    logo_b64     = Column(Text)          # base64-encoded logo image
+    updated_at   = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 
 class User(Base):

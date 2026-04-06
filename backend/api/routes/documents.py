@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session, joinedload
 from core.database import get_db
 from core.config import settings
 from core.security import get_current_user
-from models.models import Plan, Document, HouseType, System, Project, User, EventLog
+from models.models import Plan, Document, HouseType, System, Project, User, EventLog, CompanySettings
 import os, datetime, base64, smtplib, logging, json
 
 logger = logging.getLogger(__name__)
@@ -31,10 +31,26 @@ def get_logo_b64() -> str:
     return LOGO_B64 or ""
 
 
-def build_quote_html(plan) -> str:
+def _get_company(db: Session = None) -> dict:
+    """Return company branding from DB, with safe defaults."""
+    if db:
+        row = db.query(CompanySettings).first()
+        if row:
+            return {
+                "name":   row.company_name or "Insight HVAC",
+                "phone":  row.phone or "",
+                "email":  row.email or "",
+                "footer": row.quote_footer or "",
+                "logo":   row.logo_b64 or get_logo_b64() or "",
+            }
+    return {"name": "Insight HVAC", "phone": "", "email": "", "footer": "", "logo": get_logo_b64() or ""}
+
+
+def build_quote_html(plan, db=None) -> str:
     builder  = plan.project.builder
     now      = datetime.datetime.now().strftime("%B %d, %Y")
-    logo_src = get_logo_b64()
+    co       = _get_company(db)
+    logo_src = co["logo"]
 
     # Builder address block
     addr_lines = []
@@ -106,9 +122,9 @@ def build_quote_html(plan) -> str:
             draws_html += '</tr></table>'
 
     logo_html = (
-        f'<img src="{logo_src}" alt="Metcalfe HVAC" class="logo">'
+        f'<img src="{logo_src}" alt="{co["name"]}" class="logo">'
         if logo_src else
-        '<div class="company-name-text">Metcalfe HVAC</div>'
+        f'<div class="company-name-text">{co["name"]}</div>'
     )
 
     return f"""<!DOCTYPE html>
@@ -312,8 +328,8 @@ def build_quote_html(plan) -> str:
   {f'<div class="draws-section">{draws_html}</div>' if draws_html else ''}
 
   <div class="footer">
-    <span>Metcalfe HVAC · Plan # {plan.plan_number} · {plan.estimator_name}</span>
-    <span>This proposal is valid for 30 days from {now}</span>
+    <span>{co["name"]} · Plan # {plan.plan_number} · {plan.estimator_name}</span>
+    <span>{co["footer"] if co["footer"] else f"This proposal is valid for 30 days from {now}"}</span>
   </div>
 
 </body>
@@ -339,7 +355,7 @@ def generate_quote(plan_id: int, db: Session = Depends(get_db),
     )
     os.makedirs(estimator_folder, exist_ok=True)
 
-    html = build_quote_html(plan)
+    html = build_quote_html(plan, db)
     pdf_path  = os.path.join(estimator_folder, f"{plan.plan_number}_quote.pdf")
     html_path = os.path.join(estimator_folder, f"{plan.plan_number}_quote.html")
 
@@ -360,13 +376,28 @@ def generate_quote(plan_id: int, db: Session = Depends(get_db),
         output_path = html_path
         filename    = f"{plan.plan_number}_quote.html"
 
-    doc = Document(plan_id=plan_id, doc_type="quote", storage_path=output_path)
+    # Auto-increment version for this plan+doc_type
+    last = db.query(Document).filter_by(plan_id=plan_id, doc_type="quote") \
+              .order_by(Document.version.desc()).first()
+    next_version = (last.version + 1) if last else 1
+
+    # Version-stamped filenames so old files aren't overwritten
+    ext = ".pdf" if pdf_generated else ".html"
+    versioned_name = f"{plan.plan_number}_quote_v{next_version}{ext}"
+    versioned_path = os.path.join(estimator_folder, versioned_name)
+    import shutil
+    shutil.copy2(output_path, versioned_path)
+
+    doc = Document(plan_id=plan_id, doc_type="quote",
+                   version=next_version, storage_path=versioned_path)
     db.add(doc)
     db.commit()
 
     return {
-        "path":          output_path,
-        "filename":      filename,
+        "doc_id":        doc.id,
+        "path":          versioned_path,
+        "filename":      versioned_name,
+        "version":       next_version,
         "pdf":           pdf_generated,
         "html_fallback": html_path,
     }
@@ -375,17 +406,31 @@ def generate_quote(plan_id: int, db: Session = Depends(get_db),
 @router.get("/{plan_id}/history")
 def quote_history(plan_id: int, db: Session = Depends(get_db),
                   current_user: User = Depends(get_current_user)):
-    docs = db.query(Document).filter_by(plan_id=plan_id).order_by(
-        Document.generated_at.desc()).all()
+    docs = db.query(Document).filter_by(plan_id=plan_id, doc_type="quote") \
+              .order_by(Document.version.desc()).all()
     return [
         {
             "id":           d.id,
             "doc_type":     d.doc_type,
+            "version":      d.version,
             "filename":     os.path.basename(d.storage_path or ""),
             "generated_at": d.generated_at,
         }
         for d in docs
     ]
+
+
+@router.get("/{plan_id}/history/{doc_id}/download")
+def download_quote_version(plan_id: int, doc_id: int,
+                           db: Session = Depends(get_db),
+                           current_user: User = Depends(get_current_user)):
+    doc = db.query(Document).filter_by(id=doc_id, plan_id=plan_id, doc_type="quote").first()
+    if not doc or not doc.storage_path or not os.path.exists(doc.storage_path):
+        raise HTTPException(404, "Quote version not found")
+    filename   = os.path.basename(doc.storage_path)
+    media_type = "application/pdf" if filename.endswith(".pdf") else "text/html"
+    return FileResponse(doc.storage_path, filename=filename, media_type=media_type,
+                        headers={"Content-Disposition": f'attachment; filename="{filename}"'})
 
 
 @router.get("/{plan_id}/preview")
@@ -403,7 +448,7 @@ def preview_quote(plan_id: int, db: Session = Depends(get_db),
     if not plan:
         raise HTTPException(404, "Plan not found")
 
-    html = build_quote_html(plan)
+    html = build_quote_html(plan, db)
     return HTMLResponse(content=html)
 
 
@@ -515,15 +560,16 @@ def download_quote(plan_id: int, db: Session = Depends(get_db),
 
 # ── Field Sheet ───────────────────────────────────────────────
 
-def build_field_sheet_html(plan) -> str:
+def build_field_sheet_html(plan, db=None) -> str:
     builder  = plan.project.builder
     now      = datetime.datetime.now().strftime("%B %d, %Y")
-    logo_src = get_logo_b64()
+    co       = _get_company(db)
+    logo_src = co["logo"]
 
     logo_html = (
-        f'<img src="{logo_src}" alt="Metcalfe HVAC" class="logo">'
+        f'<img src="{logo_src}" alt="{co["name"]}" class="logo">'
         if logo_src else
-        '<div class="company-name-text">Metcalfe HVAC</div>'
+        f'<div class="company-name-text">{co["name"]}</div>'
     )
 
     house_sections = ""
@@ -702,7 +748,7 @@ def build_field_sheet_html(plan) -> str:
   </div>
 
   <div class="footer">
-    <span>Metcalfe HVAC · Field Sheet · Plan # {plan.plan_number}</span>
+    <span>{co["name"]} · Field Sheet · Plan # {plan.plan_number}</span>
     <span>Generated {now}</span>
   </div>
 
@@ -730,7 +776,7 @@ def generate_field_sheet(plan_id: int, db: Session = Depends(get_db),
     )
     os.makedirs(estimator_folder, exist_ok=True)
 
-    html = build_field_sheet_html(plan)
+    html = build_field_sheet_html(plan, db)
     pdf_path  = os.path.join(estimator_folder, f"{plan.plan_number}_field_sheet.pdf")
     html_path = os.path.join(estimator_folder, f"{plan.plan_number}_field_sheet.html")
 

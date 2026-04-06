@@ -528,6 +528,45 @@ function AddLineItemForm({ planId, systemId, onDone }) {
   )
 }
 
+// ── Quote version history ─────────────────────────────────────
+function QuoteHistory({ planId }) {
+  const { data: history = [] } = useQuery({
+    queryKey: ['quote-history', String(planId)],
+    queryFn:  () => documents.history(planId),
+  })
+  if (history.length === 0) return null
+  return (
+    <div className="card" style={{ marginTop: 16 }}>
+      <div style={{ fontWeight: 600, fontSize: 11, color: 'var(--gray-600)',
+        textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>
+        Quote Versions
+      </div>
+      {history.map(d => (
+        <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between',
+          alignItems: 'center', padding: '7px 0', borderBottom: '1px solid var(--gray-100)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, padding: '2px 8px',
+              borderRadius: 99, background: 'var(--blue-light)', color: 'var(--blue)' }}>
+              v{d.version}
+            </span>
+            <span style={{ fontSize: 13, color: 'var(--gray-600)' }}>{d.filename}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 12, color: 'var(--gray-400)' }}>
+              {new Date(d.generated_at).toLocaleDateString()} {new Date(d.generated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+            <button onClick={() => documents.downloadVersion(planId, d.id, d.filename)}
+              style={{ fontSize: 12, background: 'none', border: '1px solid var(--gray-200)',
+                borderRadius: 6, padding: '3px 10px', cursor: 'pointer', color: 'var(--gray-600)' }}>
+              ⬇ Download
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ── Email history ─────────────────────────────────────────────
 function EmailHistory({ planId }) {
   const { data: emails = [] } = useQuery({
@@ -740,11 +779,13 @@ export default function PlanDetail() {
             style={{ background: 'var(--blue-light)', color: 'var(--blue)',
               border: '1px solid var(--blue-mid)' }}
             onClick={async () => {
-              await generateQuote.mutateAsync()
-              await documents.download(id, `${plan.plan_number}_quote.pdf`)
+              const result = await generateQuote.mutateAsync()
+              await documents.downloadVersion(id, result.id ?? result.doc_id, result.filename)
+                .catch(() => documents.download(id, result.filename))
+              qc.invalidateQueries({ queryKey: ['quote-history', id] })
             }}
             disabled={generateQuote.isPending}>
-            {generateQuote.isPending ? 'Generating...' : '⬇ Download Quote'}
+            {generateQuote.isPending ? 'Generating...' : '⬇ Generate & Download Quote'}
           </button>
           <button className="btn-secondary"
             style={{ background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd' }}
@@ -757,6 +798,29 @@ export default function PlanDetail() {
             disabled={generateFieldSheet.isPending}>
             {generateFieldSheet.isPending ? 'Generating...' : '⬇ Field Sheet'}
           </button>
+
+          {/* Template toggle — admin only */}
+          {isAdmin && (
+            <button
+              onClick={() => {
+                const next = !plan.is_template
+                if (!next && !window.confirm(`Remove "${plan.plan_number}" from templates?`)) return
+                plans.update(id, { is_template: next }).then(() => {
+                  qc.invalidateQueries({ queryKey: ['plan', id] })
+                  qc.invalidateQueries({ queryKey: ['plans', 'templates'] })
+                })
+              }}
+              title={plan.is_template ? 'Remove from templates' : 'Save as template'}
+              style={{
+                background: plan.is_template ? '#fef9c3' : 'var(--gray-100)',
+                color: plan.is_template ? '#854d0e' : 'var(--gray-500)',
+                border: `1px solid ${plan.is_template ? '#fde68a' : 'var(--gray-200)'}`,
+                borderRadius: 'var(--radius)', padding: '8px 12px',
+                fontSize: 13, cursor: 'pointer',
+              }}>
+              {plan.is_template ? '★ Template' : '☆ Template'}
+            </button>
+          )}
 
           {/* Divider between document actions and workflow actions */}
           <div style={{ width: 1, height: 32, background: 'var(--gray-200)', margin: '0 2px' }} />
@@ -1053,6 +1117,9 @@ export default function PlanDetail() {
 
       {/* Activity */}
       <ActivityLog planId={parseInt(id)} />
+
+      {/* Quote version history */}
+      <QuoteHistory planId={parseInt(id)} />
 
       {/* Email history */}
       <EmailHistory planId={parseInt(id)} />

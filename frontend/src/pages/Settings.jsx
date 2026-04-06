@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
-import { authApi } from '../api/client'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { authApi, companyApi } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import { useTheme, THEMES } from '../context/ThemeContext'
 
@@ -105,6 +105,134 @@ function ThemePreviewCard({ t, active, onSelect }) {
   )
 }
 
+function BrandingCard() {
+  const qc = useQueryClient()
+  const { data: co, isLoading } = useQuery({ queryKey: ['company'], queryFn: companyApi.get })
+  const [form, setForm] = useState(null)
+  const [msg,  setMsg]  = useState('')
+
+  // Initialise local form once data loads
+  if (co && !form) setForm({
+    company_name: co.company_name || '',
+    phone:        co.phone        || '',
+    email:        co.email        || '',
+    address:      co.address      || '',
+    city:         co.city         || '',
+    state:        co.state        || '',
+    zip_code:     co.zip_code     || '',
+    website:      co.website      || '',
+    quote_footer: co.quote_footer || '',
+    logo_b64:     co.logo_b64     || '',
+  })
+
+  const save = useMutation({
+    mutationFn: () => companyApi.update(form),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['company'] })
+      setMsg('Saved.')
+      setTimeout(() => setMsg(''), 3000)
+    },
+  })
+
+  function handleLogo(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => setForm(f => ({ ...f, logo_b64: ev.target.result }))
+    reader.readAsDataURL(file)
+  }
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  if (isLoading || !form) return null
+
+  return (
+    <div className="card" style={{ marginBottom: 20 }}>
+      <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>Company Branding</div>
+      <div style={{ fontSize: 13, color: 'var(--gray-400)', marginBottom: 16 }}>
+        Used on all generated quote PDFs and field sheets.
+      </div>
+
+      <div className="form-row form-row-2" style={{ marginBottom: 12 }}>
+        <div>
+          <label>Company name *</label>
+          <input value={form.company_name} onChange={e => set('company_name', e.target.value)} />
+        </div>
+        <div>
+          <label>Phone</label>
+          <input value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="301-555-0100" />
+        </div>
+      </div>
+
+      <div className="form-row form-row-2" style={{ marginBottom: 12 }}>
+        <div>
+          <label>Email</label>
+          <input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="info@company.com" />
+        </div>
+        <div>
+          <label>Website</label>
+          <input value={form.website} onChange={e => set('website', e.target.value)} placeholder="https://company.com" />
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 12 }}>
+        <label>Address</label>
+        <input value={form.address} onChange={e => set('address', e.target.value)} placeholder="123 Main St" />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 100px', gap: 10, marginBottom: 12 }}>
+        <div>
+          <label>City</label>
+          <input value={form.city} onChange={e => set('city', e.target.value)} />
+        </div>
+        <div>
+          <label>State</label>
+          <input value={form.state} maxLength={2} onChange={e => set('state', e.target.value.toUpperCase())} />
+        </div>
+        <div>
+          <label>ZIP</label>
+          <input value={form.zip_code} onChange={e => set('zip_code', e.target.value)} />
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 12 }}>
+        <label>Quote footer text <span style={{ fontWeight: 400, color: 'var(--gray-400)' }}>(optional — overrides "valid for 30 days" message)</span></label>
+        <input value={form.quote_footer} onChange={e => set('quote_footer', e.target.value)}
+          placeholder="This proposal is valid for 30 days from the date above." />
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label>Logo</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {form.logo_b64 && (
+            <img src={form.logo_b64} alt="Logo preview"
+              style={{ maxHeight: 48, maxWidth: 160, objectFit: 'contain',
+                border: '1px solid var(--gray-200)', borderRadius: 4, padding: 4 }} />
+          )}
+          <div>
+            <input type="file" accept="image/*" onChange={handleLogo}
+              style={{ fontSize: 13 }} />
+            {form.logo_b64 && (
+              <button onClick={() => set('logo_b64', '')}
+                style={{ marginLeft: 8, fontSize: 12, background: 'none', border: 'none',
+                  color: 'var(--danger)', cursor: 'pointer' }}>
+                Remove
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button className="btn-primary" onClick={() => save.mutate()} disabled={save.isPending}>
+          {save.isPending ? 'Saving...' : 'Save branding'}
+        </button>
+        {msg && <span style={{ fontSize: 13, color: 'var(--success)' }}>{msg}</span>}
+      </div>
+    </div>
+  )
+}
+
 export default function Settings() {
   const { user, refreshUser } = useAuth()
   const { theme, applyTheme } = useTheme()
@@ -168,6 +296,9 @@ export default function Settings() {
           {ROLE_LABELS[user?.role] || user?.role}
         </span>
       </div>
+
+      {/* Company branding — admin only */}
+      {user?.role === 'admin' && <BrandingCard />}
 
       {/* Appearance */}
       <div className="card" style={{ marginBottom: 20 }}>

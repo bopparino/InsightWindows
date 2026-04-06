@@ -12,6 +12,7 @@ export default function NewPlan() {
     project_id: '', house_type: '', number_of_zones: 1, notes: '',
   })
   const [copyFromId, setCopyFromId] = useState('')
+  const [templateId, setTemplateId] = useState('')
   const [newProject, setNewProject] = useState({
     show: false, code: '', name: '', builder_id: '',
   })
@@ -35,16 +36,24 @@ export default function NewPlan() {
     queryKey: ['plans', 'all'],
     queryFn: () => plans.list(null),
   })
+  const { data: templateList = [] } = useQuery({
+    queryKey: ['plans', 'templates'],
+    queryFn: plans.templates,
+  })
   const planOptions = plansList.map(p => ({
+    id: p.id, label: p.plan_number, sublabel: `${p.project_name} · ${p.builder_name}`,
+  }))
+  const templateOptions = templateList.map(p => ({
     id: p.id, label: p.plan_number, sublabel: `${p.project_name} · ${p.builder_name}`,
   }))
 
   const createPlan = useMutation({
     mutationFn: (data) => plans.create(data),
     onSuccess: async (data) => {
-      if (copyFromId) {
+      const sourceId = templateId || copyFromId
+      if (sourceId) {
         try {
-          await plans.copyFrom(data.id, parseInt(copyFromId))
+          await plans.copyFrom(data.id, parseInt(sourceId))
         } catch (e) {
           setError(
             'Plan was created, but line items could not be copied: ' +
@@ -140,12 +149,29 @@ export default function NewPlan() {
           </div>
         </div>
 
+        {templateOptions.length > 0 && (
+          <div style={{ marginBottom: 12 }}>
+            <label>Start from template <span style={{ fontWeight: 400, color: 'var(--gray-400)' }}>(optional)</span></label>
+            <SearchSelect
+              options={templateOptions}
+              value={templateId}
+              onChange={v => { setTemplateId(v); if (v) setCopyFromId('') }}
+              placeholder="Search templates..."
+            />
+            {templateId && (
+              <div style={{ fontSize: 12, color: 'var(--gray-500)', marginTop: 4 }}>
+                All house types and line items from this template will be copied into the new plan.
+              </div>
+            )}
+          </div>
+        )}
+
         <div style={{ marginBottom: 4 }}>
           <label>Copy line items from existing plan <span style={{ fontWeight: 400, color: 'var(--gray-400)' }}>(optional)</span></label>
           <SearchSelect
             options={planOptions}
             value={copyFromId}
-            onChange={v => setCopyFromId(v)}
+            onChange={v => { setCopyFromId(v); if (v) setTemplateId('') }}
             placeholder="Search plan number or project..."
           />
           {copyFromId && (

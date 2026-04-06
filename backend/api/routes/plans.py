@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -80,9 +80,10 @@ class PlanCreate(BaseModel):
     house_types: list[HouseTypeIn] = []
 
 class PlanUpdate(BaseModel):
-    status: Optional[str] = None
-    house_type: Optional[str] = None
-    notes: Optional[str] = None
+    status:      Optional[str]  = None
+    house_type:  Optional[str]  = None
+    notes:       Optional[str]  = None
+    is_template: Optional[bool] = None
 
 
 # ── Helpers ───────────────────────────────────────────────────
@@ -163,6 +164,81 @@ def list_plans(status: Optional[str] = None, db: Session = Depends(get_db),
         }
         for p, total_bid in rows
     ]
+
+
+@router.get("/templates")
+def list_templates(db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+    """Return all plans marked as templates."""
+    rows = (
+        db.query(Plan)
+        .join(Plan.project).join(Project.builder)
+        .options(joinedload(Plan.project).joinedload(Project.builder))
+        .filter(Plan.is_template == True)  # noqa: E712
+        .order_by(Plan.plan_number)
+        .all()
+    )
+    return [
+        {
+            "id":          p.id,
+            "plan_number": p.plan_number,
+            "house_type":  p.house_type,
+            "project_name": p.project.name,
+            "builder_name": p.project.builder.name,
+        }
+        for p in rows
+    ]
+
+
+@router.get("/export-csv")
+def export_plans_csv(status: Optional[str] = None, db: Session = Depends(get_db),
+                     current_user: User = Depends(get_current_user)):
+    """Download the plans list as a CSV file."""
+    import csv, io
+    total_subq = (
+        select(
+            HouseType.plan_id,
+            func.coalesce(func.sum(LineItem.quantity * LineItem.unit_price), 0).label("total_bid"),
+        )
+        .join(System, System.house_type_id == HouseType.id)
+        .join(LineItem, LineItem.system_id == System.id)
+        .group_by(HouseType.plan_id)
+        .subquery()
+    )
+    q = (
+        db.query(Plan, func.coalesce(total_subq.c.total_bid, 0).label("total_bid"))
+        .outerjoin(total_subq, total_subq.c.plan_id == Plan.id)
+        .join(Plan.project).join(Project.builder)
+        .options(joinedload(Plan.project).joinedload(Project.builder))
+    )
+    if status:
+        q = q.filter(Plan.status == status)
+    if current_user.role == "account_manager":
+        q = q.filter(Plan.estimator_initials == current_user.initials)
+    rows = q.order_by(Plan.created_at.desc()).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Plan Number", "Status", "Project Code", "Project Name",
+        "Builder", "House Type", "Zones", "Total Bid",
+        "Estimator", "Created", "Contracted",
+    ])
+    for p, total_bid in rows:
+        writer.writerow([
+            p.plan_number, p.status,
+            p.project.code, p.project.name, p.project.builder.name,
+            p.house_type or "", p.number_of_zones,
+            f"{float(total_bid):.2f}", p.estimator_name,
+            p.created_at.strftime("%Y-%m-%d") if p.created_at else "",
+            p.contracted_at.strftime("%Y-%m-%d") if p.contracted_at else "",
+        ])
+
+    filename = f"plans{'_' + status if status else ''}.csv"
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.get("/performance")
