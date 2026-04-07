@@ -23,6 +23,21 @@ if _SF_ENABLED:
 # Create tables on startup if they don't exist
 Base.metadata.create_all(bind=engine)
 
+# Run additive column migrations (safe/idempotent — won't touch existing data)
+def _run_migrations():
+    migrations = [
+        # v1.2 — plan templates
+        "ALTER TABLE plans ADD COLUMN IF NOT EXISTS is_template BOOLEAN NOT NULL DEFAULT FALSE",
+        # v1.2 — quote versioning
+        "ALTER TABLE documents ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 1",
+    ]
+    with engine.connect() as conn:
+        for sql in migrations:
+            conn.execute(__import__("sqlalchemy").text(sql))
+        conn.commit()
+
+_run_migrations()
+
 # Ensure storage folder exists
 os.makedirs(settings.STORAGE_PATH, exist_ok=True)
 
