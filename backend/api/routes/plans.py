@@ -10,7 +10,7 @@ import re
 from core.database import get_db
 from core.config import settings
 from core.security import get_current_user
-from models.models import Plan, Project, Builder, HouseType, System, LineItem, Draw, EventLog, Document, User
+from models.models import Plan, Project, Builder, HouseType, System, LineItem, Draw, EventLog, Document, User, PlanComment, PlanTask
 
 router = APIRouter()
 
@@ -1064,5 +1064,102 @@ def delete_draw(plan_id: int, house_type_id: int, draw_id: int,
     if not draw:
         raise HTTPException(404, "Draw not found")
     db.delete(draw)
+    db.commit()
+    return {"ok": True}
+
+
+# ── Comments ──────────────────────────────────────────────────────────────────
+
+class CommentIn(BaseModel):
+    body: str
+
+@router.get("/{plan_id}/comments")
+def list_comments(plan_id: int, db: Session = Depends(get_db),
+                  _: User = Depends(get_current_user)):
+    rows = (db.query(PlanComment)
+              .filter_by(plan_id=plan_id)
+              .order_by(PlanComment.created_at.asc())
+              .all())
+    return [{"id": c.id, "username": c.username, "full_name": c.full_name,
+             "body": c.body, "created_at": c.created_at} for c in rows]
+
+@router.post("/{plan_id}/comments", status_code=201)
+def add_comment(plan_id: int, data: CommentIn, db: Session = Depends(get_db),
+                current_user: User = Depends(get_current_user)):
+    if not data.body.strip():
+        raise HTTPException(400, "Comment body cannot be empty")
+    c = PlanComment(plan_id=plan_id, username=current_user.username,
+                    full_name=current_user.full_name, body=data.body.strip())
+    db.add(c)
+    db.commit()
+    return {"id": c.id, "username": c.username, "full_name": c.full_name,
+            "body": c.body, "created_at": c.created_at}
+
+@router.delete("/{plan_id}/comments/{comment_id}")
+def delete_comment(plan_id: int, comment_id: int, db: Session = Depends(get_db),
+                   current_user: User = Depends(get_current_user)):
+    c = db.query(PlanComment).filter_by(id=comment_id, plan_id=plan_id).first()
+    if not c:
+        raise HTTPException(404, "Comment not found")
+    if c.username != current_user.username and current_user.role != "admin":
+        raise HTTPException(403, "Cannot delete another user's comment")
+    db.delete(c)
+    db.commit()
+    return {"ok": True}
+
+
+# ── Tasks ─────────────────────────────────────────────────────────────────────
+
+class TaskIn(BaseModel):
+    title:       str
+    assigned_to: Optional[str] = None
+
+class TaskUpdate(BaseModel):
+    title:       Optional[str]  = None
+    done:        Optional[bool] = None
+    assigned_to: Optional[str]  = None
+
+@router.get("/{plan_id}/tasks")
+def list_tasks(plan_id: int, db: Session = Depends(get_db),
+               _: User = Depends(get_current_user)):
+    rows = (db.query(PlanTask)
+              .filter_by(plan_id=plan_id)
+              .order_by(PlanTask.created_at.asc())
+              .all())
+    return [{"id": t.id, "title": t.title, "done": t.done,
+             "assigned_to": t.assigned_to, "created_by": t.created_by,
+             "created_at": t.created_at} for t in rows]
+
+@router.post("/{plan_id}/tasks", status_code=201)
+def add_task(plan_id: int, data: TaskIn, db: Session = Depends(get_db),
+             current_user: User = Depends(get_current_user)):
+    if not data.title.strip():
+        raise HTTPException(400, "Task title cannot be empty")
+    t = PlanTask(plan_id=plan_id, title=data.title.strip(),
+                 assigned_to=data.assigned_to, created_by=current_user.full_name)
+    db.add(t)
+    db.commit()
+    return {"id": t.id, "title": t.title, "done": t.done,
+            "assigned_to": t.assigned_to, "created_by": t.created_by,
+            "created_at": t.created_at}
+
+@router.patch("/{plan_id}/tasks/{task_id}")
+def update_task(plan_id: int, task_id: int, data: TaskUpdate,
+                db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    t = db.query(PlanTask).filter_by(id=task_id, plan_id=plan_id).first()
+    if not t:
+        raise HTTPException(404, "Task not found")
+    for k, v in data.model_dump(exclude_none=True).items():
+        setattr(t, k, v)
+    db.commit()
+    return {"ok": True}
+
+@router.delete("/{plan_id}/tasks/{task_id}")
+def delete_task(plan_id: int, task_id: int, db: Session = Depends(get_db),
+                current_user: User = Depends(get_current_user)):
+    t = db.query(PlanTask).filter_by(id=task_id, plan_id=plan_id).first()
+    if not t:
+        raise HTTPException(404, "Task not found")
+    db.delete(t)
     db.commit()
     return {"ok": True}

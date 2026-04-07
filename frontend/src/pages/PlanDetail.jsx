@@ -767,7 +767,8 @@ export default function PlanDetail() {
             </button>
           </h1>
         </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {/* ── Document actions ── */}
           <button className="btn-secondary"
             onClick={async () => {
               const url = await documents.preview(id)
@@ -775,27 +776,31 @@ export default function PlanDetail() {
             }}>
             Preview Quote
           </button>
-          <button className="btn-secondary"
-            style={{ background: 'var(--blue-light)', color: 'var(--blue)',
-              border: '1px solid var(--blue-mid)' }}
+          <button
             onClick={async () => {
               const result = await generateQuote.mutateAsync()
               await documents.downloadVersion(id, result.id ?? result.doc_id, result.filename)
                 .catch(() => documents.download(id, result.filename))
               qc.invalidateQueries({ queryKey: ['quote-history', id] })
             }}
-            disabled={generateQuote.isPending}>
+            disabled={generateQuote.isPending}
+            style={{ background: 'var(--blue)', color: 'white', border: 'none',
+              borderRadius: 'var(--radius)', padding: '7px 14px', fontSize: 13, fontWeight: 500 }}>
             {generateQuote.isPending ? 'Generating...' : '⬇ Generate & Download Quote'}
           </button>
-          <button className="btn-secondary"
-            style={{ background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd' }}
-            onClick={() => setShowEmailModal(true)}>
+          <button
+            onClick={() => setShowEmailModal(true)}
+            style={{ background: 'var(--status-proposed-bg)', color: 'var(--status-proposed-text)',
+              border: '1px solid var(--status-proposed-border)',
+              borderRadius: 'var(--radius)', padding: '7px 14px', fontSize: 13, fontWeight: 500 }}>
             ✉ Email Quote
           </button>
-          <button className="btn-secondary"
-            style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}
+          <button
             onClick={() => generateFieldSheet.mutate()}
-            disabled={generateFieldSheet.isPending}>
+            disabled={generateFieldSheet.isPending}
+            style={{ background: 'var(--status-contracted-bg)', color: 'var(--status-contracted-text)',
+              border: '1px solid var(--status-contracted-border)',
+              borderRadius: 'var(--radius)', padding: '7px 14px', fontSize: 13, fontWeight: 500 }}>
             {generateFieldSheet.isPending ? 'Generating...' : '⬇ Field Sheet'}
           </button>
 
@@ -812,20 +817,20 @@ export default function PlanDetail() {
               }}
               title={plan.is_template ? 'Remove from templates' : 'Save as template'}
               style={{
-                background: plan.is_template ? '#fef9c3' : 'var(--gray-100)',
-                color: plan.is_template ? '#854d0e' : 'var(--gray-500)',
-                border: `1px solid ${plan.is_template ? '#fde68a' : 'var(--gray-200)'}`,
-                borderRadius: 'var(--radius)', padding: '8px 12px',
-                fontSize: 13, cursor: 'pointer',
+                background: plan.is_template ? 'var(--status-proposed-accent)' : 'var(--gray-100)',
+                color: plan.is_template ? 'white' : 'var(--gray-500)',
+                border: `1px solid ${plan.is_template ? 'var(--status-proposed-accent)' : 'var(--gray-200)'}`,
+                borderRadius: 'var(--radius)', padding: '7px 12px',
+                fontSize: 13, fontWeight: plan.is_template ? 600 : 400,
               }}>
-              {plan.is_template ? '★ Template' : '☆ Template'}
+              {plan.is_template ? '★ Saved as Template' : '☆ Template'}
             </button>
           )}
 
-          {/* Divider between document actions and workflow actions */}
+          {/* Divider */}
           <div style={{ width: 1, height: 32, background: 'var(--gray-200)', margin: '0 2px' }} />
 
-          {/* Revert — only show if not already at the first status */}
+          {/* Revert */}
           {prevStatus && (
             <button
               onClick={() => {
@@ -836,21 +841,30 @@ export default function PlanDetail() {
               disabled={updateStatus.isPending}
               style={{ background: 'var(--gray-100)', color: 'var(--gray-600)',
                 border: '1px solid var(--gray-200)', borderRadius: 'var(--radius)',
-                padding: '8px 14px', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                padding: '7px 14px', fontSize: 13, fontWeight: 500 }}>
               ← Revert to {prevStatus}
             </button>
           )}
 
-          {/* Advance */}
-          {nextStatus && (
-            <button className="btn-primary"
-              onClick={() => updateStatus.mutate(nextStatus)}
-              disabled={updateStatus.isPending}>
-              Mark as {nextStatus.charAt(0).toUpperCase() + nextStatus.slice(1)}
-            </button>
-          )}
+          {/* Advance — color matches next status */}
+          {nextStatus && (() => {
+            const s = {
+              proposed:   { bg: 'var(--status-proposed-accent)',   color: 'white' },
+              contracted: { bg: 'var(--status-contracted-accent)', color: 'white' },
+              complete:   { bg: 'var(--status-complete-accent)',   color: 'white' },
+            }[nextStatus] || { bg: 'var(--blue)', color: 'white' }
+            return (
+              <button
+                onClick={() => updateStatus.mutate(nextStatus)}
+                disabled={updateStatus.isPending}
+                style={{ background: s.bg, color: s.color, border: 'none',
+                  borderRadius: 'var(--radius)', padding: '7px 14px', fontSize: 13, fontWeight: 600 }}>
+                Mark as {nextStatus.charAt(0).toUpperCase() + nextStatus.slice(1)}
+              </button>
+            )
+          })()}
 
-          {/* Mark as Lost — only from proposed */}
+          {/* Mark as Lost — proposed only */}
           {plan.status === 'proposed' && (
             <button
               onClick={() => {
@@ -859,9 +873,9 @@ export default function PlanDetail() {
                 )) updateStatus.mutate('lost')
               }}
               disabled={updateStatus.isPending}
-              style={{ background: 'none', color: 'var(--danger)', border: '1px solid #fecaca',
-                borderRadius: 'var(--radius)', padding: '8px 14px', fontSize: 13,
-                fontWeight: 500, cursor: 'pointer' }}>
+              style={{ background: 'var(--status-lost-bg)', color: 'var(--status-lost-text)',
+                border: '1px solid var(--status-lost-border)',
+                borderRadius: 'var(--radius)', padding: '7px 14px', fontSize: 13, fontWeight: 500 }}>
               Mark as Lost
             </button>
           )}
@@ -875,9 +889,9 @@ export default function PlanDetail() {
                 )) deletePlan.mutate()
               }}
               disabled={deletePlan.isPending}
-              style={{ background: 'none', color: 'var(--danger)', border: '1px solid #fecaca',
-                borderRadius: 'var(--radius)', padding: '8px 14px', fontSize: 13,
-                fontWeight: 500, cursor: 'pointer' }}>
+              style={{ background: 'var(--status-lost-bg)', color: 'var(--status-lost-text)',
+                border: '1px solid var(--status-lost-border)',
+                borderRadius: 'var(--radius)', padding: '7px 14px', fontSize: 13, fontWeight: 500 }}>
               {deletePlan.isPending ? 'Deleting...' : 'Delete plan'}
             </button>
           )}
@@ -1124,6 +1138,176 @@ export default function PlanDetail() {
       {/* Email history */}
       <EmailHistory planId={parseInt(id)} />
 
+      {/* Comments + Tasks */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 24 }}>
+        <PlanComments planId={parseInt(id)} currentUser={user} />
+        <PlanTasks planId={parseInt(id)} currentUser={user} />
+      </div>
+
+    </div>
+  )
+}
+
+function PlanComments({ planId, currentUser }) {
+  const qc = useQueryClient()
+  const [body, setBody] = useState('')
+  const { data: comments = [] } = useQuery({
+    queryKey: ['plan-comments', planId],
+    queryFn:  () => plans.comments(planId),
+  })
+  const add = useMutation({
+    mutationFn: () => plans.addComment(planId, body),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['plan-comments', planId] }); setBody('') },
+  })
+  const remove = useMutation({
+    mutationFn: (cid) => plans.deleteComment(planId, cid),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plan-comments', planId] }),
+  })
+
+  return (
+    <div className="card">
+      <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 14 }}>Comments</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+        {comments.length === 0 && (
+          <div style={{ fontSize: 13, color: 'var(--gray-400)' }}>No comments yet.</div>
+        )}
+        {comments.map(c => (
+          <div key={c.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <div style={{
+              width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+              background: 'var(--blue-light)', color: 'var(--blue)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 11, fontWeight: 700,
+            }}>
+              {c.full_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 2 }}>
+                <span style={{ fontWeight: 600, fontSize: 13 }}>{c.full_name}</span>
+                <span style={{ fontSize: 11, color: 'var(--gray-400)' }}>
+                  {new Date(c.created_at).toLocaleString()}
+                </span>
+                {(c.username === currentUser?.username || currentUser?.role === 'admin') && (
+                  <button onClick={() => remove.mutate(c.id)}
+                    style={{ marginLeft: 'auto', fontSize: 11, background: 'none', border: 'none',
+                      color: 'var(--gray-300)', cursor: 'pointer', padding: 0 }}>
+                    ×
+                  </button>
+                )}
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--gray-700)', whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word' }}>
+                {c.body}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <textarea
+          value={body}
+          onChange={e => setBody(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && body.trim()) add.mutate() }}
+          placeholder="Add a comment… (Ctrl+Enter to submit)"
+          rows={2}
+          style={{ flex: 1, resize: 'vertical', fontSize: 13 }}
+        />
+        <button className="btn-primary" disabled={!body.trim() || add.isPending}
+          onClick={() => add.mutate()}
+          style={{ alignSelf: 'flex-end' }}>
+          Post
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function PlanTasks({ planId, currentUser }) {
+  const qc = useQueryClient()
+  const [title, setTitle] = useState('')
+  const { data: tasks = [] } = useQuery({
+    queryKey: ['plan-tasks', planId],
+    queryFn:  () => plans.tasks(planId),
+  })
+  const add = useMutation({
+    mutationFn: () => plans.addTask(planId, { title }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['plan-tasks', planId] }); setTitle('') },
+  })
+  const toggle = useMutation({
+    mutationFn: ({ tid, done }) => plans.updateTask(planId, tid, { done }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plan-tasks', planId] }),
+  })
+  const remove = useMutation({
+    mutationFn: (tid) => plans.deleteTask(planId, tid),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plan-tasks', planId] }),
+  })
+
+  const open = tasks.filter(t => !t.done)
+  const done = tasks.filter(t => t.done)
+
+  return (
+    <div className="card">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <div style={{ fontWeight: 600, fontSize: 15 }}>Tasks</div>
+        {tasks.length > 0 && (
+          <div style={{ fontSize: 12, color: 'var(--gray-400)' }}>
+            {done.length}/{tasks.length} done
+          </div>
+        )}
+      </div>
+
+      {tasks.length === 0 && (
+        <div style={{ fontSize: 13, color: 'var(--gray-400)', marginBottom: 14 }}>No tasks yet.</div>
+      )}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
+        {open.map(t => (
+          <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="checkbox" checked={false}
+              onChange={() => toggle.mutate({ tid: t.id, done: true })}
+              style={{ cursor: 'pointer', flexShrink: 0 }} />
+            <span style={{ flex: 1, fontSize: 13 }}>{t.title}</span>
+            {t.assigned_to && (
+              <span style={{ fontSize: 11, color: 'var(--gray-400)', whiteSpace: 'nowrap' }}>
+                {t.assigned_to}
+              </span>
+            )}
+            <button onClick={() => remove.mutate(t.id)}
+              style={{ background: 'none', border: 'none', color: 'var(--gray-300)',
+                cursor: 'pointer', fontSize: 13, padding: '0 2px', flexShrink: 0 }}>
+              ×
+            </button>
+          </div>
+        ))}
+        {done.length > 0 && open.length > 0 && (
+          <div style={{ height: 1, background: 'var(--gray-100)', margin: '4px 0' }} />
+        )}
+        {done.map(t => (
+          <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.5 }}>
+            <input type="checkbox" checked={true}
+              onChange={() => toggle.mutate({ tid: t.id, done: false })}
+              style={{ cursor: 'pointer', flexShrink: 0 }} />
+            <span style={{ flex: 1, fontSize: 13, textDecoration: 'line-through',
+              color: 'var(--gray-500)' }}>{t.title}</span>
+            <button onClick={() => remove.mutate(t.id)}
+              style={{ background: 'none', border: 'none', color: 'var(--gray-300)',
+                cursor: 'pointer', fontSize: 13, padding: '0 2px', flexShrink: 0 }}>
+              ×
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input value={title} onChange={e => setTitle(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && title.trim()) add.mutate() }}
+          placeholder="Add a task… (Enter to add)"
+          style={{ flex: 1, fontSize: 13 }} />
+        <button className="btn-primary" disabled={!title.trim() || add.isPending}
+          onClick={() => add.mutate()}>
+          Add
+        </button>
+      </div>
     </div>
   )
 }

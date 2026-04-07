@@ -58,6 +58,13 @@ export const plans = {
   bulkDelete:  (ids)    => api.post('/plans/bulk-delete', { ids }).then(r => r.data),
   copyFrom:    (planId, sourceId) => api.post(`/plans/${planId}/copy-from/${sourceId}`).then(r => r.data),
   templates:   ()                => api.get('/plans/templates').then(r => r.data),
+  comments:    (id)             => api.get(`/plans/${id}/comments`).then(r => r.data),
+  addComment:  (id, body)       => api.post(`/plans/${id}/comments`, { body }).then(r => r.data),
+  deleteComment: (id, cid)      => api.delete(`/plans/${id}/comments/${cid}`).then(r => r.data),
+  tasks:       (id)             => api.get(`/plans/${id}/tasks`).then(r => r.data),
+  addTask:     (id, data)       => api.post(`/plans/${id}/tasks`, data).then(r => r.data),
+  updateTask:  (id, tid, data)  => api.patch(`/plans/${id}/tasks/${tid}`, data).then(r => r.data),
+  deleteTask:  (id, tid)        => api.delete(`/plans/${id}/tasks/${tid}`).then(r => r.data),
 }
 
 export const equipment = {

@@ -8,7 +8,8 @@ from core.database import engine, Base
 from models.models import (  # noqa — registers all models
     Builder, County, Project, EquipmentManufacturer,
     EquipmentSystem, Plan, HouseType, System,
-    LineItem, Draw, Document, EventLog, User, Suggestion, CompanySettings
+    LineItem, Draw, Document, EventLog, User, Suggestion, CompanySettings,
+    PlanComment, PlanTask,
 )
 from api.routes import plans, equipment, builders, projects, documents, kit, auth, files, search, feedback, company
 
@@ -30,6 +31,27 @@ def _run_migrations():
         "ALTER TABLE plans ADD COLUMN IF NOT EXISTS is_template BOOLEAN NOT NULL DEFAULT FALSE",
         # v1.2 — quote versioning
         "ALTER TABLE documents ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 1",
+        # v1.4 — plan comments
+        """CREATE TABLE IF NOT EXISTS plan_comments (
+            id         SERIAL PRIMARY KEY,
+            plan_id    INTEGER NOT NULL REFERENCES plans(id) ON DELETE CASCADE,
+            username   VARCHAR(50) NOT NULL,
+            full_name  VARCHAR(100) NOT NULL,
+            body       TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT now()
+        )""",
+        "CREATE INDEX IF NOT EXISTS ix_plan_comments_plan_id ON plan_comments(plan_id)",
+        # v1.4 — plan tasks
+        """CREATE TABLE IF NOT EXISTS plan_tasks (
+            id          SERIAL PRIMARY KEY,
+            plan_id     INTEGER NOT NULL REFERENCES plans(id) ON DELETE CASCADE,
+            title       VARCHAR(200) NOT NULL,
+            done        BOOLEAN NOT NULL DEFAULT FALSE,
+            assigned_to VARCHAR(100),
+            created_by  VARCHAR(100) NOT NULL,
+            created_at  TIMESTAMP DEFAULT now()
+        )""",
+        "CREATE INDEX IF NOT EXISTS ix_plan_tasks_plan_id ON plan_tasks(plan_id)",
     ]
     with engine.connect() as conn:
         for sql in migrations:

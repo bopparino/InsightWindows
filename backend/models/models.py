@@ -219,6 +219,27 @@ class CompanySettings(Base):
     updated_at   = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 
+class PlanComment(Base):
+    __tablename__ = "plan_comments"
+    id         = Column(Integer, primary_key=True)
+    plan_id    = Column(Integer, ForeignKey("plans.id"), nullable=False, index=True)
+    username   = Column(String(50), nullable=False)
+    full_name  = Column(String(100), nullable=False)
+    body       = Column(Text, nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class PlanTask(Base):
+    __tablename__ = "plan_tasks"
+    id           = Column(Integer, primary_key=True)
+    plan_id      = Column(Integer, ForeignKey("plans.id"), nullable=False, index=True)
+    title        = Column(String(200), nullable=False)
+    done         = Column(Boolean, default=False, nullable=False)
+    assigned_to  = Column(String(100))
+    created_by   = Column(String(100), nullable=False)
+    created_at   = Column(DateTime, server_default=func.now())
+
+
 class User(Base):
     __tablename__ = "users"
     id              = Column(Integer, primary_key=True)
