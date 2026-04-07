@@ -275,22 +275,28 @@ export default function Dashboard() {
   }, {}) : null
 
   // Financial metrics
+  const openPipeline   = groups.proposed.plans.reduce((s, p) => s + (p.total_bid || 0), 0)
   const totalPipeline  = filtered.reduce((s, p) => s + (p.total_bid || 0), 0)
   const securedRevenue = [...groups.contracted.plans, ...groups.complete.plans]
                            .reduce((s, p) => s + (p.total_bid || 0), 0)
   const biddedCount    = groups.proposed.count + groups.contracted.count + groups.complete.count + groups.lost.count
   const wonCount       = groups.contracted.count + groups.complete.count
   const winRate        = biddedCount > 0 ? (wonCount / biddedCount) * 100 : null
-  const avgBidValue    = filtered.length > 0 ? totalPipeline / filtered.length : 0
+  const avgBidValue    = biddedCount > 0
+    ? (openPipeline + securedRevenue + groups.lost.plans.reduce((s, p) => s + (p.total_bid || 0), 0)) / biddedCount
+    : 0
 
   // Prior metrics for deltas
+  const priorOpenPipeline = prior ? (priorGroups?.proposed?.total || 0) : null
   const priorTotal    = prior ? prior.reduce((s, p) => s + (p.total_bid || 0), 0) : null
   const priorSecured  = prior ? [...(priorGroups.contracted.plans || []), ...(priorGroups.complete?.plans || [])]
                           .reduce((s, p) => s + (p.total_bid || 0), 0) : null
   const priorBidded   = prior ? (priorGroups.proposed.count + priorGroups.contracted.count + priorGroups.complete.count + priorGroups.lost.count) : null
   const priorWon      = prior ? (priorGroups.contracted.count + priorGroups.complete.count) : null
   const priorWinRate  = priorBidded > 0 ? (priorWon / priorBidded) * 100 : null
-  const priorAvg      = prior && prior.length > 0 ? priorTotal / prior.length : null
+  const priorAvg      = priorBidded > 0
+    ? ((priorGroups?.proposed?.total || 0) + (priorSecured || 0) + (priorGroups?.lost?.total || 0)) / priorBidded
+    : null
 
   // Chart data
   const trendData   = useMemo(() => buildTrendData(data, MONTHS), [data, MONTHS])
@@ -359,10 +365,10 @@ export default function Dashboard() {
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
           <MetricTile
-            label="Total Pipeline"
-            value={isLoading ? '—' : currency(totalPipeline)}
-            sub={`${filtered.length} plans`}
-            delta={showDelta ? computeDelta(totalPipeline, priorTotal) : null}
+            label="Open Pipeline"
+            value={isLoading ? '—' : currency(openPipeline)}
+            sub={`${groups.proposed.count} proposed`}
+            delta={showDelta ? computeDelta(openPipeline, priorOpenPipeline) : null}
             large
           />
           <MetricTile

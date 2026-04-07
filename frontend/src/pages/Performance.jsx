@@ -239,8 +239,10 @@ export default function Performance() {
     enabled:  range !== 'custom' || !!(customFrom || customTo),
   })
 
-  const summary = data?.summary || []
-  const monthly = data?.monthly || []
+  const summary     = data?.summary      || []
+  const monthly     = data?.monthly      || []
+  const byBuilder   = data?.by_builder   || []
+  const byHouseType = data?.by_house_type || []
 
   const chartColors      = THEMES.find(t => t.id === theme)?.chartColors || {}
   const ESTIMATOR_COLORS = chartColors.estimators || DEFAULT_ESTIMATOR_COLORS
@@ -494,7 +496,7 @@ export default function Performance() {
           )}
 
           {/* ── Status breakdown cards (all statuses) ── */}
-          <div className="card">
+          <div className="card" style={{ marginBottom: 24 }}>
             <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 16 }}>
               Pipeline Breakdown — All Statuses
             </div>
@@ -526,6 +528,108 @@ export default function Performance() {
               })}
             </div>
           </div>
+
+          {/* ── Builder breakdown ── */}
+          {byBuilder.length > 0 && (
+            <div className="card" style={{ marginBottom: 24, padding: 0, overflow: 'hidden' }}>
+              <div style={{ padding: '16px 18px 12px', borderBottom: '1px solid var(--gray-100)' }}>
+                <div style={{ fontWeight: 600, fontSize: 15 }}>Builder Breakdown</div>
+                <div style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 2 }}>
+                  Ranked by contracted revenue
+                </div>
+              </div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: 'var(--gray-50)' }}>
+                    {['#', 'Builder', 'Plans', 'Pipeline', 'Contracted', 'Win Rate'].map((h, i) => (
+                      <th key={h} style={{
+                        padding: '8px 12px',
+                        textAlign: i <= 1 ? 'left' : i === 2 ? 'center' : 'right',
+                        fontWeight: 600, fontSize: 11, color: 'var(--gray-400)',
+                        textTransform: 'uppercase', letterSpacing: '0.04em',
+                        paddingLeft: i === 0 ? 18 : undefined,
+                        paddingRight: i === 5 ? 18 : undefined,
+                      }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {byBuilder.map((b, i) => (
+                    <tr key={b.builder_name} style={{ borderBottom: '1px solid var(--gray-100)' }}>
+                      <td style={{ padding: '11px 18px', fontWeight: 700, color: 'var(--gray-400)',
+                        fontSize: 13, width: 32 }}>#{i + 1}</td>
+                      <td style={{ padding: '11px 12px', fontWeight: 600, fontSize: 14 }}>
+                        {b.builder_name}
+                      </td>
+                      <td style={{ padding: '11px 12px', textAlign: 'center', color: 'var(--gray-600)' }}>
+                        {b.total_plans}
+                      </td>
+                      <td style={{ padding: '11px 12px', textAlign: 'right', color: 'var(--gray-500)', fontSize: 13 }}>
+                        {currency(b.pipeline)}
+                      </td>
+                      <td style={{ padding: '11px 12px', textAlign: 'right', fontWeight: 700, fontSize: 14 }}>
+                        {currency(b.contracted_revenue)}
+                      </td>
+                      <td style={{ padding: '11px 18px', textAlign: 'right' }}>
+                        <WinRateBadge rate={b.win_rate} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* ── House type breakdown ── */}
+          {byHouseType.length > 0 && (
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              <div style={{ padding: '16px 18px 12px', borderBottom: '1px solid var(--gray-100)' }}>
+                <div style={{ fontWeight: 600, fontSize: 15 }}>House Type Breakdown</div>
+                <div style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 2 }}>
+                  Ranked by number of plans
+                </div>
+              </div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: 'var(--gray-50)' }}>
+                    {['House Type', 'Plans', 'Avg Bid', 'Pipeline', 'Contracted', 'Win Rate'].map((h, i) => (
+                      <th key={h} style={{
+                        padding: '8px 12px', fontWeight: 600, fontSize: 11,
+                        color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '0.04em',
+                        textAlign: i === 0 ? 'left' : i === 1 ? 'center' : 'right',
+                        paddingLeft: i === 0 ? 18 : undefined,
+                        paddingRight: i === 5 ? 18 : undefined,
+                      }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {byHouseType.map(ht => (
+                    <tr key={ht.house_type} style={{ borderBottom: '1px solid var(--gray-100)' }}>
+                      <td style={{ padding: '11px 18px', fontWeight: 600, fontSize: 14 }}>
+                        {ht.house_type}
+                      </td>
+                      <td style={{ padding: '11px 12px', textAlign: 'center', color: 'var(--gray-600)' }}>
+                        {ht.total_plans}
+                      </td>
+                      <td style={{ padding: '11px 12px', textAlign: 'right', color: 'var(--gray-500)', fontSize: 13 }}>
+                        {ht.avg_bid > 0 ? currency(ht.avg_bid) : '—'}
+                      </td>
+                      <td style={{ padding: '11px 12px', textAlign: 'right', color: 'var(--gray-500)', fontSize: 13 }}>
+                        {currency(ht.pipeline)}
+                      </td>
+                      <td style={{ padding: '11px 12px', textAlign: 'right', fontWeight: 700, fontSize: 14 }}>
+                        {currency(ht.contracted_revenue)}
+                      </td>
+                      <td style={{ padding: '11px 18px', textAlign: 'right' }}>
+                        <WinRateBadge rate={ht.win_rate} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </>
       )}
     </div>

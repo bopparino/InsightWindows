@@ -10,7 +10,7 @@ import re
 from core.database import get_db
 from core.config import settings
 from core.security import get_current_user
-from models.models import Plan, Project, HouseType, System, LineItem, Draw, EventLog, Document, User
+from models.models import Plan, Project, Builder, HouseType, System, LineItem, Draw, EventLog, Document, User
 
 router = APIRouter()
 
@@ -367,7 +367,90 @@ def get_performance(
         for init, yr, mo, total in monthly_q.all()
     ]
 
-    return {"summary": summary, "monthly": monthly}
+    # --- Builder breakdown ---
+    builder_rows = (
+        db.query(
+            Builder.name.label("builder_name"),
+            Plan.status,
+            func.coalesce(total_subq.c.total_bid, 0).label("total_bid"),
+        )
+        .join(Plan.project)
+        .join(Project.builder)
+        .outerjoin(total_subq, total_subq.c.plan_id == Plan.id)
+        .filter(Plan.estimator_initials.in_(eligible_inits))
+        .filter(Plan.is_template == False)
+    )
+    if date_from:
+        builder_rows = builder_rows.filter(Plan.created_at >= date_from)
+    if date_to:
+        builder_rows = builder_rows.filter(Plan.created_at <= date_to)
+
+    builder_agg = {}
+    for bname, status, total_bid in builder_rows.all():
+        if bname not in builder_agg:
+            builder_agg[bname] = {s: {"count": 0, "total": 0.0} for s in STATUSES}
+        if status in builder_agg[bname]:
+            builder_agg[bname][status]["count"] += 1
+            builder_agg[bname][status]["total"] += float(total_bid)
+
+    by_builder = []
+    for bname, bs in builder_agg.items():
+        won   = bs["contracted"]["count"] + bs["complete"]["count"]
+        lost  = bs["lost"]["count"]
+        denom = won + lost
+        by_builder.append({
+            "builder_name":      bname,
+            "total_plans":       sum(v["count"] for v in bs.values()),
+            "contracted_revenue": bs["contracted"]["total"] + bs["complete"]["total"],
+            "pipeline":          bs["proposed"]["total"],
+            "win_rate":          round(won / denom, 4) if denom else None,
+            "by_status":         bs,
+        })
+    by_builder.sort(key=lambda x: x["contracted_revenue"], reverse=True)
+
+    # --- House type breakdown ---
+    ht_rows = (
+        db.query(
+            Plan.house_type,
+            Plan.status,
+            func.coalesce(total_subq.c.total_bid, 0).label("total_bid"),
+        )
+        .outerjoin(total_subq, total_subq.c.plan_id == Plan.id)
+        .filter(Plan.estimator_initials.in_(eligible_inits))
+        .filter(Plan.house_type.isnot(None), Plan.house_type != "")
+        .filter(Plan.is_template == False)
+    )
+    if date_from:
+        ht_rows = ht_rows.filter(Plan.created_at >= date_from)
+    if date_to:
+        ht_rows = ht_rows.filter(Plan.created_at <= date_to)
+
+    ht_agg = {}
+    for ht, status, total_bid in ht_rows.all():
+        if ht not in ht_agg:
+            ht_agg[ht] = {s: {"count": 0, "total": 0.0} for s in STATUSES}
+        if status in ht_agg[ht]:
+            ht_agg[ht][status]["count"] += 1
+            ht_agg[ht][status]["total"] += float(total_bid)
+
+    by_house_type = []
+    for ht, bs in ht_agg.items():
+        won        = bs["contracted"]["count"] + bs["complete"]["count"]
+        lost       = bs["lost"]["count"]
+        denom      = won + lost
+        total      = sum(v["count"] for v in bs.values())
+        total_val  = sum(v["total"] for v in bs.values())
+        by_house_type.append({
+            "house_type":        ht,
+            "total_plans":       total,
+            "contracted_revenue": bs["contracted"]["total"] + bs["complete"]["total"],
+            "pipeline":          bs["proposed"]["total"],
+            "avg_bid":           round(total_val / total, 2) if total else 0,
+            "win_rate":          round(won / denom, 4) if denom else None,
+        })
+    by_house_type.sort(key=lambda x: x["total_plans"], reverse=True)
+
+    return {"summary": summary, "monthly": monthly, "by_builder": by_builder, "by_house_type": by_house_type}
 
 
 @router.post("/", status_code=201)
