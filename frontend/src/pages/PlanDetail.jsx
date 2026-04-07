@@ -1260,21 +1260,25 @@ function PlanTasks({ planId, currentUser }) {
         <div style={{ fontSize: 13, color: 'var(--gray-400)', marginBottom: 14 }}>No tasks yet.</div>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 14 }}>
         {open.map(t => (
-          <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div key={t.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8,
+            padding: '5px 0', borderBottom: '1px solid var(--gray-100)' }}>
             <input type="checkbox" checked={false}
               onChange={() => toggle.mutate({ tid: t.id, done: true })}
-              style={{ cursor: 'pointer', flexShrink: 0 }} />
-            <span style={{ flex: 1, fontSize: 13 }}>{t.title}</span>
+              style={{ cursor: 'pointer', flexShrink: 0, marginTop: 2 }} />
+            <span style={{ flex: 1, minWidth: 0, fontSize: 13, wordBreak: 'break-word',
+              lineHeight: 1.4 }}>{t.title}</span>
             {t.assigned_to && (
-              <span style={{ fontSize: 11, color: 'var(--gray-400)', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 11, color: 'var(--gray-400)', whiteSpace: 'nowrap',
+                flexShrink: 0 }}>
                 {t.assigned_to}
               </span>
             )}
             <button onClick={() => remove.mutate(t.id)}
               style={{ background: 'none', border: 'none', color: 'var(--gray-300)',
-                cursor: 'pointer', fontSize: 13, padding: '0 2px', flexShrink: 0 }}>
+                cursor: 'pointer', fontSize: 16, padding: '0 2px', flexShrink: 0,
+                lineHeight: 1 }}>
               ×
             </button>
           </div>
@@ -1283,15 +1287,17 @@ function PlanTasks({ planId, currentUser }) {
           <div style={{ height: 1, background: 'var(--gray-100)', margin: '4px 0' }} />
         )}
         {done.map(t => (
-          <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.5 }}>
+          <div key={t.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8,
+            padding: '5px 0', borderBottom: '1px solid var(--gray-100)', opacity: 0.5 }}>
             <input type="checkbox" checked={true}
               onChange={() => toggle.mutate({ tid: t.id, done: false })}
-              style={{ cursor: 'pointer', flexShrink: 0 }} />
-            <span style={{ flex: 1, fontSize: 13, textDecoration: 'line-through',
-              color: 'var(--gray-500)' }}>{t.title}</span>
+              style={{ cursor: 'pointer', flexShrink: 0, marginTop: 2 }} />
+            <span style={{ flex: 1, minWidth: 0, fontSize: 13, textDecoration: 'line-through',
+              color: 'var(--gray-500)', wordBreak: 'break-word', lineHeight: 1.4 }}>{t.title}</span>
             <button onClick={() => remove.mutate(t.id)}
               style={{ background: 'none', border: 'none', color: 'var(--gray-300)',
-                cursor: 'pointer', fontSize: 13, padding: '0 2px', flexShrink: 0 }}>
+                cursor: 'pointer', fontSize: 16, padding: '0 2px', flexShrink: 0,
+                lineHeight: 1 }}>
               ×
             </button>
           </div>
