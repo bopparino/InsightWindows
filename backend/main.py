@@ -52,6 +52,8 @@ def _run_migrations():
             created_at  TIMESTAMP DEFAULT now()
         )""",
         "CREATE INDEX IF NOT EXISTS ix_plan_tasks_plan_id ON plan_tasks(plan_id)",
+        # Fix default company name if it was seeded with the placeholder
+        "UPDATE company_settings SET company_name = 'Metcalfe HVAC' WHERE company_name = 'Insight HVAC'",
     ]
     with engine.connect() as conn:
         for sql in migrations:

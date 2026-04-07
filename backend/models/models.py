@@ -206,7 +206,7 @@ class CompanySettings(Base):
     """Single-row table holding branding/company info editable from the UI."""
     __tablename__ = "company_settings"
     id           = Column(Integer, primary_key=True)
-    company_name = Column(String(100), nullable=False, default="Insight HVAC")
+    company_name = Column(String(100), nullable=False, default="Metcalfe HVAC")
     phone        = Column(String(30))
     email        = Column(String(200))
     address      = Column(String(200))
