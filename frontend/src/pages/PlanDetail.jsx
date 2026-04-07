@@ -1266,7 +1266,7 @@ function PlanTasks({ planId, currentUser }) {
             padding: '5px 0', borderBottom: '1px solid var(--gray-100)' }}>
             <input type="checkbox" checked={false}
               onChange={() => toggle.mutate({ tid: t.id, done: true })}
-              style={{ cursor: 'pointer', flexShrink: 0, marginTop: 2 }} />
+              style={{ cursor: 'pointer', flexShrink: 0, marginTop: 2, width: 'auto' }} />
             <span style={{ flex: 1, minWidth: 0, fontSize: 13, wordBreak: 'break-word',
               lineHeight: 1.4 }}>{t.title}</span>
             {t.assigned_to && (
@@ -1291,7 +1291,7 @@ function PlanTasks({ planId, currentUser }) {
             padding: '5px 0', borderBottom: '1px solid var(--gray-100)', opacity: 0.5 }}>
             <input type="checkbox" checked={true}
               onChange={() => toggle.mutate({ tid: t.id, done: false })}
-              style={{ cursor: 'pointer', flexShrink: 0, marginTop: 2 }} />
+              style={{ cursor: 'pointer', flexShrink: 0, marginTop: 2, width: 'auto' }} />
             <span style={{ flex: 1, minWidth: 0, fontSize: 13, textDecoration: 'line-through',
               color: 'var(--gray-500)', wordBreak: 'break-word', lineHeight: 1.4 }}>{t.title}</span>
             <button onClick={() => remove.mutate(t.id)}

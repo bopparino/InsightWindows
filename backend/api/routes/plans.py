@@ -701,6 +701,8 @@ def update_plan(plan_id: int, data: PlanUpdate, db: Session = Depends(get_db),
         plan.house_type = data.house_type
     if data.notes is not None:
         plan.notes = data.notes
+    if data.is_template is not None:
+        plan.is_template = data.is_template
 
     db.commit()
     return {"ok": True}
