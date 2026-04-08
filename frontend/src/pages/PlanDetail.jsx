@@ -644,6 +644,124 @@ function AddHouseTypeForm({ planId, onDone }) {
   )
 }
 
+// ── Constants ─────────────────────────────────────────────────
+const LABOR_RATE   = 86
+const SERVICE_RATE = 32
+const PERMIT_COST  = 170
+
+// ── Bid summary panel (per system) ────────────────────────────
+function BidSummary({ planId, system, factor }) {
+  const qc = useQueryClient()
+  const [fields, setFields] = useState({
+    labor_hrs:     system.labor_hrs,
+    service_qty:   system.service_qty,
+    permit_yn:     system.permit_yn,
+    sales_tax_pct: system.sales_tax_pct,
+  })
+  const [dirty, setDirty] = useState(false)
+
+  const save = useMutation({
+    mutationFn: (data) => systems.update(planId, system.id, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['plan', String(planId)] }); setDirty(false) },
+  })
+
+  const set = (k, v) => { setFields(f => ({ ...f, [k]: v })); setDirty(true) }
+
+  const matCost    = system.line_items.reduce((s, li) => s + li.extended_price, 0)
+  const matSelling = factor > 0 ? matCost / factor : 0
+  const equipSell  = system.equipment_system?.bid_price ?? 0
+  const laborAmt   = fields.labor_hrs * LABOR_RATE
+  const serviceAmt = fields.service_qty * SERVICE_RATE
+  const permitAmt  = fields.permit_yn ? PERMIT_COST : 0
+  const taxAmt     = matCost * fields.sales_tax_pct
+  const finalBid   = matSelling + equipSell + laborAmt + serviceAmt + permitAmt + taxAmt
+
+  const fmt = (n) => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+  return (
+    <div style={{ marginTop: 14, padding: '12px 16px', background: 'var(--blue-light)',
+      border: '1px solid var(--blue-mid)', borderRadius: 'var(--radius)' }}>
+      <div style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase',
+        letterSpacing: '0.06em', color: 'var(--blue)', marginBottom: 10 }}>Bid Summary</div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto',
+        rowGap: 6, columnGap: 24, fontSize: 13, alignItems: 'center' }}>
+
+        <span style={{ color: 'var(--gray-600)' }}>Materials (cost)</span>
+        <span style={{ textAlign: 'right' }}>{fmt(matCost)}</span>
+
+        <span style={{ color: 'var(--gray-600)' }}>÷ Factor ({factor.toFixed(2)}) → selling</span>
+        <span style={{ textAlign: 'right', fontWeight: 600, color: 'var(--blue)' }}>{fmt(matSelling)}</span>
+
+        {equipSell > 0 && <>
+          <span style={{ color: 'var(--gray-600)' }}>Equipment (bid price)</span>
+          <span style={{ textAlign: 'right' }}>+{fmt(equipSell)}</span>
+        </>}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ color: 'var(--gray-600)' }}>Labor</span>
+          <input type="number" min="0" step="0.5" value={fields.labor_hrs}
+            onChange={e => set('labor_hrs', parseFloat(e.target.value) || 0)}
+            style={{ width: 54, fontSize: 12, padding: '2px 6px', textAlign: 'center' }} />
+          <span style={{ fontSize: 12, color: 'var(--gray-400)' }}>hrs × ${LABOR_RATE}</span>
+        </div>
+        <span style={{ textAlign: 'right' }}>+{fmt(laborAmt)}</span>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ color: 'var(--gray-600)' }}>Service</span>
+          <input type="number" min="0" step="1" value={fields.service_qty}
+            onChange={e => set('service_qty', parseInt(e.target.value) || 0)}
+            style={{ width: 54, fontSize: 12, padding: '2px 6px', textAlign: 'center' }} />
+          <span style={{ fontSize: 12, color: 'var(--gray-400)' }}>calls × ${SERVICE_RATE}</span>
+        </div>
+        <span style={{ textAlign: 'right' }}>+{fmt(serviceAmt)}</span>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6,
+          cursor: 'pointer', margin: 0, color: 'var(--gray-600)' }}>
+          <input type="checkbox" checked={fields.permit_yn}
+            onChange={e => set('permit_yn', e.target.checked)}
+            style={{ width: 'auto', margin: 0 }} />
+          Permit (${PERMIT_COST})
+        </label>
+        <span style={{ textAlign: 'right' }}>+{fmt(permitAmt)}</span>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ color: 'var(--gray-600)' }}>Sales tax</span>
+          <input type="number" min="0" max="20" step="0.1"
+            value={(fields.sales_tax_pct * 100).toFixed(1)}
+            onChange={e => set('sales_tax_pct', (parseFloat(e.target.value) || 0) / 100)}
+            style={{ width: 54, fontSize: 12, padding: '2px 6px', textAlign: 'center' }} />
+          <span style={{ fontSize: 12, color: 'var(--gray-400)' }}>% on materials</span>
+        </div>
+        <span style={{ textAlign: 'right' }}>+{fmt(taxAmt)}</span>
+
+        <div style={{ gridColumn: '1 / -1', height: 1, background: 'var(--blue-mid)', margin: '4px 0' }} />
+
+        <span style={{ fontWeight: 700 }}>Final Bid</span>
+        <span style={{ textAlign: 'right', fontWeight: 700, fontSize: 16, color: 'var(--blue)' }}>
+          {fmt(finalBid)}
+        </span>
+      </div>
+
+      {dirty && (
+        <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
+          <button className="btn-primary btn-sm" disabled={save.isPending}
+            onClick={() => save.mutate(fields)}>
+            {save.isPending ? 'Saving…' : 'Save'}
+          </button>
+          <button className="btn-secondary btn-sm" onClick={() => {
+            setFields({
+              labor_hrs: system.labor_hrs, service_qty: system.service_qty,
+              permit_yn: system.permit_yn, sales_tax_pct: system.sales_tax_pct,
+            })
+            setDirty(false)
+          }}>Cancel</button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Main plan detail page ─────────────────────────────────────
 export default function PlanDetail() {
   const { id } = useParams()
@@ -655,7 +773,10 @@ export default function PlanDetail() {
   const [showDocMenu, setShowDocMenu] = useState(false)
   const [addingHouseType, setAddingHouseType] = useState(false)
   const [addingLineItemTo, setAddingLineItemTo] = useState(null)
-  const [kitZone, setKitZone] = useState(null)  // { systemId, zoneName }
+  const [kitZone, setKitZone] = useState(null)  // { systemId }
+  const [pickingEquipmentFor, setPickingEquipmentFor] = useState(null) // systemId
+  const [editingFactor, setEditingFactor] = useState(false)
+  const [factorInput, setFactorInput] = useState('')
   const [dirtyRows, setDirtyRows] = useState(0)
   const [copied, setCopied] = useState(false)
 
@@ -717,6 +838,17 @@ export default function PlanDetail() {
     onError: (e) => alert(e.response?.data?.detail || 'Could not duplicate house type'),
   })
 
+  const linkEquipment = useMutation({
+    mutationFn: ({ systemId, equipmentSystemId }) =>
+      systems.update(parseInt(id), systemId, { equipment_system_id: equipmentSystemId }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plan', id] }),
+  })
+
+  const updateFactor = useMutation({
+    mutationFn: (f) => plans.update(id, { factor: f }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plan', id] }),
+  })
+
   const deleteLineItem = useMutation({
     mutationFn: (liId) => lineItems.delete(id, liId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['plan', id] }),
@@ -737,8 +869,16 @@ export default function PlanDetail() {
   const nextStatus = statusIdx >= 0 ? STATUS_FLOW[statusIdx + 1] : null
   const prevStatus = statusIdx > 0  ? STATUS_FLOW[statusIdx - 1]  : null
   const totalBid = (plan.house_types ?? []).reduce((sum, ht) =>
-    sum + (ht.systems ?? []).reduce((s2, sys) =>
-      s2 + (sys.line_items ?? []).reduce((s3, li) => s3 + li.extended_price, 0), 0), 0)
+    sum + (ht.systems ?? []).reduce((s2, sys) => {
+      const matCost    = (sys.line_items ?? []).reduce((s3, li) => s3 + li.extended_price, 0)
+      const matSelling = plan.factor > 0 ? matCost / plan.factor : 0
+      const equipSell  = sys.equipment_system?.bid_price ?? 0
+      const laborAmt   = (sys.labor_hrs ?? 0) * LABOR_RATE
+      const serviceAmt = (sys.service_qty ?? 0) * SERVICE_RATE
+      const permitAmt  = sys.permit_yn ? PERMIT_COST : 0
+      const taxAmt     = matCost * (sys.sales_tax_pct ?? 0.06)
+      return s2 + matSelling + equipSell + laborAmt + serviceAmt + permitAmt + taxAmt
+    }, 0), 0)
 
   return (
     <div>
@@ -942,7 +1082,7 @@ export default function PlanDetail() {
       </div>
 
       {/* Meta cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 16, marginBottom: 24 }}>
         <div className="card">
           <div style={{ fontSize: 12, color: 'var(--gray-400)', marginBottom: 4 }}>Builder</div>
           <div style={{ fontWeight: 600 }}>{plan.project.builder.name}</div>
@@ -965,6 +1105,39 @@ export default function PlanDetail() {
               {new Date(plan.contracted_at).toLocaleDateString()}
             </div>
           )}
+        </div>
+        <div className="card">
+          <div style={{ fontSize: 12, color: 'var(--gray-400)', marginBottom: 4 }}>Factor</div>
+          {editingFactor ? (
+            <input
+              type="number" min="0.01" max="1" step="0.01"
+              value={factorInput}
+              autoFocus
+              onChange={e => setFactorInput(e.target.value)}
+              onBlur={() => {
+                const f = parseFloat(factorInput)
+                if (f > 0 && f <= 1) updateFactor.mutate(f)
+                setEditingFactor(false)
+              }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') e.currentTarget.blur()
+                if (e.key === 'Escape') setEditingFactor(false)
+              }}
+              style={{ fontWeight: 700, fontSize: 20, width: 80, padding: '2px 6px' }}
+            />
+          ) : (
+            <div
+              onClick={() => { setFactorInput(String(plan.factor)); setEditingFactor(true) }}
+              style={{ fontWeight: 700, fontSize: 20, color: 'var(--blue)', cursor: 'pointer',
+                display: 'flex', alignItems: 'baseline', gap: 6 }}
+              title="Click to edit factor">
+              {plan.factor.toFixed(2)}
+              <span style={{ fontSize: 11, color: 'var(--gray-400)', fontWeight: 400 }}>✎</span>
+            </div>
+          )}
+          <div style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 2 }}>
+            {plan.factor > 0 ? `${((1 - plan.factor) * 100).toFixed(0)}% margin` : ''}
+          </div>
         </div>
         <div className="card">
           <div style={{ fontSize: 12, color: 'var(--gray-400)', marginBottom: 4 }}>Total Bid</div>
@@ -1018,23 +1191,36 @@ export default function PlanDetail() {
       )}
 
       {/* House types */}
-      {plan.house_types.map(ht => (
+      {plan.house_types.map(ht => {
+        const htBid = ht.systems.reduce((s2, sys) => {
+          const matCost    = sys.line_items.reduce((s3, li) => s3 + li.extended_price, 0)
+          const matSelling = plan.factor > 0 ? matCost / plan.factor : 0
+          const equipSell  = sys.equipment_system?.bid_price ?? 0
+          const laborAmt   = (sys.labor_hrs ?? 0) * LABOR_RATE
+          const serviceAmt = (sys.service_qty ?? 0) * SERVICE_RATE
+          const permitAmt  = sys.permit_yn ? PERMIT_COST : 0
+          const taxAmt     = matCost * (sys.sales_tax_pct ?? 0.06)
+          return s2 + matSelling + equipSell + laborAmt + serviceAmt + permitAmt + taxAmt
+        }, 0)
+
+        return (
         <div key={ht.id} className="card" style={{ marginBottom: 20 }}>
+          {/* House type header */}
           <div style={{ display: 'flex', justifyContent: 'space-between',
-            alignItems: 'flex-start', marginBottom: 16 }}>
+            alignItems: 'flex-start', marginBottom: 20, paddingBottom: 16,
+            borderBottom: '2px solid var(--gray-100)' }}>
             <div>
-              <div style={{ fontWeight: 600, fontSize: 16 }}>{ht.name}</div>
-              <div style={{ fontSize: 13, color: 'var(--gray-600)' }}>
-                House #{ht.house_number}{ht.bid_hours ? ` · ${ht.bid_hours}h labor` : ''}
+              <div style={{ fontWeight: 700, fontSize: 17 }}>{ht.name}</div>
+              <div style={{ fontSize: 13, color: 'var(--gray-500)', marginTop: 2 }}>
+                House #{ht.house_number}
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 12, color: 'var(--gray-400)' }}>House total</div>
-                <div style={{ fontWeight: 700, fontSize: 17 }}>
-                  ${ht.systems.reduce((s, sys) =>
-                    s + sys.line_items.reduce((s2, li) => s2 + li.extended_price, 0), 0
-                  ).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                <div style={{ fontSize: 11, color: 'var(--gray-400)', textTransform: 'uppercase',
+                  letterSpacing: '0.04em' }}>House Bid</div>
+                <div style={{ fontWeight: 700, fontSize: 18, color: 'var(--blue)' }}>
+                  ${htBid.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </div>
               </div>
               <button
@@ -1059,25 +1245,72 @@ export default function PlanDetail() {
             </div>
           </div>
 
-          {ht.systems.map(sys => (
-            <div key={sys.id} style={{ marginBottom: 20 }}>
+          {ht.systems.map((sys, sysIdx) => (
+            <div key={sys.id} style={{
+              marginBottom: 28, paddingBottom: 28,
+              borderBottom: sysIdx < ht.systems.length - 1 ? '1px solid var(--gray-100)' : 'none',
+            }}>
               {/* Zone header */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                marginBottom: 8, paddingBottom: 6, borderBottom: '1px solid var(--gray-100)' }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--gray-600)' }}>
-                  Zone {sys.system_number}
-                  {sys.zone_label ? ` — ${sys.zone_label}` : ''}
-                </div>
-                {sys.equipment_system && (
-                  <span style={{ fontSize: 12, color: 'var(--blue-mid)',
-                    background: 'var(--blue-light)', padding: '2px 10px', borderRadius: 99 }}>
-                    {sys.equipment_system.system_code} ·
-                    ${sys.equipment_system.bid_price.toLocaleString()}
-                  </span>
-                )}
+              <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--gray-800)',
+                marginBottom: 12 }}>
+                Zone {sys.system_number}
+                {sys.zone_label ? ` — ${sys.zone_label}` : ''}
               </div>
 
-              {/* Line items */}
+              {/* Equipment row */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14,
+                padding: '10px 14px',
+                background: sys.equipment_system ? 'var(--blue-light)' : 'var(--gray-50)',
+                border: `1px solid ${sys.equipment_system ? 'var(--blue-mid)' : 'var(--gray-200)'}`,
+                borderRadius: 'var(--radius)',
+              }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {sys.equipment_system ? (
+                    <>
+                      <div style={{ fontSize: 10, color: 'var(--blue)', fontWeight: 700,
+                        textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>
+                        Equipment
+                      </div>
+                      <div style={{ fontWeight: 700, fontFamily: 'monospace', fontSize: 14,
+                        color: 'var(--gray-900)', letterSpacing: '0.02em' }}>
+                        {sys.equipment_system.system_code}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--gray-600)', marginTop: 1,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {sys.equipment_system.description}
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ fontSize: 13, color: 'var(--gray-400)', fontStyle: 'italic' }}>
+                      No equipment selected — pick a system to start the bid
+                    </div>
+                  )}
+                </div>
+                {sys.equipment_system && (
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{ fontSize: 11, color: 'var(--gray-400)' }}>Bid price</div>
+                    <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--blue)' }}>
+                      ${sys.equipment_system.bid_price.toLocaleString('en-US',
+                        { minimumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                )}
+                <button
+                  onClick={() => setPickingEquipmentFor(sys.id)}
+                  style={{
+                    flexShrink: 0,
+                    background: sys.equipment_system ? 'white' : 'var(--blue)',
+                    color: sys.equipment_system ? 'var(--gray-700)' : 'white',
+                    border: `1px solid ${sys.equipment_system ? 'var(--gray-200)' : 'var(--blue)'}`,
+                    borderRadius: 'var(--radius)', padding: '6px 16px',
+                    fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                  }}>
+                  {sys.equipment_system ? 'Change' : 'Select Equipment'}
+                </button>
+              </div>
+
+              {/* Line items table */}
               {sys.line_items.length > 0 && (
                 <table className="table" style={{ fontSize: 13, marginBottom: 8 }}>
                   <thead>
@@ -1105,6 +1338,22 @@ export default function PlanDetail() {
                 </table>
               )}
 
+              {/* Bid summary */}
+              <BidSummary planId={parseInt(id)} system={sys} factor={plan.factor} />
+
+              {/* Equipment picker modal */}
+              {pickingEquipmentFor === sys.id && (
+                <EquipmentPicker
+                  planId={parseInt(id)}
+                  systemId={sys.id}
+                  onSelect={(equip) => {
+                    linkEquipment.mutate({ systemId: sys.id, equipmentSystemId: equip.id })
+                    setPickingEquipmentFor(null)
+                  }}
+                  onClose={() => setPickingEquipmentFor(null)}
+                />
+              )}
+
               {/* Kit picker modal */}
               {kitZone?.systemId === sys.id && (
                 <KitPicker
@@ -1113,6 +1362,8 @@ export default function PlanDetail() {
                   onClose={() => setKitZone(null)}
                 />
               )}
+
+              {/* Action buttons */}
               {addingLineItemTo === sys.id ? (
                 <AddLineItemForm
                   planId={parseInt(id)}
@@ -1120,10 +1371,10 @@ export default function PlanDetail() {
                   onDone={() => setAddingLineItemTo(null)}
                 />
               ) : (
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                   <button className="btn-secondary btn-sm"
                     onClick={() => setAddingLineItemTo(sys.id)}>
-                    + Add line item
+                    + Custom line item
                   </button>
                   <button className="btn-secondary btn-sm"
                     style={{ background: 'var(--blue-light)', color: 'var(--blue)',
@@ -1139,7 +1390,8 @@ export default function PlanDetail() {
           {/* Draws */}
           <DrawSchedule planId={parseInt(id)} houseTypeId={ht.id} draws={ht.draws} />
         </div>
-      ))}
+        )
+      })}
 
       {/* Add house type */}
       {addingHouseType ? (

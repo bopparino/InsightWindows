@@ -34,7 +34,20 @@ class SystemIn(BaseModel):
     zone_label: Optional[str] = None
     equipment_system_id: Optional[int] = None
     notes: Optional[str] = None
+    labor_hrs: float = 0
+    service_qty: int = 0
+    permit_yn: bool = False
+    sales_tax_pct: float = 0.06
     line_items: list[LineItemIn] = []
+
+class SystemUpdate(BaseModel):
+    zone_label: Optional[str] = None
+    equipment_system_id: Optional[int] = None
+    notes: Optional[str] = None
+    labor_hrs: Optional[float] = None
+    service_qty: Optional[int] = None
+    permit_yn: Optional[bool] = None
+    sales_tax_pct: Optional[float] = None
 
 class DrawIn(BaseModel):
     stage: str
@@ -62,13 +75,15 @@ class PlanCreate(BaseModel):
     house_type: Optional[str] = None
     number_of_zones: int = 1
     notes: Optional[str] = None
+    factor: float = 0.69
     house_types: list[HouseTypeIn] = []
 
 class PlanUpdate(BaseModel):
-    status:      Optional[str]  = None
-    house_type:  Optional[str]  = None
-    notes:       Optional[str]  = None
-    is_template: Optional[bool] = None
+    status:      Optional[str]   = None
+    house_type:  Optional[str]   = None
+    notes:       Optional[str]   = None
+    is_template: Optional[bool]  = None
+    factor:      Optional[float] = None
 
 
 # ── Helpers ───────────────────────────────────────────────────
@@ -456,6 +471,7 @@ def create_plan(data: PlanCreate, db: Session = Depends(get_db),
             house_type=data.house_type,
             number_of_zones=data.number_of_zones,
             notes=data.notes,
+            factor=data.factor,
             status="draft",
         )
         db.add(plan)
@@ -487,6 +503,10 @@ def create_plan(data: PlanCreate, db: Session = Depends(get_db),
                 system_number=sys_data.system_number,
                 zone_label=sys_data.zone_label,
                 equipment_system_id=sys_data.equipment_system_id,
+                labor_hrs=sys_data.labor_hrs,
+                service_qty=sys_data.service_qty,
+                permit_yn=sys_data.permit_yn,
+                sales_tax_pct=sys_data.sales_tax_pct,
                 notes=sys_data.notes,
             )
             db.add(system)
@@ -595,6 +615,7 @@ def get_plan(plan_id: int, db: Session = Depends(get_db),
         "number_of_zones": plan.number_of_zones,
         "notes": plan.notes,
         "is_template": plan.is_template,
+        "factor": float(plan.factor) if plan.factor else 0.69,
         "estimator_name": plan.estimator_name,
         "created_at": plan.created_at,
         "contracted_at": plan.contracted_at,
@@ -629,6 +650,10 @@ def get_plan(plan_id: int, db: Session = Depends(get_db),
                         "id": s.id,
                         "system_number": s.system_number,
                         "zone_label": s.zone_label,
+                        "labor_hrs": float(s.labor_hrs or 0),
+                        "service_qty": int(s.service_qty or 0),
+                        "permit_yn": bool(s.permit_yn),
+                        "sales_tax_pct": float(s.sales_tax_pct or 0.06),
                         "equipment_system": {
                             "system_code": s.equipment_system.system_code,
                             "description": s.equipment_system.description,
@@ -686,6 +711,8 @@ def update_plan(plan_id: int, data: PlanUpdate, db: Session = Depends(get_db),
         plan.house_type = data.house_type
     if data.notes is not None:
         plan.notes = data.notes
+    if data.factor is not None:
+        plan.factor = data.factor
     if data.is_template is not None:
         plan.is_template = data.is_template
 
@@ -945,7 +972,7 @@ def delete_line_item(plan_id: int, line_item_id: int, db: Session = Depends(get_
 
 
 @router.patch("/{plan_id}/systems/{system_id}")
-def update_system(plan_id: int, system_id: int, data: SystemCreate, db: Session = Depends(get_db),
+def update_system(plan_id: int, system_id: int, data: SystemUpdate, db: Session = Depends(get_db),
                   current_user: User = Depends(get_current_user)):
     system = db.query(System).filter_by(id=system_id).first()
     if not system:

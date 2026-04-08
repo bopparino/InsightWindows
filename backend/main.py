@@ -69,6 +69,12 @@ def _run_migrations():
         "CREATE INDEX IF NOT EXISTS ix_kit_variants_category ON kit_variants(category_code)",
         # v1.6 — markup divisor (selling = per_kit; internal cost = per_kit * markup_divisor)
         "ALTER TABLE kit_variants ADD COLUMN IF NOT EXISTS markup_divisor NUMERIC(5,4) NOT NULL DEFAULT 1.0",
+        # v2.0 — structured bidsheet: factor on plan, labor/service/permit/tax on system
+        "ALTER TABLE plans   ADD COLUMN IF NOT EXISTS factor        NUMERIC(5,4) NOT NULL DEFAULT 0.69",
+        "ALTER TABLE systems ADD COLUMN IF NOT EXISTS labor_hrs     NUMERIC(6,2) NOT NULL DEFAULT 0",
+        "ALTER TABLE systems ADD COLUMN IF NOT EXISTS service_qty   INTEGER      NOT NULL DEFAULT 0",
+        "ALTER TABLE systems ADD COLUMN IF NOT EXISTS permit_yn     BOOLEAN      NOT NULL DEFAULT FALSE",
+        "ALTER TABLE systems ADD COLUMN IF NOT EXISTS sales_tax_pct NUMERIC(5,4) NOT NULL DEFAULT 0.06",
     ]
     with engine.connect() as conn:
         for sql in migrations:
