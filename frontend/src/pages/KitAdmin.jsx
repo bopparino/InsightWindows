@@ -1,289 +1,222 @@
+/**
+ * KitAdmin — Kit Pricing "bible"
+ *
+ * Lists all categories (A–T) with their variants.
+ * Admins can edit prices, add variants, and soft-delete variants.
+ */
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { kit } from '../api/client'
 
-const CATEGORIES = [
-  { id: 'sheet_metal', label: 'Sheet Metal' },
-  { id: 'flex_line',   label: 'Flex Duct' },
-  { id: 'refrigerant', label: 'Refrigerant' },
-  { id: 'drain',       label: 'Drain / Condensate' },
-  { id: 'mastic',      label: 'Mastic' },
-  { id: 'misc',        label: 'Miscellaneous' },
-]
-
-const CATEGORY_MAP = Object.fromEntries(CATEGORIES.map(c => [c.id, c.label]))
-
-const EMPTY_FORM = {
-  category: 'sheet_metal',
-  description: '',
-  base_price: '',
-  price_per_ton: '',
-  unit: '',
-  sort_order: '',
-}
-
-function fmt(val) {
-  const n = parseFloat(val)
-  return isNaN(n) ? '—' : `$${n.toFixed(2)}`
-}
-
 // ── Inline edit row ───────────────────────────────────────────
-function EditRow({ item, onSave, onCancel, saving }) {
-  const [draft, setDraft] = useState({
-    description:   item.description,
-    base_price:    String(item.base_price),
-    price_per_ton: String(item.price_per_ton),
-    unit:          item.unit,
-    sort_order:    String(item.sort_order),
+function EditRow({ v, cat, onSave, onCancel, saving }) {
+  const [d, setD] = useState({
+    variant_code: v.variant_code,
+    variant_name: v.variant_name,
+    per_kit:      String(v.per_kit),
+    per_foot:     String(v.per_foot),
+    sort_order:   String(v.sort_order),
   })
+  const set = (k, val) => setD(p => ({ ...p, [k]: val }))
 
-  function set(field, value) {
-    setDraft(d => ({ ...d, [field]: value }))
-  }
-
-  function handleSave() {
+  function save() {
     onSave({
-      category:      item.category,
-      description:   draft.description,
-      base_price:    parseFloat(draft.base_price) || 0,
-      price_per_ton: parseFloat(draft.price_per_ton) || 0,
-      unit:          draft.unit,
-      sort_order:    parseInt(draft.sort_order, 10) || 0,
+      category_code: cat.code,
+      category_name: cat.name,
+      variant_code:  d.variant_code.trim(),
+      variant_name:  d.variant_name.trim(),
+      per_kit:       parseFloat(d.per_kit)  || 0,
+      per_foot:      parseFloat(d.per_foot) || 0,
+      sort_order:    parseInt(d.sort_order, 10) || 10,
+      active:        true,
     })
   }
 
-  const inputStyle = {
-    padding: '4px 7px',
-    fontSize: 13,
-    border: '1px solid var(--gray-300)',
-    borderRadius: 5,
-    width: '100%',
-    boxSizing: 'border-box',
-  }
-
   return (
-    <tr style={{ background: '#fafbff', borderBottom: '1px solid var(--gray-200)' }}>
-      <td style={{ padding: '6px 10px' }}>
-        <input
-          style={{ ...inputStyle, width: 64 }}
-          type="number"
-          value={draft.sort_order}
-          onChange={e => set('sort_order', e.target.value)}
-        />
+    <tr style={{ background: '#f0f4ff' }}>
+      <td style={{ padding: '5px 10px' }}>
+        <input value={d.variant_code} onChange={e => set('variant_code', e.target.value)}
+          style={{ fontSize: 13, width: 80 }} />
       </td>
-      <td style={{ padding: '6px 10px' }}>
-        <input
-          style={inputStyle}
-          type="text"
-          value={draft.description}
-          onChange={e => set('description', e.target.value)}
-        />
+      <td style={{ padding: '5px 10px' }}>
+        <input value={d.variant_name} onChange={e => set('variant_name', e.target.value)}
+          style={{ fontSize: 13, width: '100%' }} />
       </td>
-      <td style={{ padding: '6px 10px' }}>
-        <input
-          style={{ ...inputStyle, width: 90 }}
-          type="number"
-          step="0.01"
-          value={draft.base_price}
-          onChange={e => set('base_price', e.target.value)}
-        />
+      <td style={{ padding: '5px 10px' }}>
+        <input type="number" step="0.01" value={d.per_kit} onChange={e => set('per_kit', e.target.value)}
+          style={{ fontSize: 13, width: 84, textAlign: 'right' }} />
       </td>
-      <td style={{ padding: '6px 10px' }}>
-        <input
-          style={{ ...inputStyle, width: 90 }}
-          type="number"
-          step="0.01"
-          value={draft.price_per_ton}
-          onChange={e => set('price_per_ton', e.target.value)}
-        />
+      <td style={{ padding: '5px 10px' }}>
+        <input type="number" step="0.01" value={d.per_foot} onChange={e => set('per_foot', e.target.value)}
+          style={{ fontSize: 13, width: 84, textAlign: 'right' }} />
       </td>
-      <td style={{ padding: '6px 10px' }}>
-        <input
-          style={{ ...inputStyle, width: 80 }}
-          type="text"
-          value={draft.unit}
-          onChange={e => set('unit', e.target.value)}
-        />
+      <td style={{ padding: '5px 10px' }}>
+        <input type="number" value={d.sort_order} onChange={e => set('sort_order', e.target.value)}
+          style={{ fontSize: 13, width: 52, textAlign: 'center' }} />
       </td>
-      <td style={{ padding: '6px 10px', whiteSpace: 'nowrap' }}>
-        <button
-          className="btn-primary btn-sm"
-          onClick={handleSave}
-          disabled={saving}
-          style={{ marginRight: 6 }}
-        >
-          {saving ? 'Saving...' : 'Save'}
+      <td style={{ padding: '5px 10px', whiteSpace: 'nowrap' }}>
+        <button className="btn-primary btn-sm" onClick={save} disabled={saving} style={{ marginRight: 6 }}>
+          {saving ? '…' : 'Save'}
         </button>
-        <button className="btn-secondary btn-sm" onClick={onCancel} disabled={saving}>
-          Cancel
-        </button>
+        <button className="btn-secondary btn-sm" onClick={onCancel}>Cancel</button>
       </td>
     </tr>
   )
 }
 
-// ── Read-only row ─────────────────────────────────────────────
-function ViewRow({ item, onEdit, onDelete, deleting }) {
-  return (
-    <tr style={{ borderBottom: '1px solid var(--gray-100)' }}>
-      <td style={{ padding: '8px 12px', color: 'var(--gray-400)', fontSize: 12,
-        textAlign: 'center' }}>
-        {item.sort_order}
-      </td>
-      <td style={{ padding: '8px 12px' }}>{item.description}</td>
-      <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600 }}>
-        {fmt(item.base_price)}
-      </td>
-      <td style={{ padding: '8px 12px', textAlign: 'right',
-        color: item.price_per_ton > 0 ? 'var(--gray-700)' : 'var(--gray-300)' }}>
-        {item.price_per_ton > 0 ? fmt(item.price_per_ton) : '—'}
-      </td>
-      <td style={{ padding: '8px 12px', color: 'var(--gray-400)', fontSize: 12,
-        textAlign: 'center' }}>
-        {item.unit || '—'}
-      </td>
-      <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}>
-        <button
-          className="btn-secondary btn-sm"
-          onClick={() => onEdit(item)}
-          title="Edit"
-          style={{ marginRight: 6 }}
-        >
-          Edit
-        </button>
-        <button
-          className="btn-secondary btn-sm"
-          onClick={() => onDelete(item)}
-          disabled={deleting}
-          style={{ color: 'var(--red, #dc2626)' }}
-        >
-          Delete
-        </button>
-      </td>
-    </tr>
-  )
-}
+// ── Add-variant row (bottom of each category) ─────────────────
+function AddRow({ cat, onAdd, adding }) {
+  const EMPTY = { variant_code: '', variant_name: '', per_kit: '', per_foot: '', sort_order: '' }
+  const [d, setD] = useState(EMPTY)
+  const set = (k, val) => setD(p => ({ ...p, [k]: val }))
 
-// ── Add item form ─────────────────────────────────────────────
-function AddForm({ onAdd, adding, onClose }) {
-  const [form, setForm] = useState(EMPTY_FORM)
-
-  function set(field, value) {
-    setForm(f => ({ ...f, [field]: value }))
-  }
-
-  function handleSubmit(e) {
-    e.preventDefault()
+  function submit() {
+    if (!d.variant_code.trim() || !d.variant_name.trim()) return
     onAdd({
-      category:      form.category,
-      description:   form.description,
-      base_price:    parseFloat(form.base_price) || 0,
-      price_per_ton: parseFloat(form.price_per_ton) || 0,
-      unit:          form.unit,
-      sort_order:    parseInt(form.sort_order, 10) || 0,
+      category_code: cat.code,
+      category_name: cat.name,
+      variant_code:  d.variant_code.trim(),
+      variant_name:  d.variant_name.trim(),
+      per_kit:       parseFloat(d.per_kit)  || 0,
+      per_foot:      parseFloat(d.per_foot) || 0,
+      sort_order:    parseInt(d.sort_order, 10) || 10,
+      active:        true,
     })
-  }
-
-  const labelStyle = {
-    display: 'block',
-    fontSize: 12,
-    fontWeight: 600,
-    color: 'var(--gray-500)',
-    marginBottom: 4,
-    textTransform: 'uppercase',
-    letterSpacing: '0.04em',
-  }
-
-  const inputStyle = {
-    width: '100%',
-    boxSizing: 'border-box',
+    setD(EMPTY)
   }
 
   return (
-    <div className="card" style={{ marginBottom: 20, border: '1.5px solid var(--blue)',
-      borderRadius: 10, padding: 20 }}>
-      <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16,
-        color: 'var(--gray-800)' }}>
-        Add Kit Item
+    <tr style={{ background: '#f8fdf8', borderTop: '1px dashed var(--gray-200)' }}>
+      <td style={{ padding: '5px 10px' }}>
+        <input placeholder="Code" value={d.variant_code} onChange={e => set('variant_code', e.target.value)}
+          style={{ fontSize: 13, width: 80 }} />
+      </td>
+      <td style={{ padding: '5px 10px' }}>
+        <input placeholder="Variant name" value={d.variant_name} onChange={e => set('variant_name', e.target.value)}
+          style={{ fontSize: 13, width: '100%' }} />
+      </td>
+      <td style={{ padding: '5px 10px' }}>
+        <input type="number" step="0.01" placeholder="0.00" value={d.per_kit} onChange={e => set('per_kit', e.target.value)}
+          style={{ fontSize: 13, width: 84, textAlign: 'right' }} />
+      </td>
+      <td style={{ padding: '5px 10px' }}>
+        <input type="number" step="0.01" placeholder="0.00" value={d.per_foot} onChange={e => set('per_foot', e.target.value)}
+          style={{ fontSize: 13, width: 84, textAlign: 'right' }} />
+      </td>
+      <td style={{ padding: '5px 10px' }}>
+        <input type="number" placeholder="10" value={d.sort_order} onChange={e => set('sort_order', e.target.value)}
+          style={{ fontSize: 13, width: 52, textAlign: 'center' }} />
+      </td>
+      <td style={{ padding: '5px 10px' }}>
+        <button className="btn-primary btn-sm" onClick={submit}
+          disabled={adding || !d.variant_code.trim() || !d.variant_name.trim()}>
+          {adding ? '…' : '+ Add'}
+        </button>
+      </td>
+    </tr>
+  )
+}
+
+// ── Single category accordion ─────────────────────────────────
+function CategorySection({ cat, editingId, savingId, addingCat, deletingId, onEdit, onAdd, onDelete }) {
+  const [open, setOpen] = useState(true)
+
+  const TH = ({ children, right, center, w }) => (
+    <th style={{
+      padding: '6px 10px',
+      textAlign: right ? 'right' : center ? 'center' : 'left',
+      fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
+      color: 'var(--gray-400)', background: 'var(--gray-50)',
+      borderBottom: '1px solid var(--gray-200)', width: w,
+    }}>{children}</th>
+  )
+
+  return (
+    <div className="card" style={{ marginBottom: 12, padding: 0, overflow: 'hidden' }}>
+      {/* Header */}
+      <div
+        onClick={() => setOpen(o => !o)}
+        style={{
+          padding: '10px 16px',
+          background: 'var(--gray-50)',
+          borderBottom: open ? '1px solid var(--gray-200)' : 'none',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          cursor: 'pointer', userSelect: 'none',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: 26, height: 26, borderRadius: 6,
+            background: 'var(--blue)', color: 'white', fontSize: 12, fontWeight: 700, flexShrink: 0,
+          }}>{cat.code}</span>
+          <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--gray-800)' }}>{cat.name}</span>
+          <span style={{ fontSize: 12, color: 'var(--gray-400)' }}>
+            {cat.variants.length} variant{cat.variants.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+        <span style={{ color: 'var(--gray-400)', fontSize: 14 }}>{open ? '▾' : '▸'}</span>
       </div>
-      <form onSubmit={handleSubmit}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-          gap: 14, marginBottom: 16 }}>
-          <div style={{ gridColumn: '1 / -1' }}>
-            <label style={labelStyle}>Category</label>
-            <select style={inputStyle} value={form.category}
-              onChange={e => set('category', e.target.value)}>
-              {CATEGORIES.map(c => (
-                <option key={c.id} value={c.id}>{c.label}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ gridColumn: '1 / -1' }}>
-            <label style={labelStyle}>Description</label>
-            <input
-              style={inputStyle}
-              type="text"
-              required
-              placeholder="e.g. 6-in flex duct (per foot)"
-              value={form.description}
-              onChange={e => set('description', e.target.value)}
-            />
-          </div>
-          <div>
-            <label style={labelStyle}>Base Price ($)</label>
-            <input
-              style={inputStyle}
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="0.00"
-              value={form.base_price}
-              onChange={e => set('base_price', e.target.value)}
-            />
-          </div>
-          <div>
-            <label style={labelStyle}>Per-Ton Adder ($/ton)</label>
-            <input
-              style={inputStyle}
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="0.00"
-              value={form.price_per_ton}
-              onChange={e => set('price_per_ton', e.target.value)}
-            />
-          </div>
-          <div>
-            <label style={labelStyle}>Unit</label>
-            <input
-              style={inputStyle}
-              type="text"
-              placeholder="e.g. ft, lb, each"
-              value={form.unit}
-              onChange={e => set('unit', e.target.value)}
-            />
-          </div>
-          <div>
-            <label style={labelStyle}>Sort #</label>
-            <input
-              style={inputStyle}
-              type="number"
-              min="0"
-              placeholder="0"
-              value={form.sort_order}
-              onChange={e => set('sort_order', e.target.value)}
-            />
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button type="submit" className="btn-primary" disabled={adding}>
-            {adding ? 'Adding...' : 'Add Item'}
-          </button>
-          <button type="button" className="btn-secondary" onClick={onClose}>
-            Cancel
-          </button>
-        </div>
-      </form>
+
+      {open && (
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead>
+            <tr>
+              <TH w={90}>Code</TH>
+              <TH>Variant Name</TH>
+              <TH right w={110}>Per Kit ($)</TH>
+              <TH right w={120}>Per Foot ($/ft)</TH>
+              <TH center w={70}>Sort</TH>
+              <TH w={140}>Actions</TH>
+            </tr>
+          </thead>
+          <tbody>
+            {cat.variants.map(v =>
+              editingId === v.id ? (
+                <EditRow
+                  key={v.id}
+                  v={v}
+                  cat={cat}
+                  onSave={data => onEdit(v.id, data)}
+                  onCancel={() => onEdit(null, null)}
+                  saving={savingId === v.id}
+                />
+              ) : (
+                <tr key={v.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
+                  <td style={{ padding: '8px 10px', color: 'var(--gray-500)', fontFamily: 'monospace', fontSize: 11 }}>
+                    {v.variant_code}
+                  </td>
+                  <td style={{ padding: '8px 10px' }}>{v.variant_name}</td>
+                  <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600 }}>
+                    {v.per_kit > 0 ? `$${v.per_kit.toFixed(2)}` : '—'}
+                  </td>
+                  <td style={{ padding: '8px 10px', textAlign: 'right',
+                    color: v.per_foot > 0 ? 'var(--gray-700)' : 'var(--gray-300)' }}>
+                    {v.per_foot > 0 ? `$${v.per_foot.toFixed(2)}/ft` : '—'}
+                  </td>
+                  <td style={{ padding: '8px 10px', textAlign: 'center', color: 'var(--gray-400)', fontSize: 12 }}>
+                    {v.sort_order}
+                  </td>
+                  <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
+                    <button className="btn-secondary btn-sm" onClick={() => onEdit(v.id, null)}
+                      style={{ marginRight: 6 }}>
+                      Edit
+                    </button>
+                    <button
+                      className="btn-secondary btn-sm"
+                      onClick={() => onDelete(v)}
+                      disabled={deletingId === v.id}
+                      style={{ color: 'var(--red, #dc2626)' }}>
+                      {deletingId === v.id ? '…' : 'Remove'}
+                    </button>
+                  </td>
+                </tr>
+              )
+            )}
+            <AddRow cat={cat} onAdd={onAdd} adding={addingCat === cat.code} />
+          </tbody>
+        </table>
+      )}
     </div>
   )
 }
@@ -291,190 +224,99 @@ function AddForm({ onAdd, adding, onClose }) {
 // ── Main page ─────────────────────────────────────────────────
 export default function KitAdmin() {
   const queryClient = useQueryClient()
-  const [editingId, setEditingId]   = useState(null)
-  const [showAddForm, setShowAddForm] = useState(false)
+  const [editingId,  setEditingId]  = useState(null)
+  const [savingId,   setSavingId]   = useState(null)
+  const [addingCat,  setAddingCat]  = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
 
-  const { data: items = [], isLoading, isError } = useQuery({
-    queryKey: ['kit-items'],
-    queryFn:  kit.list,
+  const { data: categories = [], isLoading, isError } = useQuery({
+    queryKey: ['kit-variants'],
+    queryFn:  kit.variants,
   })
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => kit.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['kit-items'] })
-      setEditingId(null)
-    },
+  const updateMut = useMutation({
+    mutationFn: ({ id, data }) => kit.updateVariant(id, data),
+    onSuccess:  () => { queryClient.invalidateQueries({ queryKey: ['kit-variants'] }); setEditingId(null); setSavingId(null) },
+    onError:    () => setSavingId(null),
   })
 
-  const createMutation = useMutation({
-    mutationFn: (data) => kit.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['kit-items'] })
-      setShowAddForm(false)
-    },
+  const createMut = useMutation({
+    mutationFn: (data) => kit.createVariant(data),
+    onSuccess:  () => { queryClient.invalidateQueries({ queryKey: ['kit-variants'] }); setAddingCat(null) },
+    onError:    () => setAddingCat(null),
   })
 
-  const deleteMutation = useMutation({
-    mutationFn: (id) => kit.remove(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['kit-items'] })
-    },
+  const deleteMut = useMutation({
+    mutationFn: (id) => kit.removeVariant(id),
+    onSuccess:  () => { queryClient.invalidateQueries({ queryKey: ['kit-variants'] }); setDeletingId(null) },
+    onError:    () => setDeletingId(null),
   })
 
-  function handleEdit(item) {
-    setEditingId(item.id)
-    setShowAddForm(false)
+  function handleEdit(id, data) {
+    if (id === null)   { setEditingId(null); return }
+    if (data === null) { setEditingId(id);   return }
+    setSavingId(id)
+    updateMut.mutate({ id, data })
   }
 
-  function handleSave(id, data) {
-    updateMutation.mutate({ id, data })
+  function handleAdd(catCode, data) {
+    setAddingCat(catCode)
+    createMut.mutate(data)
   }
 
-  function handleDelete(item) {
-    if (!window.confirm(`Delete "${item.description}"? This cannot be undone.`)) return
-    deleteMutation.mutate(item.id)
+  function handleDelete(v) {
+    if (!window.confirm(
+      `Remove "${v.variant_name}" from kit pricing?\n\nThis hides it from the picker but preserves existing bids.`
+    )) return
+    setDeletingId(v.id)
+    deleteMut.mutate(v.id)
   }
 
-  // Group items by category, sorted within each group
-  const grouped = CATEGORIES.map(cat => ({
-    ...cat,
-    items: items
-      .filter(i => i.category === cat.id)
-      .sort((a, b) => a.sort_order - b.sort_order),
-  })).filter(cat => cat.items.length > 0)
-
-  const thStyle = {
-    padding: '7px 12px',
-    textAlign: 'left',
-    fontWeight: 600,
-    fontSize: 11,
-    color: 'var(--gray-400)',
-    textTransform: 'uppercase',
-    letterSpacing: '0.04em',
-    background: 'var(--gray-50)',
-    borderBottom: '1px solid var(--gray-200)',
-  }
+  const totalVariants = categories.reduce((s, c) => s + c.variants.length, 0)
 
   return (
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Kit Item Pricing</h1>
+          <h1 className="page-title">Kit Pricing</h1>
           <div style={{ fontSize: 13, color: 'var(--gray-400)', marginTop: 2 }}>
-            Manage consumable pricing used in the Kit Calculator
+            {isLoading
+              ? 'Loading…'
+              : `${categories.length} categories · ${totalVariants} variants — 2019 pricing`}
           </div>
         </div>
-        <button
-          className="btn-primary"
-          onClick={() => { setShowAddForm(v => !v); setEditingId(null) }}
-        >
-          {showAddForm ? 'Cancel' : '+ Add item'}
-        </button>
       </div>
 
-      {/* Pricing formula note */}
       <div style={{
-        background: 'var(--blue-light)',
-        border: '1px solid var(--blue-mid)',
-        borderRadius: 8,
-        padding: '10px 16px',
-        fontSize: 13,
-        color: 'var(--blue-mid)',
-        marginBottom: 20,
+        background: 'var(--blue-light, #eff6ff)', border: '1px solid var(--blue-mid, #93c5fd)',
+        borderRadius: 8, padding: '10px 16px', fontSize: 13,
+        color: 'var(--blue-mid, #1d4ed8)', marginBottom: 20,
       }}>
-        <strong>Pricing formula:</strong> Final price = base price + (per-ton adder x tonnage).
-        Items with no per-ton adder use base price only.
+        <strong>Per Kit</strong> is the flat cost per installation.{' '}
+        <strong>Per Foot</strong> is an additional charge multiplied by footage entered in the kit picker.
+        Removing a variant hides it from new bids but does not affect existing line items.
       </div>
 
-      {/* Add form */}
-      {showAddForm && (
-        <AddForm
-          onAdd={data => createMutation.mutate(data)}
-          adding={createMutation.isPending}
-          onClose={() => setShowAddForm(false)}
-        />
-      )}
-
-      {/* Loading / error / empty states */}
       {isLoading && (
-        <div style={{ textAlign: 'center', padding: 48 }}>
-          <span className="spinner" />
-        </div>
+        <div style={{ textAlign: 'center', padding: 60 }}><span className="spinner" /></div>
       )}
 
       {isError && (
-        <div className="empty-state">
-          <p>Failed to load kit items. Check the API connection.</p>
-        </div>
+        <div className="empty-state"><p>Failed to load kit pricing. Check API connection.</p></div>
       )}
 
-      {!isLoading && !isError && items.length === 0 && (
-        <div className="empty-state">
-          <p>No kit items found.</p>
-          <p style={{ fontSize: 13, marginTop: 8 }}>
-            Use the <strong>+ Add item</strong> button above, or run{' '}
-            <code style={{ background: 'var(--gray-100)', padding: '2px 6px',
-              borderRadius: 4 }}>python db/seed_kit_items.py</code> to seed defaults.
-          </p>
-        </div>
-      )}
-
-      {/* Category tables */}
-      {!isLoading && !isError && grouped.map(cat => (
-        <div key={cat.id} className="card" style={{ marginBottom: 18, padding: 0,
-          overflow: 'hidden' }}>
-          {/* Category header row */}
-          <div style={{
-            padding: '10px 16px',
-            background: 'var(--gray-50)',
-            borderBottom: '1px solid var(--gray-200)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}>
-            <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--gray-700)' }}>
-              {cat.label}
-            </span>
-            <span style={{ fontSize: 12, color: 'var(--gray-400)' }}>
-              {cat.items.length} item{cat.items.length !== 1 ? 's' : ''}
-            </span>
-          </div>
-
-          <table className="table" style={{ marginBottom: 0, fontSize: 13 }}>
-            <thead>
-              <tr>
-                <th style={{ ...thStyle, textAlign: 'center', width: 70 }}>Sort #</th>
-                <th style={thStyle}>Description</th>
-                <th style={{ ...thStyle, textAlign: 'right', width: 120 }}>Base Price ($)</th>
-                <th style={{ ...thStyle, textAlign: 'right', width: 140 }}>Per-Ton Adder ($/ton)</th>
-                <th style={{ ...thStyle, textAlign: 'center', width: 90 }}>Unit</th>
-                <th style={{ ...thStyle, width: 150 }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {cat.items.map(item =>
-                editingId === item.id ? (
-                  <EditRow
-                    key={item.id}
-                    item={item}
-                    onSave={data => handleSave(item.id, data)}
-                    onCancel={() => setEditingId(null)}
-                    saving={updateMutation.isPending}
-                  />
-                ) : (
-                  <ViewRow
-                    key={item.id}
-                    item={item}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    deleting={deleteMutation.isPending && deleteMutation.variables === item.id}
-                  />
-                )
-              )}
-            </tbody>
-          </table>
-        </div>
+      {!isLoading && !isError && categories.map(cat => (
+        <CategorySection
+          key={cat.code}
+          cat={cat}
+          editingId={editingId}
+          savingId={savingId}
+          addingCat={addingCat}
+          deletingId={deletingId}
+          onEdit={handleEdit}
+          onAdd={(data) => handleAdd(cat.code, data)}
+          onDelete={handleDelete}
+        />
       ))}
     </div>
   )

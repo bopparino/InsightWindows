@@ -1060,13 +1060,27 @@ def generate_top_sheet(plan_id: int, db: Session = Depends(get_db),
     if not plan:
         raise HTTPException(404, "Plan not found")
 
-    html     = build_top_sheet_html(plan, db)
-    filename = f"{plan.plan_number}_top_sheet.html"
-    path     = os.path.join(settings.STORAGE_PATH, filename)
-    with open(path, "w", encoding="utf-8") as f:
+    html      = build_top_sheet_html(plan, db)
+    base_name = f"{plan.plan_number}_top_sheet"
+    html_path = os.path.join(settings.STORAGE_PATH, f"{base_name}.html")
+    pdf_path  = os.path.join(settings.STORAGE_PATH, f"{base_name}.pdf")
+
+    with open(html_path, "w", encoding="utf-8") as f:
         f.write(html)
 
-    doc = Document(plan_id=plan_id, doc_type="top_sheet", storage_path=path, version=1)
+    pdf_generated = False
+    try:
+        from weasyprint import HTML
+        HTML(string=html, base_url=settings.STORAGE_PATH).write_pdf(pdf_path)
+        pdf_generated = True
+        output_path = pdf_path
+        filename    = f"{base_name}.pdf"
+    except Exception as e:
+        logger.warning("WeasyPrint failed for %s top sheet, falling back to HTML: %s", plan.plan_number, e)
+        output_path = html_path
+        filename    = f"{base_name}.html"
+
+    doc = Document(plan_id=plan_id, doc_type="top_sheet", storage_path=output_path, version=1)
     db.add(doc)
     db.commit()
 
@@ -1083,10 +1097,11 @@ def download_top_sheet(plan_id: int, db: Session = Depends(get_db),
     if not doc or not doc.storage_path or not os.path.exists(doc.storage_path):
         raise HTTPException(404, "No top sheet generated yet.")
 
-    filename = os.path.basename(doc.storage_path)
+    filename   = os.path.basename(doc.storage_path)
+    media_type = "application/pdf" if filename.endswith(".pdf") else "text/html"
     return FileResponse(
         doc.storage_path,
         filename=filename,
-        media_type="text/html",
+        media_type=media_type,
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
