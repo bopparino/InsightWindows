@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { plans, documents, lineItems, houseTypes, equipment, houseTypeApi, systems, draws as drawsApi, search } from '../api/client'
+import InlineKitSelector from '../components/InlineKitSelector'
 
 // ── Email Quote modal ─────────────────────────────────────────
 function EmailQuoteModal({ plan, currentUser, onClose, onSent }) {
@@ -106,7 +107,6 @@ function EmailQuoteModal({ plan, currentUser, onClose, onSent }) {
     </div>
   )
 }
-import KitPicker from '../components/KitPicker'
 import { useAuth } from '../context/AuthContext'
 
 const STATUS_FLOW = ['draft', 'proposed', 'contracted', 'complete']
@@ -773,7 +773,6 @@ export default function PlanDetail() {
   const [showDocMenu, setShowDocMenu] = useState(false)
   const [addingHouseType, setAddingHouseType] = useState(false)
   const [addingLineItemTo, setAddingLineItemTo] = useState(null)
-  const [kitZone, setKitZone] = useState(null)  // { systemId }
   const [pickingEquipmentFor, setPickingEquipmentFor] = useState(null) // systemId
   const [editingFactor, setEditingFactor] = useState(false)
   const [factorInput, setFactorInput] = useState('')
@@ -821,15 +820,6 @@ export default function PlanDetail() {
 
   const generateTopSheet = useMutation({
     mutationFn: () => documents.generateTopSheet(id),
-  })
-
-  const addKitItems = useMutation({
-    mutationFn: async ({ systemId, items }) => {
-      for (const item of items) {
-        await lineItems.add(parseInt(id), systemId, item)
-      }
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['plan', id] }),
   })
 
   const duplicateHouseType = useMutation({
@@ -1338,6 +1328,9 @@ export default function PlanDetail() {
                 </table>
               )}
 
+              {/* Inline kit category selector */}
+              <InlineKitSelector planId={parseInt(id)} systemId={sys.id} />
+
               {/* Bid summary */}
               <BidSummary planId={parseInt(id)} system={sys} factor={plan.factor} />
 
@@ -1354,16 +1347,7 @@ export default function PlanDetail() {
                 />
               )}
 
-              {/* Kit picker modal */}
-              {kitZone?.systemId === sys.id && (
-                <KitPicker
-                  zoneName={sys.zone_label || `Zone ${sys.system_number}`}
-                  onAddItems={(items) => addKitItems.mutate({ systemId: sys.id, items })}
-                  onClose={() => setKitZone(null)}
-                />
-              )}
-
-              {/* Action buttons */}
+              {/* Custom line item escape hatch */}
               {addingLineItemTo === sys.id ? (
                 <AddLineItemForm
                   planId={parseInt(id)}
@@ -1371,16 +1355,10 @@ export default function PlanDetail() {
                   onDone={() => setAddingLineItemTo(null)}
                 />
               ) : (
-                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                <div style={{ marginTop: 8 }}>
                   <button className="btn-secondary btn-sm"
                     onClick={() => setAddingLineItemTo(sys.id)}>
                     + Custom line item
-                  </button>
-                  <button className="btn-secondary btn-sm"
-                    style={{ background: 'var(--blue-light)', color: 'var(--blue)',
-                      border: '1px solid var(--blue-mid)' }}
-                    onClick={() => setKitZone({ systemId: sys.id })}>
-                    Kit pricing
                   </button>
                 </div>
               )}
