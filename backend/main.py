@@ -54,6 +54,19 @@ def _run_migrations():
         "CREATE INDEX IF NOT EXISTS ix_plan_tasks_plan_id ON plan_tasks(plan_id)",
         # Fix default company name if it was seeded with the placeholder
         "UPDATE company_settings SET company_name = 'Metcalfe HVAC' WHERE company_name = 'Insight HVAC'",
+        # v1.5 — kit variants
+        """CREATE TABLE IF NOT EXISTS kit_variants (
+            id            SERIAL PRIMARY KEY,
+            category_code VARCHAR(4)   NOT NULL,
+            category_name VARCHAR(100) NOT NULL,
+            variant_code  VARCHAR(40)  NOT NULL,
+            variant_name  VARCHAR(200) NOT NULL,
+            per_kit       NUMERIC(10,4) NOT NULL DEFAULT 0,
+            per_foot      NUMERIC(10,4) NOT NULL DEFAULT 0,
+            sort_order    INTEGER NOT NULL DEFAULT 10,
+            active        BOOLEAN NOT NULL DEFAULT TRUE
+        )""",
+        "CREATE INDEX IF NOT EXISTS ix_kit_variants_category ON kit_variants(category_code)",
     ]
     with engine.connect() as conn:
         for sql in migrations:

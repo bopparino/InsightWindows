@@ -652,6 +652,7 @@ export default function PlanDetail() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'admin'
   const [showEmailModal, setShowEmailModal] = useState(false)
+  const [showDocMenu, setShowDocMenu] = useState(false)
   const [addingHouseType, setAddingHouseType] = useState(false)
   const [addingLineItemTo, setAddingLineItemTo] = useState(null)
   const [kitZone, setKitZone] = useState(null)  // { systemId, zoneName }
@@ -695,6 +696,10 @@ export default function PlanDetail() {
       await documents.generateFieldSheet(id)
       await documents.fieldSheetDownload(id, `${plan?.plan_number}_field_sheet.pdf`)
     },
+  })
+
+  const generateTopSheet = useMutation({
+    mutationFn: () => documents.generateTopSheet(id),
   })
 
   const addKitItems = useMutation({
@@ -768,64 +773,102 @@ export default function PlanDetail() {
           </h1>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {/* ── Document actions ── */}
-          <button className="btn-secondary"
-            onClick={async () => {
-              const url = await documents.preview(id)
-              window.open(url, '_blank')
-            }}>
-            Preview Quote
-          </button>
-          <button
-            onClick={async () => {
-              const result = await generateQuote.mutateAsync()
-              await documents.downloadVersion(id, result.id ?? result.doc_id, result.filename)
-                .catch(() => documents.download(id, result.filename))
-              qc.invalidateQueries({ queryKey: ['quote-history', id] })
-            }}
-            disabled={generateQuote.isPending}
-            style={{ background: 'var(--blue)', color: 'white', border: 'none',
-              borderRadius: 'var(--radius)', padding: '7px 14px', fontSize: 13, fontWeight: 500 }}>
-            {generateQuote.isPending ? 'Generating...' : '⬇ Generate & Download Quote'}
-          </button>
-          <button
-            onClick={() => setShowEmailModal(true)}
-            style={{ background: 'var(--status-proposed-bg)', color: 'var(--status-proposed-text)',
-              border: '1px solid var(--status-proposed-border)',
-              borderRadius: 'var(--radius)', padding: '7px 14px', fontSize: 13, fontWeight: 500 }}>
-            ✉ Email Quote
-          </button>
-          <button
-            onClick={() => generateFieldSheet.mutate()}
-            disabled={generateFieldSheet.isPending}
-            style={{ background: 'var(--status-contracted-bg)', color: 'var(--status-contracted-text)',
-              border: '1px solid var(--status-contracted-border)',
-              borderRadius: 'var(--radius)', padding: '7px 14px', fontSize: 13, fontWeight: 500 }}>
-            {generateFieldSheet.isPending ? 'Generating...' : '⬇ Field Sheet'}
-          </button>
-
-          {/* Template toggle — admin only */}
-          {isAdmin && (
+          {/* ── Documents dropdown ── */}
+          <div style={{ position: 'relative' }}>
             <button
-              onClick={() => {
-                const next = !plan.is_template
-                if (!next && !window.confirm(`Remove "${plan.plan_number}" from templates?`)) return
-                plans.update(id, { is_template: next }).then(() => {
-                  qc.invalidateQueries({ queryKey: ['plan', id] })
-                  qc.invalidateQueries({ queryKey: ['plans', 'templates'] })
-                })
-              }}
-              title={plan.is_template ? 'Remove from templates' : 'Save as template'}
-              style={{
-                background: plan.is_template ? 'var(--status-proposed-accent)' : 'var(--gray-100)',
-                color: plan.is_template ? 'white' : 'var(--gray-500)',
-                border: `1px solid ${plan.is_template ? 'var(--status-proposed-accent)' : 'var(--gray-200)'}`,
-                borderRadius: 'var(--radius)', padding: '7px 12px',
-                fontSize: 13, fontWeight: plan.is_template ? 600 : 400,
-              }}>
-              {plan.is_template ? '★ Saved as Template' : '☆ Template'}
+              className="btn-secondary"
+              onClick={() => setShowDocMenu(m => !m)}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              Documents
+              <span style={{ fontSize: 10, opacity: 0.6 }}>▼</span>
             </button>
-          )}
+            {showDocMenu && (
+              <>
+                {/* Backdrop to close */}
+                <div style={{ position: 'fixed', inset: 0, zIndex: 49 }}
+                  onClick={() => setShowDocMenu(false)} />
+                <div style={{
+                  position: 'absolute', top: 'calc(100% + 6px)', right: 0,
+                  background: 'var(--card-bg)', border: '1px solid var(--gray-200)',
+                  borderRadius: 'var(--radius)', boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                  zIndex: 50, minWidth: 220, overflow: 'hidden',
+                }}>
+                  {[
+                    {
+                      label: 'Preview Quote',
+                      icon: '👁',
+                      action: async () => { const url = await documents.preview(id); window.open(url, '_blank') },
+                    },
+                    {
+                      label: generateQuote.isPending ? 'Generating...' : 'Generate & Download Quote',
+                      icon: '⬇',
+                      disabled: generateQuote.isPending,
+                      action: async () => {
+                        const result = await generateQuote.mutateAsync()
+                        await documents.downloadVersion(id, result.id ?? result.doc_id, result.filename)
+                          .catch(() => documents.download(id, result.filename))
+                        qc.invalidateQueries({ queryKey: ['quote-history', id] })
+                      },
+                    },
+                    {
+                      label: 'Email Quote',
+                      icon: '✉',
+                      action: () => setShowEmailModal(true),
+                    },
+                    {
+                      label: generateFieldSheet.isPending ? 'Generating...' : 'Field Sheet',
+                      icon: '⬇',
+                      disabled: generateFieldSheet.isPending,
+                      action: async () => {
+                        await documents.generateFieldSheet(id)
+                        await documents.fieldSheetDownload(id, `${plan?.plan_number}_field_sheet.pdf`)
+                      },
+                    },
+                    {
+                      label: generateTopSheet.isPending ? 'Generating...' : 'Top Sheet',
+                      icon: '⬇',
+                      disabled: generateTopSheet.isPending,
+                      action: async () => {
+                        const result = await generateTopSheet.mutateAsync()
+                        await documents.topSheetDownload(id, result.filename)
+                      },
+                    },
+                    ...(isAdmin ? [{
+                      label: plan.is_template ? '★ Remove from Templates' : '☆ Save as Template',
+                      icon: '',
+                      accent: plan.is_template,
+                      action: () => {
+                        const next = !plan.is_template
+                        if (!next && !window.confirm(`Remove "${plan.plan_number}" from templates?`)) return
+                        plans.update(id, { is_template: next }).then(() => {
+                          qc.invalidateQueries({ queryKey: ['plan', id] })
+                          qc.invalidateQueries({ queryKey: ['plans', 'templates'] })
+                        })
+                      },
+                    }] : []),
+                  ].map((item, i) => (
+                    <button key={i}
+                      disabled={item.disabled}
+                      onClick={() => { if (!item.disabled) { item.action(); setShowDocMenu(false) } }}
+                      style={{
+                        width: '100%', textAlign: 'left', background: 'none', border: 'none',
+                        padding: '10px 16px', fontSize: 13, cursor: item.disabled ? 'not-allowed' : 'pointer',
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        color: item.accent ? 'var(--status-proposed-accent)' : 'var(--gray-700)',
+                        fontWeight: item.accent ? 600 : 400,
+                        borderBottom: i < 4 || (isAdmin && i === 4) ? '1px solid var(--gray-100)' : 'none',
+                        opacity: item.disabled ? 0.5 : 1,
+                      }}
+                      onMouseEnter={e => { if (!item.disabled) e.currentTarget.style.background = 'var(--gray-50)' }}
+                      onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+                      <span style={{ width: 16, textAlign: 'center', fontSize: 12 }}>{item.icon}</span>
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
 
           {/* Divider */}
           <div style={{ width: 1, height: 32, background: 'var(--gray-200)', margin: '0 2px' }} />

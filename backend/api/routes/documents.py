@@ -830,3 +830,263 @@ def download_field_sheet(plan_id: int, db: Session = Depends(get_db),
         media_type=media_type,
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
+
+
+# ── Top Sheet ─────────────────────────────────────────────────────────────────
+
+# Labor rate constants (2019 — configurable later)
+LABOR_RATE_PER_HOUR = 76.73        # fully loaded labor cost per hour
+OVERHEAD_PCT        = 0.15         # overhead applied to direct cost
+BACKCHARGE_PCT      = 0.01         # typical backcharge allowance
+PROD_OH_PCT         = 0.74         # production overhead
+MARKUP_TARGET       = 1.30         # suggested price = direct cost × markup
+
+# Phase definitions: (code, label, labor_hours_pct_of_total)
+# Hours are estimated as a % of total bid value / labor rate
+# These approximate the phase breakdown from the job cost sheet
+PHASES = [
+    ("R/I",    "Rough-In",            0.42),
+    ("INDUN",  "Indoor Unit",         0.09),
+    ("OUTUN",  "Outdoor Unit",        0.08),
+    ("REGIS",  "Registers & Grills",  0.05),
+    ("START",  "Startup & Balance",   0.06),
+    ("LINES",  "Line Sets & Piping",  0.15),
+    ("FINAL",  "Final / Inspection",  0.05),
+    ("OTHER",  "Other / Misc",        0.10),
+]
+
+
+def build_top_sheet_html(plan, db=None) -> str:
+    co  = _get_company(db)
+    now = datetime.datetime.now().strftime("%B %d, %Y")
+
+    # ── Compute totals from line items ────────────────────────────────────────
+    all_li = [
+        li for ht in plan.house_types
+        for sys in ht.systems
+        for li in sys.line_items
+    ]
+    material_cost = sum(float(li.quantity) * float(li.unit_price) for li in all_li)
+
+    # Estimate total labor hours based on material cost proxy
+    # Rule of thumb from the 2019 data: labor ≈ 24.6% of selling price
+    # We back-calculate from material as a starting point
+    estimated_hours_total = round(material_cost / LABOR_RATE_PER_HOUR * 0.35, 1)
+    labor_cost = estimated_hours_total * LABOR_RATE_PER_HOUR
+
+    direct_cost  = material_cost + labor_cost
+    overhead     = direct_cost * OVERHEAD_PCT
+    backcharges  = direct_cost * BACKCHARGE_PCT
+    prod_oh      = direct_cost * PROD_OH_PCT
+    misc_costs   = overhead + backcharges + prod_oh
+    total_cost   = direct_cost + misc_costs
+    suggested    = total_cost * MARKUP_TARGET
+    selling      = material_cost  # the actual bid total on the quote
+    profit       = selling - total_cost
+    gross_profit = (profit / selling * 100) if selling else 0
+
+    # Phase breakdown rows
+    phase_rows_html = ""
+    for code, label, pct in PHASES:
+        ph_hours    = round(estimated_hours_total * pct, 2)
+        ph_labor    = round(ph_hours * LABOR_RATE_PER_HOUR, 2)
+        ph_material = round(material_cost * pct, 2)
+        ph_other    = 0.0
+        ph_total    = round(ph_labor + ph_material + ph_other, 2)
+        phase_rows_html += f"""
+        <tr>
+          <td class="ph">{code}</td>
+          <td class="ph">{label}</td>
+          <td class="num">{ph_hours:.2f}</td>
+          <td class="num">${ph_labor:,.2f}</td>
+          <td class="num">${ph_material:,.2f}</td>
+          <td class="num">—</td>
+          <td class="num bold">${ph_total:,.2f}</td>
+        </tr>"""
+
+    delta_color = "#16a34a" if profit >= 0 else "#dc2626"
+
+    return f"""<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<style>
+  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  body {{ font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #111;
+          padding: 24px 32px; }}
+  h1 {{ font-size: 18px; text-align: center; margin-bottom: 2px; }}
+  .subtitle {{ text-align: center; font-size: 12px; color: #555; margin-bottom: 14px; }}
+  .meta {{ display: flex; justify-content: space-between; margin-bottom: 14px;
+           border: 1px solid #ccc; padding: 8px 12px; font-size: 11px; }}
+  .meta div {{ line-height: 1.7; }}
+  table {{ width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 11px; }}
+  th {{ background: #1e3a5f; color: white; padding: 5px 8px; text-align: left; font-size: 10px; }}
+  th.num {{ text-align: right; }}
+  td {{ padding: 4px 8px; border-bottom: 1px solid #e5e7eb; }}
+  td.num {{ text-align: right; }}
+  td.ph {{ color: #555; }}
+  td.bold {{ font-weight: 700; }}
+  tr.subtotal td {{ background: #f3f4f6; font-weight: 700; border-top: 2px solid #1e3a5f; }}
+  .two-col {{ display: flex; gap: 24px; margin-bottom: 14px; }}
+  .box {{ flex: 1; border: 1px solid #ccc; padding: 10px 14px; }}
+  .box h3 {{ font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
+             color: #555; margin-bottom: 8px; }}
+  .kv {{ display: flex; justify-content: space-between; padding: 3px 0;
+         border-bottom: 1px solid #f0f0f0; font-size: 11px; }}
+  .kv:last-child {{ border-bottom: none; }}
+  .kv .val {{ font-weight: 600; }}
+  .highlight {{ background: #fffbeb; }}
+  .profit-positive {{ color: #16a34a; font-size: 14px; font-weight: 700; }}
+  .profit-negative {{ color: #dc2626; font-size: 14px; font-weight: 700; }}
+  .footer {{ font-size: 9px; color: #aaa; text-align: center; margin-top: 20px;
+             border-top: 1px solid #eee; padding-top: 8px; }}
+  .warn {{ background: #fef3c7; border: 1px solid #fde68a; padding: 6px 10px;
+           font-size: 10px; color: #92400e; margin-bottom: 12px; border-radius: 4px; }}
+</style>
+</head><body>
+
+  <h1>{co["name"]}</h1>
+  <div class="subtitle">Job Cost Estimate &amp; Top Sheet</div>
+
+  <div class="meta">
+    <div>
+      <strong>Plan #:</strong> {plan.plan_number}<br>
+      <strong>Project:</strong> {plan.project.name}<br>
+      <strong>Builder:</strong> {plan.project.builder.name}
+    </div>
+    <div>
+      <strong>Date:</strong> {now}<br>
+      <strong>Estimator:</strong> {plan.estimator_name}<br>
+      <strong>Status:</strong> {plan.status.title()}
+    </div>
+  </div>
+
+  <div class="warn">
+    ⚠ Labor hours are estimated from bid value. Actual hours should be verified
+    against field records. Material cost reflects quoted line items.
+  </div>
+
+  <!-- Phase breakdown -->
+  <table>
+    <thead>
+      <tr>
+        <th>Phase</th><th>Description</th>
+        <th class="num">Hours</th><th class="num">$ Labor</th>
+        <th class="num">$ Material</th><th class="num">$ Other</th>
+        <th class="num">$ Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {phase_rows_html}
+      <tr class="subtotal">
+        <td colspan="2">Sub Total</td>
+        <td class="num">{estimated_hours_total:.2f}</td>
+        <td class="num">${labor_cost:,.2f}</td>
+        <td class="num">${material_cost:,.2f}</td>
+        <td class="num">—</td>
+        <td class="num">${direct_cost:,.2f}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="two-col">
+    <!-- Cost structure -->
+    <div class="box">
+      <h3>Cost Structure</h3>
+      <div class="kv"><span>Material Cost</span><span class="val">${material_cost:,.2f}</span></div>
+      <div class="kv"><span>Estimated Labor ({estimated_hours_total:.1f} hrs @ ${LABOR_RATE_PER_HOUR:.2f}/hr)</span>
+                      <span class="val">${labor_cost:,.2f}</span></div>
+      <div class="kv"><span>Production O/H ({PROD_OH_PCT*100:.0f}%)</span>
+                      <span class="val">${prod_oh:,.2f}</span></div>
+      <div class="kv"><span>Backcharges ({BACKCHARGE_PCT*100:.0f}%)</span>
+                      <span class="val">${backcharges:,.2f}</span></div>
+      <div class="kv"><span>Overhead ({OVERHEAD_PCT*100:.0f}%)</span>
+                      <span class="val">${overhead:,.2f}</span></div>
+      <div class="kv" style="border-top:2px solid #1e3a5f; margin-top:4px; padding-top:6px;">
+        <span><strong>Total Cost</strong></span>
+        <span class="val"><strong>${total_cost:,.2f}</strong></span>
+      </div>
+    </div>
+
+    <!-- Margin summary -->
+    <div class="box">
+      <h3>Margin Summary</h3>
+      <div class="kv"><span>Total Direct Cost</span><span class="val">${direct_cost:,.2f}</span></div>
+      <div class="kv highlight"><span>Suggested Price ({MARKUP_TARGET*100-100:.0f}% markup)</span>
+                      <span class="val">${suggested:,.2f}</span></div>
+      <div class="kv"><span><strong>Selling Price (quoted)</strong></span>
+                      <span class="val"><strong>${selling:,.2f}</strong></span></div>
+      <div class="kv" style="border-top:2px solid #1e3a5f; margin-top:4px; padding-top:6px;">
+        <span><strong>Profit</strong></span>
+        <span class="val {'profit-positive' if profit >= 0 else 'profit-negative'}">${profit:,.2f}</span>
+      </div>
+      <div class="kv">
+        <span><strong>Gross Profit %</strong></span>
+        <span class="val {'profit-positive' if profit >= 0 else 'profit-negative'}">{gross_profit:.1f}%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- House type breakdown -->
+  <table>
+    <thead>
+      <tr>
+        <th>House Type</th><th>House #</th>
+        <th class="num">Line Items</th><th class="num">Bid Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {"".join(
+        f'<tr><td>{ht.name}</td><td>{ht.house_number}</td>'
+        f'<td class="num">{sum(len(s.line_items) for s in ht.systems)}</td>'
+        f'<td class="num bold">${sum(float(li.quantity)*float(li.unit_price) for s in ht.systems for li in s.line_items):,.2f}</td></tr>'
+        for ht in plan.house_types
+      )}
+    </tbody>
+  </table>
+
+  <div class="footer">
+    {co["name"]} &middot; Plan # {plan.plan_number} &middot; {plan.estimator_name}
+    &middot; Generated {now} &middot; Internal use only — not for distribution
+  </div>
+</body></html>"""
+
+
+@router.post("/{plan_id}/top-sheet/generate")
+def generate_top_sheet(plan_id: int, db: Session = Depends(get_db),
+                       current_user: User = Depends(get_current_user)):
+    plan = db.query(Plan).options(
+        joinedload(Plan.project).joinedload(Project.builder),
+        joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.line_items),
+    ).filter_by(id=plan_id).first()
+    if not plan:
+        raise HTTPException(404, "Plan not found")
+
+    html     = build_top_sheet_html(plan, db)
+    filename = f"{plan.plan_number}_top_sheet.html"
+    path     = os.path.join(settings.STORAGE_PATH, filename)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(html)
+
+    doc = Document(plan_id=plan_id, doc_type="top_sheet", storage_path=path, version=1)
+    db.add(doc)
+    db.commit()
+
+    return {"filename": filename, "doc_id": doc.id}
+
+
+@router.get("/{plan_id}/top-sheet/download")
+def download_top_sheet(plan_id: int, db: Session = Depends(get_db),
+                       current_user: User = Depends(get_current_user)):
+    doc = db.query(Document).filter_by(
+        plan_id=plan_id, doc_type="top_sheet"
+    ).order_by(Document.generated_at.desc()).first()
+
+    if not doc or not doc.storage_path or not os.path.exists(doc.storage_path):
+        raise HTTPException(404, "No top sheet generated yet.")
+
+    filename = os.path.basename(doc.storage_path)
+    return FileResponse(
+        doc.storage_path,
+        filename=filename,
+        media_type="text/html",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )

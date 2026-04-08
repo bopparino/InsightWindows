@@ -113,8 +113,11 @@ export const documents = {
   fieldSheetDownload: (planId, filename) => api.get(`/documents/${planId}/field-sheet/download`, { responseType: 'blob' })
                                      .then(r => triggerDownload(r.data, filename)),
   emailQuote:      (planId, data)         => api.post(`/documents/${planId}/email-quote`, data).then(r => r.data),
-  downloadVersion: (planId, docId, fname) => api.get(`/documents/${planId}/history/${docId}/download`, { responseType: 'blob' })
+  downloadVersion:   (planId, docId, fname) => api.get(`/documents/${planId}/history/${docId}/download`, { responseType: 'blob' })
                                                .then(r => triggerDownload(r.data, fname)),
+  generateTopSheet:  (planId) => api.post(`/documents/${planId}/top-sheet/generate`).then(r => r.data),
+  topSheetDownload:  (planId, filename) => api.get(`/documents/${planId}/top-sheet/download`, { responseType: 'blob' })
+                                     .then(r => triggerDownload(r.data, filename)),
 }
 
 export const filesApi = {
