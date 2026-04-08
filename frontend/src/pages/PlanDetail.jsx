@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { plans, documents, lineItems, houseTypes, equipment, houseTypeApi, systems, draws as drawsApi, search } from '../api/client'
@@ -223,19 +223,15 @@ function EquipmentPicker({ planId, systemId, onSelect, onClose }) {
 }
 
 // ── Inline edit row ───────────────────────────────────────────
-function EditableLineItemRow({ planId, li, onDelete, onEditingChange }) {
+function LineItemRow({ planId, li, onDelete }) {
   const qc = useQueryClient()
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState({
     description: li.description,
     quantity:    li.quantity,
     unit_price:  li.unit_price,
-    pricing_flag: li.pricing_flag,
   })
   const [suggestions, setSuggestions] = useState([])
-
-  const startEditing = () => { setEditing(true);  onEditingChange?.(true)  }
-  const stopEditing  = () => { setEditing(false); onEditingChange?.(false); setSuggestions([]) }
 
   useEffect(() => {
     if (!editing) return
@@ -251,280 +247,180 @@ function EditableLineItemRow({ planId, li, onDelete, onEditingChange }) {
 
   const save = useMutation({
     mutationFn: () => lineItems.update(planId, li.id, form),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['plan', String(planId)] })
-      stopEditing()
-    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['plan', String(planId)] }); setEditing(false) },
   })
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
   if (editing) {
     return (
-      <tr style={{ background: 'var(--blue-light)' }}>
-        <td style={{ color: 'var(--gray-400)', fontSize: 11, paddingTop: 6, paddingBottom: 6 }}>
-          {li.sort_order}
-        </td>
-        <td style={{ position: 'relative' }}>
+      <div style={{ padding: '10px 12px', background: 'var(--blue-light)',
+        borderRadius: 8, marginBottom: 4, border: '1px solid var(--blue-mid)' }}>
+        <div style={{ position: 'relative', marginBottom: 8 }}>
           <input value={form.description} onChange={e => set('description', e.target.value)}
-            style={{ fontSize: 13, padding: '4px 8px', width: '100%' }} autoFocus />
+            style={{ width: '100%', fontSize: 14 }} autoFocus
+            onKeyDown={e => { if (e.key === 'Escape') setEditing(false) }} />
           {suggestions.length > 0 && (
-            <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 50,
+            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
               background: 'var(--card-bg)', border: '1px solid var(--gray-200)',
               borderRadius: 6, boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-              minWidth: 340, maxHeight: 200, overflowY: 'auto' }}>
+              maxHeight: 180, overflowY: 'auto' }}>
               {suggestions.map((s, i) => (
                 <div key={i}
                   onMouseDown={() => { set('description', s.description); set('unit_price', s.avg_price); setSuggestions([]) }}
-                  style={{ padding: '7px 12px', cursor: 'pointer', fontSize: 13,
+                  style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 13,
                     borderBottom: '1px solid var(--gray-100)',
                     display: 'flex', justifyContent: 'space-between', gap: 12 }}>
                   <span>{s.description}</span>
                   <span style={{ color: 'var(--gray-400)', fontSize: 12, whiteSpace: 'nowrap' }}>
-                    ${s.avg_price.toFixed(2)} · {s.count}×
+                    avg ${s.avg_price.toFixed(2)}
                   </span>
                 </div>
               ))}
             </div>
           )}
-        </td>
-        <td style={{ textAlign: 'center' }}>
-          <input type="number" min="0" step="0.5" value={form.quantity}
-            onChange={e => set('quantity', parseFloat(e.target.value) || 0)}
-            style={{ fontSize: 13, padding: '4px 8px', width: 60, textAlign: 'center' }} />
-        </td>
-        <td style={{ textAlign: 'right' }}>
-          <input type="number" min="0" step="0.01" value={form.unit_price}
-            onChange={e => set('unit_price', parseFloat(e.target.value) || 0)}
-            style={{ fontSize: 13, padding: '4px 8px', width: 90, textAlign: 'right' }} />
-        </td>
-        <td style={{ textAlign: 'right', fontSize: 13, color: 'var(--blue)', fontWeight: 600 }}>
-          {form.unit_price > 0
-            ? `$${(form.quantity * form.unit_price).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
-            : <span style={{ color: 'var(--gray-400)' }}>STD</span>}
-        </td>
-        <td>
-          <select value={form.pricing_flag} onChange={e => set('pricing_flag', e.target.value)}
-            style={{ fontSize: 12, padding: '3px 6px' }}>
-            <option value="standard">standard</option>
-            <option value="option">option</option>
-          </select>
-        </td>
-        <td style={{ whiteSpace: 'nowrap' }}>
-          <button className="btn-primary btn-sm"
-            onClick={() => save.mutate()} disabled={save.isPending}
-            style={{ fontSize: 12, padding: '3px 10px', marginRight: 4 }}>
-            {save.isPending ? '…' : 'Save'}
-          </button>
-          <button className="btn-secondary btn-sm"
-            onClick={stopEditing}
-            style={{ fontSize: 12, padding: '3px 10px' }}>
-            ✕
-          </button>
-        </td>
-      </tr>
+        </div>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13,
+            color: 'var(--gray-600)', margin: 0 }}>
+            Qty
+            <input type="number" min="0" step="0.5" value={form.quantity}
+              onChange={e => set('quantity', parseFloat(e.target.value) || 0)}
+              style={{ width: 58, fontSize: 13, textAlign: 'center' }} />
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13,
+            color: 'var(--gray-600)', margin: 0 }}>
+            Unit $
+            <input type="number" min="0" step="0.01" value={form.unit_price}
+              onChange={e => set('unit_price', parseFloat(e.target.value) || 0)}
+              style={{ width: 86, fontSize: 13, textAlign: 'right' }} />
+          </label>
+          {form.unit_price > 0 && (
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--blue)', marginLeft: 4 }}>
+              = ${(form.quantity * form.unit_price).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </span>
+          )}
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+            <button className="btn-primary btn-sm" onClick={() => save.mutate()} disabled={save.isPending}>
+              {save.isPending ? '…' : 'Save'}
+            </button>
+            <button className="btn-secondary btn-sm" onClick={() => setEditing(false)}>Cancel</button>
+          </div>
+        </div>
+      </div>
     )
   }
 
   return (
-    <tr key={li.id} onDoubleClick={startEditing}
-      title="Double-click to edit" style={{ cursor: 'default' }}>
-      <td style={{ color: 'var(--gray-400)', fontSize: 11 }}>{li.sort_order}</td>
-      <td>
+    <div
+      onClick={() => setEditing(true)}
+      style={{ display: 'flex', alignItems: 'center', gap: 12,
+        padding: '9px 12px', cursor: 'pointer',
+        borderBottom: '1px solid var(--gray-100)', borderRadius: 4 }}
+      onMouseEnter={e => e.currentTarget.style.background = 'var(--gray-50)'}
+      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+      <span style={{ flex: 1, fontSize: 14, color: 'var(--gray-800)' }}>
         {li.description}
-        {li.part_number && (
-          <span style={{ fontSize: 11, color: 'var(--gray-400)', marginLeft: 6 }}>
-            [{li.part_number}]
+        {li.quantity !== 1 && (
+          <span style={{ fontSize: 12, color: 'var(--gray-400)', marginLeft: 6 }}>
+            ×{li.quantity}
           </span>
         )}
-      </td>
-      <td style={{ textAlign: 'center' }}>{li.quantity}</td>
-      <td style={{ textAlign: 'right' }}>
-        {li.unit_price > 0 ? `$${li.unit_price.toFixed(2)}` : '—'}
-      </td>
-      <td style={{ textAlign: 'right', fontWeight: li.extended_price > 0 ? 600 : 400 }}>
-        {li.extended_price > 0
-          ? `$${li.extended_price.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
-          : <span style={{ color: 'var(--gray-400)' }}>STD</span>}
-      </td>
-      <td style={{ textAlign: 'center' }}>
-        <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 99,
-          background: li.pricing_flag === 'option' ? '#fef3c7' : 'var(--gray-100)',
-          color: li.pricing_flag === 'option' ? '#92400e' : 'var(--gray-600)' }}>
-          {li.pricing_flag}
+      </span>
+      {li.extended_price > 0 && (
+        <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--gray-700)', flexShrink: 0 }}>
+          ${li.extended_price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
         </span>
-      </td>
-      <td style={{ whiteSpace: 'nowrap' }}>
-        <button onClick={startEditing}
-          style={{ background: 'none', color: 'var(--gray-400)',
-            padding: '2px 5px', fontSize: 13, lineHeight: 1, marginRight: 2 }}
-          title="Edit">✎</button>
-        <button
-          onClick={() => { if (window.confirm('Delete this line item?')) onDelete(li.id) }}
-          style={{ background: 'none', color: 'var(--gray-400)',
-            padding: '2px 5px', fontSize: 18, lineHeight: 1 }}
-          title="Delete">×
-        </button>
-      </td>
-    </tr>
+      )}
+      <button
+        onClick={e => { e.stopPropagation(); if (window.confirm('Remove this item?')) onDelete(li.id) }}
+        style={{ background: 'none', border: 'none', color: 'var(--gray-300)',
+          fontSize: 20, cursor: 'pointer', padding: '0 2px', flexShrink: 0, lineHeight: 1 }}>
+        ×
+      </button>
+    </div>
   )
 }
 
-// ── Add line item form ────────────────────────────────────────
-function AddLineItemForm({ planId, systemId, onDone }) {
+// ── Add custom line item form ─────────────────────────────────
+function AddItemForm({ planId, systemId, onDone }) {
   const qc = useQueryClient()
-  const [showPicker, setShowPicker] = useState(false)
   const [suggestions, setSuggestions] = useState([])
-  const [form, setForm] = useState({
-    description: '', quantity: 1, unit_price: 0,
-    pricing_flag: 'standard', draw_stage: '', part_number: '', sort_order: '20',
-  })
+  const [form, setForm] = useState({ description: '', quantity: 1, unit_price: 0 })
 
   useEffect(() => {
     const q = form.description.trim()
     if (q.length < 3) { setSuggestions([]); return }
     const timer = setTimeout(() => {
-      search.lineItemSuggestions(q)
-        .then(setSuggestions)
-        .catch(() => setSuggestions([]))
+      search.lineItemSuggestions(q).then(setSuggestions).catch(() => setSuggestions([]))
     }, 300)
     return () => clearTimeout(timer)
   }, [form.description])
 
   const add = useMutation({
-    mutationFn: (data) => lineItems.add(planId, systemId, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['plan', String(planId)] })
-      onDone()
-    },
-  })
-
-  const linkEquipment = useMutation({
-    mutationFn: (equipSystemId) => systems.update(planId, systemId, { equipment_system_id: equipSystemId }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['plan', String(planId)] }),
+    mutationFn: () => lineItems.add(planId, systemId, {
+      ...form, pricing_flag: 'standard', sort_order: '20',
+    }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['plan', String(planId)] }); onDone() },
   })
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
-  const handleSelectEquipment = (sys) => {
-    setForm(f => ({
-      ...f,
-      description: `${sys.system_code} — ${sys.description}`,
-      unit_price: sys.bid_price,
-      part_number: sys.system_code,
-      quantity: 1,
-    }))
-    linkEquipment.mutate(sys.id)
-    setShowPicker(false)
-  }
-
   return (
-    <>
-      {showPicker && (
-        <EquipmentPicker
-          planId={planId}
-          systemId={systemId}
-          onSelect={handleSelectEquipment}
-          onClose={() => setShowPicker(false)}
-        />
-      )}
-
-      <div style={{ background: 'var(--gray-50)', border: '1px solid var(--gray-200)',
-        borderRadius: 'var(--radius)', padding: 14, marginTop: 10 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between',
-          alignItems: 'center', marginBottom: 10 }}>
-          <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--gray-600)' }}>
-            Add line item
-          </div>
-          <button className="btn-secondary btn-sm" onClick={() => setShowPicker(true)}>
-            Browse equipment catalog
-          </button>
-        </div>
-
-        <div className="form-row" style={{ marginBottom: 10 }}>
-          <div style={{ position: 'relative' }}>
-            <label>Description *</label>
-            <input
-              placeholder="e.g. Rough In Draw, FLOAT SWITCH (Zone 1)"
-              value={form.description}
-              onChange={e => set('description', e.target.value)}
-            />
-            {suggestions.length > 0 && (
-              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
-                background: 'var(--card-bg)', border: '1px solid var(--gray-200)',
-                borderRadius: 6, boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                maxHeight: 200, overflowY: 'auto' }}>
-                {suggestions.map((s, i) => (
-                  <div key={i}
-                    onMouseDown={() => { set('description', s.description); set('unit_price', s.avg_price); setSuggestions([]) }}
-                    style={{ padding: '7px 12px', cursor: 'pointer', fontSize: 13,
-                      borderBottom: '1px solid var(--gray-100)',
-                      display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-                    <span>{s.description}</span>
-                    <span style={{ color: 'var(--gray-400)', fontSize: 12, whiteSpace: 'nowrap' }}>
-                      ${s.avg_price.toFixed(2)} · {s.count}×
-                    </span>
-                  </div>
-                ))}
+    <div style={{ background: 'var(--gray-50)', border: '1px dashed var(--gray-300)',
+      borderRadius: 8, padding: '12px 14px', marginTop: 8 }}>
+      <div style={{ position: 'relative', marginBottom: 10 }}>
+        <input placeholder="Item description…" value={form.description} autoFocus
+          onChange={e => set('description', e.target.value)}
+          onKeyDown={e => { if (e.key === 'Escape') onDone() }}
+          style={{ width: '100%', fontSize: 14 }} />
+        {suggestions.length > 0 && (
+          <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+            background: 'var(--card-bg)', border: '1px solid var(--gray-200)',
+            borderRadius: 6, boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            maxHeight: 180, overflowY: 'auto' }}>
+            {suggestions.map((s, i) => (
+              <div key={i}
+                onMouseDown={() => { set('description', s.description); set('unit_price', s.avg_price); setSuggestions([]) }}
+                style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 13,
+                  borderBottom: '1px solid var(--gray-100)',
+                  display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                <span>{s.description}</span>
+                <span style={{ color: 'var(--gray-400)', fontSize: 12 }}>avg ${s.avg_price.toFixed(2)}</span>
               </div>
-            )}
-          </div>
-        </div>
-
-        <div style={{ display: 'grid',
-          gridTemplateColumns: '80px 80px 120px 150px 160px', gap: 10, marginBottom: 12 }}>
-          <div>
-            <label>Sort #</label>
-            <input value={form.sort_order} onChange={e => set('sort_order', e.target.value)} />
-          </div>
-          <div>
-            <label>Qty</label>
-            <input type="number" min="0" step="0.5" value={form.quantity}
-              onChange={e => set('quantity', parseFloat(e.target.value) || 0)} />
-          </div>
-          <div>
-            <label>Unit price ($)</label>
-            <input type="number" min="0" step="0.01" value={form.unit_price}
-              onChange={e => set('unit_price', parseFloat(e.target.value) || 0)} />
-          </div>
-          <div>
-            <label>Type</label>
-            <select value={form.pricing_flag} onChange={e => set('pricing_flag', e.target.value)}>
-              <option value="standard">Standard</option>
-              <option value="option">Option</option>
-            </select>
-          </div>
-          <div>
-            <label>Draw stage</label>
-            <select value={form.draw_stage} onChange={e => set('draw_stage', e.target.value)}>
-              <option value="">None</option>
-              <option value="rough_in">Rough In</option>
-              <option value="indoor">Indoor</option>
-              <option value="outdoor">Outdoor</option>
-              <option value="final">Final</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Live extended price preview */}
-        {form.unit_price > 0 && (
-          <div style={{ fontSize: 13, color: 'var(--blue)', fontWeight: 600,
-            marginBottom: 10 }}>
-            Extended: ${(form.quantity * form.unit_price).toLocaleString('en-US',
-              { minimumFractionDigits: 2 })}
+            ))}
           </div>
         )}
-
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn-primary btn-sm"
-            disabled={!form.description || add.isPending}
-            onClick={() => add.mutate(form)}>
-            {add.isPending ? 'Adding...' : 'Add'}
+      </div>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13,
+          color: 'var(--gray-600)', margin: 0 }}>
+          Qty
+          <input type="number" min="0" step="0.5" value={form.quantity}
+            onChange={e => set('quantity', parseFloat(e.target.value) || 0)}
+            style={{ width: 58, fontSize: 13, textAlign: 'center' }} />
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13,
+          color: 'var(--gray-600)', margin: 0 }}>
+          Unit $
+          <input type="number" min="0" step="0.01" value={form.unit_price}
+            onChange={e => set('unit_price', parseFloat(e.target.value) || 0)}
+            style={{ width: 86, fontSize: 13, textAlign: 'right' }} />
+        </label>
+        {form.unit_price > 0 && (
+          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--blue)' }}>
+            = ${(form.quantity * form.unit_price).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          </span>
+        )}
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+          <button className="btn-primary btn-sm" disabled={!form.description || add.isPending}
+            onClick={() => add.mutate()}>
+            {add.isPending ? '…' : 'Add'}
           </button>
           <button className="btn-secondary btn-sm" onClick={onDone}>Cancel</button>
         </div>
       </div>
-    </>
+    </div>
   )
 }
 
@@ -703,7 +599,7 @@ const LABOR_RATE   = 86
 const SERVICE_RATE = 32
 const PERMIT_COST  = 170
 
-// ── Bid summary panel (per system) ────────────────────────────
+// ── Bid receipt (per zone) ─────────────────────────────────────
 function BidSummary({ planId, system, factor }) {
   const qc = useQueryClient()
   const [fields, setFields] = useState({
@@ -712,14 +608,18 @@ function BidSummary({ planId, system, factor }) {
     permit_yn:     system.permit_yn,
     sales_tax_pct: system.sales_tax_pct,
   })
-  const [dirty, setDirty] = useState(false)
 
   const save = useMutation({
     mutationFn: (data) => systems.update(planId, system.id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['plan', String(planId)] }); setDirty(false) },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plan', String(planId)] }),
   })
 
-  const set = (k, v) => { setFields(f => ({ ...f, [k]: v })); setDirty(true) }
+  // Auto-save on blur of any field
+  const commit = (patch) => {
+    const updated = { ...fields, ...patch }
+    setFields(updated)
+    save.mutate(updated)
+  }
 
   const matCost    = system.line_items.reduce((s, li) => s + li.extended_price, 0)
   const matSelling = factor > 0 ? matCost / factor : 0
@@ -730,88 +630,124 @@ function BidSummary({ planId, system, factor }) {
   const taxAmt     = matCost * fields.sales_tax_pct
   const finalBid   = matSelling + equipSell + laborAmt + serviceAmt + permitAmt + taxAmt
 
-  const fmt = (n) => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const fmt  = (n) => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const fmtP = (n) => '+' + fmt(n)
+
+  const inputStyle = {
+    width: 58, fontSize: 14, textAlign: 'center', padding: '2px 6px',
+    background: 'white', border: '1px solid var(--gray-300)',
+    borderRadius: 6, fontWeight: 600,
+  }
+  const rowStyle = {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    padding: '7px 0', borderBottom: '1px solid var(--gray-100)',
+  }
+  const labelStyle = { display: 'flex', alignItems: 'center', gap: 8,
+    fontSize: 15, color: 'var(--gray-700)' }
+  const amtStyle  = { fontSize: 15, color: 'var(--gray-800)', fontWeight: 500 }
+  const hintStyle = { fontSize: 12, color: 'var(--gray-400)' }
 
   return (
-    <div style={{ marginTop: 14, padding: '12px 16px', background: 'var(--blue-light)',
-      border: '1px solid var(--blue-mid)', borderRadius: 'var(--radius)' }}>
-      <div style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase',
-        letterSpacing: '0.06em', color: 'var(--blue)', marginBottom: 10 }}>Bid Summary</div>
+    <div style={{ marginTop: 20, borderTop: '2px solid var(--gray-200)', paddingTop: 16 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+        letterSpacing: '0.08em', color: 'var(--gray-400)', marginBottom: 10 }}>
+        Zone Bid Breakdown
+      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto',
-        rowGap: 6, columnGap: 24, fontSize: 13, alignItems: 'center' }}>
-
-        <span style={{ color: 'var(--gray-600)' }}>Materials (cost)</span>
-        <span style={{ textAlign: 'right' }}>{fmt(matCost)}</span>
-
-        <span style={{ color: 'var(--gray-600)' }}>÷ Factor ({factor.toFixed(2)}) → selling</span>
-        <span style={{ textAlign: 'right', fontWeight: 600, color: 'var(--blue)' }}>{fmt(matSelling)}</span>
-
-        {equipSell > 0 && <>
-          <span style={{ color: 'var(--gray-600)' }}>Equipment (bid price)</span>
-          <span style={{ textAlign: 'right' }}>+{fmt(equipSell)}</span>
-        </>}
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ color: 'var(--gray-600)' }}>Labor</span>
-          <input type="number" min="0" step="0.5" value={fields.labor_hrs}
-            onChange={e => set('labor_hrs', parseFloat(e.target.value) || 0)}
-            style={{ width: 54, fontSize: 12, padding: '2px 6px', textAlign: 'center' }} />
-          <span style={{ fontSize: 12, color: 'var(--gray-400)' }}>hrs × ${LABOR_RATE}</span>
+      {/* Materials */}
+      {matCost > 0 && (
+        <div style={rowStyle}>
+          <div style={labelStyle}>
+            Kit items &amp; materials
+            <span style={hintStyle}>÷ {factor.toFixed(2)} factor</span>
+          </div>
+          <span style={amtStyle}>{fmt(matSelling)}</span>
         </div>
-        <span style={{ textAlign: 'right' }}>+{fmt(laborAmt)}</span>
+      )}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ color: 'var(--gray-600)' }}>Service</span>
-          <input type="number" min="0" step="1" value={fields.service_qty}
-            onChange={e => set('service_qty', parseInt(e.target.value) || 0)}
-            style={{ width: 54, fontSize: 12, padding: '2px 6px', textAlign: 'center' }} />
-          <span style={{ fontSize: 12, color: 'var(--gray-400)' }}>calls × ${SERVICE_RATE}</span>
+      {/* Equipment */}
+      {equipSell > 0 && (
+        <div style={rowStyle}>
+          <span style={labelStyle}>Equipment</span>
+          <span style={amtStyle}>{fmtP(equipSell)}</span>
         </div>
-        <span style={{ textAlign: 'right' }}>+{fmt(serviceAmt)}</span>
+      )}
 
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6,
-          cursor: 'pointer', margin: 0, color: 'var(--gray-600)' }}>
-          <input type="checkbox" checked={fields.permit_yn}
-            onChange={e => set('permit_yn', e.target.checked)}
-            style={{ width: 'auto', margin: 0 }} />
-          Permit (${PERMIT_COST})
+      {/* Labor */}
+      <div style={rowStyle}>
+        <label style={{ ...labelStyle, cursor: 'default', margin: 0 }}>
+          Labor
+          <input
+            type="number" min="0" step="0.5"
+            value={fields.labor_hrs}
+            onChange={e => setFields(f => ({ ...f, labor_hrs: parseFloat(e.target.value) || 0 }))}
+            onBlur={e => commit({ labor_hrs: parseFloat(e.target.value) || 0 })}
+            style={inputStyle}
+          />
+          <span style={hintStyle}>hrs × ${LABOR_RATE}/hr</span>
         </label>
-        <span style={{ textAlign: 'right' }}>+{fmt(permitAmt)}</span>
+        <span style={amtStyle}>{fmtP(laborAmt)}</span>
+      </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ color: 'var(--gray-600)' }}>Sales tax</span>
-          <input type="number" min="0" max="20" step="0.1"
-            value={(fields.sales_tax_pct * 100).toFixed(1)}
-            onChange={e => set('sales_tax_pct', (parseFloat(e.target.value) || 0) / 100)}
-            style={{ width: 54, fontSize: 12, padding: '2px 6px', textAlign: 'center' }} />
-          <span style={{ fontSize: 12, color: 'var(--gray-400)' }}>% on materials</span>
-        </div>
-        <span style={{ textAlign: 'right' }}>+{fmt(taxAmt)}</span>
+      {/* Service */}
+      <div style={rowStyle}>
+        <label style={{ ...labelStyle, cursor: 'default', margin: 0 }}>
+          Service calls
+          <input
+            type="number" min="0" step="1"
+            value={fields.service_qty}
+            onChange={e => setFields(f => ({ ...f, service_qty: parseInt(e.target.value) || 0 }))}
+            onBlur={e => commit({ service_qty: parseInt(e.target.value) || 0 })}
+            style={inputStyle}
+          />
+          <span style={hintStyle}>× ${SERVICE_RATE} each</span>
+        </label>
+        <span style={amtStyle}>{fmtP(serviceAmt)}</span>
+      </div>
 
-        <div style={{ gridColumn: '1 / -1', height: 1, background: 'var(--blue-mid)', margin: '4px 0' }} />
-
-        <span style={{ fontWeight: 700 }}>Final Bid</span>
-        <span style={{ textAlign: 'right', fontWeight: 700, fontSize: 16, color: 'var(--blue)' }}>
-          {fmt(finalBid)}
+      {/* Permit */}
+      <div style={rowStyle}>
+        <label style={{ ...labelStyle, cursor: 'pointer', margin: 0 }}>
+          <input
+            type="checkbox" checked={fields.permit_yn}
+            onChange={e => commit({ permit_yn: e.target.checked })}
+            style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--blue)' }}
+          />
+          Permit required
+          <span style={hintStyle}>${PERMIT_COST} flat</span>
+        </label>
+        <span style={{ ...amtStyle, color: fields.permit_yn ? 'var(--gray-800)' : 'var(--gray-300)' }}>
+          {fmtP(permitAmt)}
         </span>
       </div>
 
-      {dirty && (
-        <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
-          <button className="btn-primary btn-sm" disabled={save.isPending}
-            onClick={() => save.mutate(fields)}>
-            {save.isPending ? 'Saving…' : 'Save'}
-          </button>
-          <button className="btn-secondary btn-sm" onClick={() => {
-            setFields({
-              labor_hrs: system.labor_hrs, service_qty: system.service_qty,
-              permit_yn: system.permit_yn, sales_tax_pct: system.sales_tax_pct,
-            })
-            setDirty(false)
-          }}>Cancel</button>
-        </div>
-      )}
+      {/* Sales tax */}
+      <div style={{ ...rowStyle, borderBottom: 'none' }}>
+        <label style={{ ...labelStyle, cursor: 'default', margin: 0 }}>
+          Sales tax
+          <input
+            type="number" min="0" max="20" step="0.5"
+            value={parseFloat((fields.sales_tax_pct * 100).toFixed(1))}
+            onChange={e => setFields(f => ({ ...f, sales_tax_pct: (parseFloat(e.target.value) || 0) / 100 }))}
+            onBlur={e => commit({ sales_tax_pct: (parseFloat(e.target.value) || 0) / 100 })}
+            style={inputStyle}
+          />
+          <span style={hintStyle}>% on materials</span>
+        </label>
+        <span style={amtStyle}>{fmtP(taxAmt)}</span>
+      </div>
+
+      {/* Final bid */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        marginTop: 14, paddingTop: 14, borderTop: '3px solid var(--gray-800)' }}>
+        <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--gray-900)',
+          textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+          Zone Bid
+        </span>
+        <span style={{ fontSize: 26, fontWeight: 800, color: 'var(--blue)' }}>
+          {fmt(finalBid)}
+        </span>
+      </div>
     </div>
   )
 }
@@ -830,20 +766,7 @@ export default function PlanDetail() {
   const [pickingEquipmentFor, setPickingEquipmentFor] = useState(null) // systemId
   const [editingFactor, setEditingFactor] = useState(false)
   const [factorInput, setFactorInput] = useState('')
-  const [dirtyRows, setDirtyRows] = useState(0)
   const [copied, setCopied] = useState(false)
-
-  const onRowEditingChange = useCallback((active) => {
-    setDirtyRows(n => Math.max(0, n + (active ? 1 : -1)))
-  }, [])
-
-  // Block browser refresh / tab close
-  useEffect(() => {
-    if (dirtyRows === 0) return
-    const handler = (e) => { e.preventDefault(); e.returnValue = '' }
-    window.addEventListener('beforeunload', handler)
-    return () => window.removeEventListener('beforeunload', handler)
-  }, [dirtyRows])
 
   const { data: plan, isLoading } = useQuery({
     queryKey: ['plan', id],
@@ -1141,68 +1064,66 @@ export default function PlanDetail() {
       </div>
 
       {/* Meta cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 16, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 24 }}>
         <div className="card">
           <div style={{ fontSize: 12, color: 'var(--gray-400)', marginBottom: 4 }}>Builder</div>
-          <div style={{ fontWeight: 600 }}>{plan.project.builder.name}</div>
-          <div style={{ fontSize: 13, color: 'var(--gray-600)' }}>
+          <div style={{ fontWeight: 600, fontSize: 15 }}>{plan.project.builder.name}</div>
+          <div style={{ fontSize: 13, color: 'var(--gray-500)', marginTop: 2 }}>
             {plan.project.builder.contact_name}
           </div>
         </div>
         <div className="card">
           <div style={{ fontSize: 12, color: 'var(--gray-400)', marginBottom: 4 }}>Project</div>
-          <div style={{ fontWeight: 600 }}>{plan.project.name}</div>
-          <div style={{ fontSize: 13, color: 'var(--gray-600)' }}>{plan.project.code}</div>
+          <div style={{ fontWeight: 600, fontSize: 15 }}>{plan.project.name}</div>
+          <div style={{ fontSize: 13, color: 'var(--gray-500)', marginTop: 2 }}>{plan.project.code}</div>
         </div>
         <div className="card">
-          <div style={{ fontSize: 12, color: 'var(--gray-400)', marginBottom: 4 }}>Status</div>
-          <span className={`badge badge-${plan.status}`} style={{ fontSize: 13 }}>
+          <div style={{ fontSize: 12, color: 'var(--gray-400)', marginBottom: 6 }}>Status</div>
+          <span className={`badge badge-${plan.status}`} style={{ fontSize: 14 }}>
             {plan.status}
           </span>
-          {plan.contracted_at && (
-            <div style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 4 }}>
-              {new Date(plan.contracted_at).toLocaleDateString()}
-            </div>
-          )}
-        </div>
-        <div className="card">
-          <div style={{ fontSize: 12, color: 'var(--gray-400)', marginBottom: 4 }}>Factor</div>
-          {editingFactor ? (
-            <input
-              type="number" min="0.01" max="1" step="0.01"
-              value={factorInput}
-              autoFocus
-              onChange={e => setFactorInput(e.target.value)}
-              onBlur={() => {
-                const f = parseFloat(factorInput)
-                if (f > 0 && f <= 1) updateFactor.mutate(f)
-                setEditingFactor(false)
-              }}
-              onKeyDown={e => {
-                if (e.key === 'Enter') e.currentTarget.blur()
-                if (e.key === 'Escape') setEditingFactor(false)
-              }}
-              style={{ fontWeight: 700, fontSize: 20, width: 80, padding: '2px 6px' }}
-            />
-          ) : (
-            <div
-              onClick={() => { setFactorInput(String(plan.factor)); setEditingFactor(true) }}
-              style={{ fontWeight: 700, fontSize: 20, color: 'var(--blue)', cursor: 'pointer',
-                display: 'flex', alignItems: 'baseline', gap: 6 }}
-              title="Click to edit factor">
-              {plan.factor.toFixed(2)}
-              <span style={{ fontSize: 11, color: 'var(--gray-400)', fontWeight: 400 }}>✎</span>
-            </div>
-          )}
-          <div style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 2 }}>
-            {plan.factor > 0 ? `${((1 - plan.factor) * 100).toFixed(0)}% margin` : ''}
+          <div style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 6 }}>
+            {plan.estimator_name && `By ${plan.estimator_name}`}
+            {plan.contracted_at && ` · ${new Date(plan.contracted_at).toLocaleDateString()}`}
           </div>
         </div>
-        <div className="card">
-          <div style={{ fontSize: 12, color: 'var(--gray-400)', marginBottom: 4 }}>Total Bid</div>
-          <div style={{ fontWeight: 700, fontSize: 20, color: 'var(--blue)' }}>
+        <div className="card" style={{ background: 'var(--blue-light)', border: '1px solid var(--blue-mid)', position: 'relative' }}>
+          <div style={{ fontSize: 12, color: 'var(--blue)', marginBottom: 4, fontWeight: 600 }}>Total Bid</div>
+          <div style={{ fontWeight: 800, fontSize: 28, color: 'var(--blue)', lineHeight: 1 }}>
             ${totalBid.toLocaleString('en-US', { minimumFractionDigits: 2 })}
           </div>
+          <div style={{ fontSize: 12, color: 'var(--blue)', opacity: 0.7, marginTop: 6 }}>
+            Factor {plan.factor.toFixed(2)} · {((1 - plan.factor) * 100).toFixed(0)}% margin
+            <button
+              onClick={() => { setFactorInput(String(plan.factor)); setEditingFactor(true) }}
+              style={{ marginLeft: 6, background: 'none', border: 'none', color: 'var(--blue)',
+                cursor: 'pointer', fontSize: 12, padding: 0, opacity: 0.7 }}
+              title="Edit factor">✎</button>
+          </div>
+          {editingFactor && (
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+              background: 'var(--blue-light)', borderRadius: 'var(--radius)',
+              display: 'flex', flexDirection: 'column', justifyContent: 'center',
+              alignItems: 'center', gap: 8, padding: 16, border: '2px solid var(--blue)' }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--blue)' }}>Edit Factor</div>
+              <input
+                type="number" min="0.01" max="1" step="0.01"
+                value={factorInput} autoFocus
+                onChange={e => setFactorInput(e.target.value)}
+                onBlur={() => {
+                  const f = parseFloat(factorInput)
+                  if (f > 0 && f <= 1) updateFactor.mutate(f)
+                  setEditingFactor(false)
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') e.currentTarget.blur()
+                  if (e.key === 'Escape') setEditingFactor(false)
+                }}
+                style={{ fontWeight: 700, fontSize: 24, width: 90, textAlign: 'center', padding: '4px 8px' }}
+              />
+              <div style={{ fontSize: 11, color: 'var(--gray-500)' }}>Enter to save · Esc to cancel</div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1304,109 +1225,122 @@ export default function PlanDetail() {
             </div>
           </div>
 
-          {ht.systems.map((sys, sysIdx) => (
+          {ht.systems.map((sys) => (
             <div key={sys.id} style={{
-              marginBottom: 28, paddingBottom: 28,
-              borderBottom: sysIdx < ht.systems.length - 1 ? '1px solid var(--gray-100)' : 'none',
+              border: '1px solid var(--gray-200)', borderRadius: 10,
+              overflow: 'hidden', marginBottom: 16,
             }}>
-              {/* Zone header */}
-              <ZoneHeader
-                sys={sys}
-                planId={parseInt(id)}
-                isOnly={ht.systems.length === 1}
-                onLabelSave={(label) => updateZoneLabel.mutate({ systemId: sys.id, zone_label: label })}
-                onDelete={() => {
-                  if (window.confirm(`Delete Zone ${sys.system_number}${sys.zone_label ? ` — ${sys.zone_label}` : ''}?\n\nAll line items in this zone will be lost.`))
-                    deleteZone.mutate(sys.id)
-                }}
-              />
-
-              {/* Equipment row */}
+              {/* Zone header strip */}
               <div style={{
-                display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14,
-                padding: '10px 14px',
-                background: sys.equipment_system ? 'var(--blue-light)' : 'var(--gray-50)',
-                border: `1px solid ${sys.equipment_system ? 'var(--blue-mid)' : 'var(--gray-200)'}`,
-                borderRadius: 'var(--radius)',
+                background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-200)',
+                padding: '10px 16px',
               }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  {sys.equipment_system ? (
-                    <>
-                      <div style={{ fontSize: 10, color: 'var(--blue)', fontWeight: 700,
-                        textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>
-                        Equipment
-                      </div>
-                      <div style={{ fontWeight: 700, fontFamily: 'monospace', fontSize: 14,
-                        color: 'var(--gray-900)', letterSpacing: '0.02em' }}>
-                        {sys.equipment_system.system_code}
-                      </div>
-                      <div style={{ fontSize: 12, color: 'var(--gray-600)', marginTop: 1,
-                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {sys.equipment_system.description}
-                      </div>
-                    </>
-                  ) : (
-                    <div style={{ fontSize: 13, color: 'var(--gray-400)', fontStyle: 'italic' }}>
-                      No equipment selected — pick a system to start the bid
-                    </div>
-                  )}
-                </div>
-                {sys.equipment_system && (
-                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <div style={{ fontSize: 11, color: 'var(--gray-400)' }}>Bid price</div>
-                    <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--blue)' }}>
-                      ${sys.equipment_system.bid_price.toLocaleString('en-US',
-                        { minimumFractionDigits: 2 })}
-                    </div>
-                  </div>
-                )}
-                <button
-                  onClick={() => setPickingEquipmentFor(sys.id)}
-                  style={{
-                    flexShrink: 0,
-                    background: sys.equipment_system ? 'white' : 'var(--blue)',
-                    color: sys.equipment_system ? 'var(--gray-700)' : 'white',
-                    border: `1px solid ${sys.equipment_system ? 'var(--gray-200)' : 'var(--blue)'}`,
-                    borderRadius: 'var(--radius)', padding: '6px 16px',
-                    fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                  }}>
-                  {sys.equipment_system ? 'Change' : 'Select Equipment'}
-                </button>
+                <ZoneHeader
+                  sys={sys}
+                  isOnly={ht.systems.length === 1}
+                  onLabelSave={(label) => updateZoneLabel.mutate({ systemId: sys.id, zone_label: label })}
+                  onDelete={() => {
+                    if (window.confirm(`Delete Zone ${sys.system_number}${sys.zone_label ? ` — ${sys.zone_label}` : ''}?\n\nAll line items in this zone will be lost.`))
+                      deleteZone.mutate(sys.id)
+                  }}
+                />
               </div>
 
-              {/* Line items table */}
-              {sys.line_items.length > 0 && (
-                <table className="table" style={{ fontSize: 13, marginBottom: 8 }}>
-                  <thead>
-                    <tr>
-                      <th style={{ width: 40 }}>#</th>
-                      <th>Description</th>
-                      <th style={{ textAlign: 'center', width: 55 }}>Qty</th>
-                      <th style={{ textAlign: 'right', width: 100 }}>Unit</th>
-                      <th style={{ textAlign: 'right', width: 120 }}>Extended</th>
-                      <th style={{ textAlign: 'center', width: 80 }}>Type</th>
-                      <th style={{ width: 60 }}></th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              {/* Zone body */}
+              <div style={{ padding: 16 }}>
+
+                {/* 1. Equipment */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16,
+                  padding: '12px 14px',
+                  background: sys.equipment_system ? 'var(--blue-light)' : 'white',
+                  border: `2px solid ${sys.equipment_system ? 'var(--blue-mid)' : 'var(--gray-200)'}`,
+                  borderRadius: 8,
+                }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {sys.equipment_system ? (
+                      <>
+                        <div style={{ fontSize: 11, color: 'var(--blue)', fontWeight: 700,
+                          textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>
+                          Equipment
+                        </div>
+                        <div style={{ fontWeight: 700, fontFamily: 'monospace', fontSize: 15,
+                          color: 'var(--gray-900)' }}>
+                          {sys.equipment_system.system_code}
+                        </div>
+                        <div style={{ fontSize: 13, color: 'var(--gray-600)', marginTop: 2,
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {sys.equipment_system.description}
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ fontSize: 15, color: 'var(--gray-400)' }}>
+                        No equipment selected yet
+                      </div>
+                    )}
+                  </div>
+                  {sys.equipment_system && (
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontSize: 11, color: 'var(--gray-400)' }}>Bid price</div>
+                      <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--blue)' }}>
+                        ${sys.equipment_system.bid_price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => setPickingEquipmentFor(sys.id)}
+                    style={{
+                      flexShrink: 0,
+                      background: sys.equipment_system ? 'white' : 'var(--blue)',
+                      color: sys.equipment_system ? 'var(--gray-700)' : 'white',
+                      border: `1px solid ${sys.equipment_system ? 'var(--gray-300)' : 'var(--blue)'}`,
+                      borderRadius: 8, padding: '8px 20px',
+                      fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                    }}>
+                    {sys.equipment_system ? 'Change' : 'Select Equipment'}
+                  </button>
+                </div>
+
+                {/* 2. Kit pricing chips */}
+                <InlineKitSelector planId={parseInt(id)} systemId={sys.id} />
+
+                {/* 3. Items added */}
+                {sys.line_items.length > 0 && (
+                  <div style={{ marginTop: 16 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+                      letterSpacing: '0.08em', color: 'var(--gray-400)', marginBottom: 6 }}>
+                      Items Added
+                    </div>
                     {sys.line_items.map(li => (
-                      <EditableLineItemRow
+                      <LineItemRow
                         key={li.id}
                         planId={parseInt(id)}
                         li={li}
                         onDelete={(liId) => deleteLineItem.mutate(liId)}
-                        onEditingChange={onRowEditingChange}
                       />
                     ))}
-                  </tbody>
-                </table>
-              )}
+                  </div>
+                )}
 
-              {/* Inline kit category selector */}
-              <InlineKitSelector planId={parseInt(id)} systemId={sys.id} />
+                {/* Custom item button / form */}
+                {addingLineItemTo === sys.id ? (
+                  <AddItemForm
+                    planId={parseInt(id)}
+                    systemId={sys.id}
+                    onDone={() => setAddingLineItemTo(null)}
+                  />
+                ) : (
+                  <button
+                    className="btn-secondary btn-sm"
+                    style={{ marginTop: 10 }}
+                    onClick={() => setAddingLineItemTo(sys.id)}>
+                    + Custom item
+                  </button>
+                )}
 
-              {/* Bid summary */}
-              <BidSummary planId={parseInt(id)} system={sys} factor={plan.factor} />
+                {/* 4. Bid receipt */}
+                <BidSummary planId={parseInt(id)} system={sys} factor={plan.factor} />
+              </div>
 
               {/* Equipment picker modal */}
               {pickingEquipmentFor === sys.id && (
@@ -1419,22 +1353,6 @@ export default function PlanDetail() {
                   }}
                   onClose={() => setPickingEquipmentFor(null)}
                 />
-              )}
-
-              {/* Custom line item escape hatch */}
-              {addingLineItemTo === sys.id ? (
-                <AddLineItemForm
-                  planId={parseInt(id)}
-                  systemId={sys.id}
-                  onDone={() => setAddingLineItemTo(null)}
-                />
-              ) : (
-                <div style={{ marginTop: 8 }}>
-                  <button className="btn-secondary btn-sm"
-                    onClick={() => setAddingLineItemTo(sys.id)}>
-                    + Custom line item
-                  </button>
-                </div>
               )}
             </div>
           ))}
