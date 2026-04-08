@@ -202,6 +202,86 @@ def _seed_kit_variants():
 
 _seed_kit_variants()
 
+
+def _fix_kit_variants():
+    """
+    Idempotent corrections to the 2019 kit variant data.
+    Safe to run on every startup — UPDATEs are no-ops when already correct,
+    INSERTs use WHERE NOT EXISTS to skip duplicates.
+    """
+    fixes = [
+        # ── Category C: correct labels, add missing exhaust variants ─────────
+        # What was labeled KITCH-EXH is actually the Dryer (wall cap, 1st floor)
+        "UPDATE kit_variants SET variant_code='DRYER-WALL', variant_name='Dryer Vent to Wall Cap (1st Floor)', sort_order=30 WHERE variant_code='KITCH-EXH'",
+        "UPDATE kit_variants SET variant_code='DRYER-ROOF', variant_name='Dryer Vent thru Roof (2nd Floor)', sort_order=40 WHERE variant_code='DRYER-VENT'",
+        # Missing range/kitchen exhaust variants
+        """INSERT INTO kit_variants (category_code,category_name,variant_code,variant_name,per_kit,per_foot,sort_order,active)
+           SELECT 'C','Exhaust Runs','RANGE-ROOF','Range Exhaust thru Roof 6\"',87.41,0,50,TRUE
+           WHERE NOT EXISTS (SELECT 1 FROM kit_variants WHERE variant_code='RANGE-ROOF')""",
+        """INSERT INTO kit_variants (category_code,category_name,variant_code,variant_name,per_kit,per_foot,sort_order,active)
+           SELECT 'C','Exhaust Runs','RANGE-WALL','Range Exhaust to Wall Cap 6\"',56.14,0,60,TRUE
+           WHERE NOT EXISTS (SELECT 1 FROM kit_variants WHERE variant_code='RANGE-WALL')""",
+        """INSERT INTO kit_variants (category_code,category_name,variant_code,variant_name,per_kit,per_foot,sort_order,active)
+           SELECT 'C','Exhaust Runs','RANGE-DOWN','Range Exhaust Downdraft 6\"',102.90,0,70,TRUE
+           WHERE NOT EXISTS (SELECT 1 FROM kit_variants WHERE variant_code='RANGE-DOWN')""",
+        """INSERT INTO kit_variants (category_code,category_name,variant_code,variant_name,per_kit,per_foot,sort_order,active)
+           SELECT 'C','Exhaust Runs','RANGE-TELE','Range Exhaust Telescopic Downdraft 6\"',136.06,0,80,TRUE
+           WHERE NOT EXISTS (SELECT 1 FROM kit_variants WHERE variant_code='RANGE-TELE')""",
+        """INSERT INTO kit_variants (category_code,category_name,variant_code,variant_name,per_kit,per_foot,sort_order,active)
+           SELECT 'C','Exhaust Runs','RANGE-DLUX','Range Exhaust Deluxe Updraft 10\"',248.73,0,90,TRUE
+           WHERE NOT EXISTS (SELECT 1 FROM kit_variants WHERE variant_code='RANGE-DLUX')""",
+
+        # ── Category D: Class B Flues are priced PER FOOT, not per kit ───────
+        "UPDATE kit_variants SET per_kit=0, per_foot=9.83  WHERE variant_code='4\" B-VENT'",
+        "UPDATE kit_variants SET per_kit=0, per_foot=11.78 WHERE variant_code='5\" B-VENT'",
+        "UPDATE kit_variants SET per_kit=0, per_foot=19.54 WHERE variant_code='6\" B-VENT'",
+
+        # ── Category N: correct air cleaner prices and model names ───────────
+        "UPDATE kit_variants SET per_kit=161.10, variant_name='Honeywell HF100F2002 16x25 Media'      WHERE variant_code='AC-1'",
+        "UPDATE kit_variants SET per_kit=161.10, variant_name='Honeywell HF100F2010 20x25 Media'      WHERE variant_code='AC-2'",
+        "UPDATE kit_variants SET per_kit=956.36, variant_name='Trion HE1400 16x25 Electronic'         WHERE variant_code='AC-3'",
+        "UPDATE kit_variants SET per_kit=979.68, variant_name='Trion HE2000 20x25 Electronic'         WHERE variant_code='AC-4'",
+        "UPDATE kit_variants SET per_kit=1027.55, variant_name='Honeywell HF300E1019 16x25 Electronic' WHERE variant_code='AC-5'",
+        "UPDATE kit_variants SET per_kit=1122.96, variant_name='Honeywell HF300E1035 20x25 HEPA'      WHERE variant_code='AC-6'",
+
+        # ── Category P: Duct Sealing — correct total cost ────────────────────
+        "UPDATE kit_variants SET per_kit=125.65 WHERE variant_code='MASTIC-PKG'",
+
+        # ── Category Q: Laundry Chutes — correct 1-story, add 2-story ────────
+        "UPDATE kit_variants SET per_kit=319.03, variant_name='Laundry Chute \u2014 One Story', sort_order=10 WHERE variant_code='LAUNDRY'",
+        """INSERT INTO kit_variants (category_code,category_name,variant_code,variant_name,per_kit,per_foot,sort_order,active)
+           SELECT 'Q','Laundry Chutes','LAUNDRY-2ST','Laundry Chute \u2014 Two Story',417.57,0,20,TRUE
+           WHERE NOT EXISTS (SELECT 1 FROM kit_variants WHERE variant_code='LAUNDRY-2ST')""",
+
+        # ── Category R: Fresh-Air — replace placeholder with 5 actual systems ─
+        "UPDATE kit_variants SET active=FALSE WHERE variant_code='FRESH-AIR'",
+        """INSERT INTO kit_variants (category_code,category_name,variant_code,variant_name,per_kit,per_foot,sort_order,active)
+           SELECT 'R','Fresh-Air','FAS-1','Aprilaire 8126X to Air Handler',278.53,0,10,TRUE
+           WHERE NOT EXISTS (SELECT 1 FROM kit_variants WHERE variant_code='FAS-1')""",
+        """INSERT INTO kit_variants (category_code,category_name,variant_code,variant_name,per_kit,per_foot,sort_order,active)
+           SELECT 'R','Fresh-Air','FAS-2','Broan MD6TU to 14x14 Filter Grill',300.00,0,20,TRUE
+           WHERE NOT EXISTS (SELECT 1 FROM kit_variants WHERE variant_code='FAS-2')""",
+        """INSERT INTO kit_variants (category_code,category_name,variant_code,variant_name,per_kit,per_foot,sort_order,active)
+           SELECT 'R','Fresh-Air','FAS-3','Broan MD8TU to 14x14 Filter Grill',332.12,0,30,TRUE
+           WHERE NOT EXISTS (SELECT 1 FROM kit_variants WHERE variant_code='FAS-3')""",
+        """INSERT INTO kit_variants (category_code,category_name,variant_code,variant_name,per_kit,per_foot,sort_order,active)
+           SELECT 'R','Fresh-Air','FAS-4','Broan MD10TU to 14x14 Filter Grill',392.34,0,40,TRUE
+           WHERE NOT EXISTS (SELECT 1 FROM kit_variants WHERE variant_code='FAS-4')""",
+        """INSERT INTO kit_variants (category_code,category_name,variant_code,variant_name,per_kit,per_foot,sort_order,active)
+           SELECT 'R','Fresh-Air','FAS-5','Honeywell Y8150 to Air Handler',228.70,0,50,TRUE
+           WHERE NOT EXISTS (SELECT 1 FROM kit_variants WHERE variant_code='FAS-5')""",
+
+        # ── Category S: Transfer Grill — correct total cost ──────────────────
+        "UPDATE kit_variants SET per_kit=28.17 WHERE variant_code='XFER-GRILL'",
+    ]
+    with engine.connect() as conn:
+        for sql in fixes:
+            conn.execute(__import__("sqlalchemy").text(sql))
+        conn.commit()
+
+_fix_kit_variants()
+
+
 app = FastAPI(
     title="HVAC Bid System — POC",
     version="0.1.0",

@@ -14,21 +14,6 @@ from models.models import Plan, Project, Builder, HouseType, System, LineItem, D
 
 router = APIRouter()
 
-STANDARD_LINE_ITEMS = [
-    ("01", "Emergency pan under indoor equipment",       1, 35),
-    ("02", "Canvas connector supply/return",             1, 45),
-    ("03", "Fire stopping — band board penetrations",    1,  0),
-    ("04", "Refrigerant lines through band board",       1,  0),
-    ("05", "Bath fans run to exterior (50 CFM)",         1,  0),
-    ("06", "Float switch",                               1, 35),
-    ("07", "Service valve locking caps",                 1, 15),
-    ("08", "Condensate drain line — PVC",                1,  0),
-    ("09", "Mastic duct sealing package",                1, 70),
-    ("10", "Sheet metal — supply plenum",                1,  0),
-    ("11", "Sheet metal — return plenum",                1,  0),
-    ("12", "Flex duct",                                  1,  0),
-    ("13", "Flex duct connectors / clamps",              1,  0),
-]
 
 
 # ── Pydantic schemas ──────────────────────────────────────────
@@ -918,15 +903,6 @@ def add_house_type(plan_id: int, data: HouseTypeCreate, db: Session = Depends(ge
                       zone_label=f"Zone {i}")
         db.add(zone)
         db.flush()
-        if i == 1:
-            for sort_order, description, qty, unit_price in STANDARD_LINE_ITEMS:
-                db.add(LineItem(
-                    system_id=zone.id,
-                    sort_order=sort_order,
-                    description=description,
-                    quantity=qty,
-                    unit_price=unit_price,
-                ))
     db.commit()
     log_event(db, plan_id, "house_type_added", f"House type '{data.name}' added to {plan.plan_number}")
     db.commit()
