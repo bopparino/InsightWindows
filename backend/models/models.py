@@ -181,13 +181,32 @@ class EventLog(Base):
 class KitItem(Base):
     __tablename__ = "kit_items"
     id            = Column(Integer, primary_key=True)
-    category      = Column(String(50), nullable=False)   # sheet_metal, flex_line, etc.
+    category      = Column(String(50), nullable=False)
     description   = Column(String(200), nullable=False)
     base_price    = Column(Numeric(10, 2), nullable=False, default=0)
     price_per_ton = Column(Numeric(10, 2), nullable=False, default=0)
     unit          = Column(String(20), default="each")
     sort_order    = Column(Integer, default=10)
     active        = Column(Boolean, default=True)
+
+
+class KitVariant(Base):
+    """
+    New kit pricing structure based on the 2019 Kit Prices workbook.
+    Each row = one selectable kit option (e.g. '4" Sheet Metal Run').
+    per_kit  = flat cost for one kit/run
+    per_foot = additional footage cost (0 if not applicable)
+    """
+    __tablename__ = "kit_variants"
+    id              = Column(Integer, primary_key=True)
+    category_code   = Column(String(4),   nullable=False, index=True)  # A, B, C … T
+    category_name   = Column(String(100), nullable=False)
+    variant_code    = Column(String(40),  nullable=False)              # 4" SMR, PVC2X21DP, etc.
+    variant_name    = Column(String(200), nullable=False)
+    per_kit         = Column(Numeric(10, 4), nullable=False, default=0)
+    per_foot        = Column(Numeric(10, 4), nullable=False, default=0)
+    sort_order      = Column(Integer, default=10)
+    active          = Column(Boolean, default=True)
 
 
 class Suggestion(Base):

@@ -155,11 +155,10 @@ export const search = {
 }
 
 export const kit = {
-  calculate: (data) => api.post('/kit/calculate', data).then(r => r.data),
-  list:      ()     => api.get('/kit/').then(r => r.data),
-  update:    (id, data) => api.patch(`/kit/${id}`, data).then(r => r.data),
-  create:    (data) => api.post('/kit/', data).then(r => r.data),
-  remove:    (id)   => api.delete(`/kit/${id}`).then(r => r.data),
+  variants:       ()         => api.get('/kit/variants').then(r => r.data),
+  createVariant:  (data)     => api.post('/kit/variants', data).then(r => r.data),
+  updateVariant:  (id, data) => api.patch(`/kit/variants/${id}`, data).then(r => r.data),
+  removeVariant:  (id)       => api.delete(`/kit/variants/${id}`).then(r => r.data),
 }
 
 export const companyApi = {

@@ -9,7 +9,7 @@ from models.models import (  # noqa — registers all models
     Builder, County, Project, EquipmentManufacturer,
     EquipmentSystem, Plan, HouseType, System,
     LineItem, Draw, Document, EventLog, User, Suggestion, CompanySettings,
-    PlanComment, PlanTask,
+    PlanComment, PlanTask, KitVariant,
 )
 from api.routes import plans, equipment, builders, projects, documents, kit, auth, files, search, feedback, company
 
@@ -88,6 +88,106 @@ def _seed_admin():
         db.close()
 
 _seed_admin()
+
+def _seed_kit_variants():
+    """Seed the 2019 kit variant pricing table if empty."""
+    from core.database import SessionLocal
+    db = SessionLocal()
+    try:
+        if db.query(KitVariant).first():
+            return  # already seeded
+
+        VARIANTS = [
+            # ── A: Sheet Metal Runs ──────────────────────────────────
+            ("A","Sheet Metal Runs","4\" SMR","4\" Sheet Metal Run",       19.34, 1.04, 10),
+            ("A","Sheet Metal Runs","5\" SMR","5\" Sheet Metal Run",       19.86, 1.40, 20),
+            ("A","Sheet Metal Runs","6\" SMR","6\" Sheet Metal Run",       18.64, 1.41, 30),
+            ("A","Sheet Metal Runs","7\" SMR","7\" Sheet Metal Run",       23.85, 1.85, 40),
+            ("A","Sheet Metal Runs","8\" SMR","8\" Sheet Metal Run",       31.58, 2.08, 50),
+            # ── B: Ductboard Runs (R8) ───────────────────────────────
+            ("B","Ductboard Runs (R8)","4\" DBR","4\" Ductboard Run R8",   38.25, 1.57, 10),
+            ("B","Ductboard Runs (R8)","5\" DBR","5\" Ductboard Run R8",   41.94, 1.72, 20),
+            ("B","Ductboard Runs (R8)","6\" DBR","6\" Ductboard Run R8",   44.06, 1.83, 30),
+            ("B","Ductboard Runs (R8)","7\" DBR","7\" Ductboard Run R8",   48.50, 2.02, 40),
+            ("B","Ductboard Runs (R8)","8\" DBR","8\" Ductboard Run R8",   54.31, 2.25, 50),
+            # ── C: Exhaust Runs ──────────────────────────────────────
+            ("C","Exhaust Runs","BATH-FAN","Bath Fan",                     30.97, 0,    10),
+            ("C","Exhaust Runs","BATH-EXH","Bath Exhaust",                 62.37, 0,    20),
+            ("C","Exhaust Runs","KITCH-EXH","Kitchen Exhaust",             56.65, 0,    30),
+            ("C","Exhaust Runs","DRYER-VENT","Dryer Vent",                 89.10, 0,    40),
+            # ── D: Class B Flues ─────────────────────────────────────
+            ("D","Class B Flues","4\" B-VENT","4\" Class B Flue",           9.83, 0,   10),
+            ("D","Class B Flues","5\" B-VENT","5\" Class B Flue",          11.78, 0,   20),
+            ("D","Class B Flues","6\" B-VENT","6\" Class B Flue",          19.54, 0,   30),
+            # ── E: B Vent Connectors ─────────────────────────────────
+            ("E","B Vent Connectors","CONN-1","B Vent Connector Type 1",  121.08, 0,   10),
+            ("E","B Vent Connectors","CONN-2","B Vent Connector Type 2",  129.88, 0,   20),
+            ("E","B Vent Connectors","CONN-3","B Vent Connector Type 3",  130.71, 0,   30),
+            ("E","B Vent Connectors","CONN-4","B Vent Connector Type 4",  183.45, 0,   40),
+            # ── F: Combustion Air ────────────────────────────────────
+            ("F","Combustion Air","COMB-AIR","Combustion Air Kit",         31.88, 0,   10),
+            # ── G: PVC Flues ─────────────────────────────────────────
+            ("G","PVC Flues","PVC2X21DP","2\" Dual Pipe \u00d7 21\'",     139.29, 0,   10),
+            ("G","PVC Flues","PVC2X31DP","2\" Dual Pipe \u00d7 31\'",     151.20, 0,   20),
+            ("G","PVC Flues","PVC2X41DP","2\" Dual Pipe \u00d7 41\'",     164.91, 0,   30),
+            ("G","PVC Flues","PVC3X21DP","3\" Dual Pipe \u00d7 21\'",     193.13, 0,   40),
+            ("G","PVC Flues","PVC3X31DP","3\" Dual Pipe \u00d7 31\'",     220.99, 0,   50),
+            ("G","PVC Flues","PVC3X41DP","3\" Dual Pipe \u00d7 41\'",     253.70, 0,   60),
+            # ── H: Condensate Drain ──────────────────────────────────
+            ("H","Condensate Drain","COND-DRAIN","Condensate Drain",       12.92, 0,   10),
+            ("H","Condensate Drain","COND-PUMP-UP","Condensate Pump-Up",   39.11, 0,   20),
+            # ── I: Condensate Pump ───────────────────────────────────
+            ("I","Condensate Pump","COND-PUMP","Condensate Pump",         139.03, 0,   10),
+            # ── J: Control Wiring ────────────────────────────────────
+            ("J","Control Wiring","CTRL-WIRE","Control Wiring Kit",        46.76, 0,   10),
+            # ── K: Copper Line Sets (per foot) ───────────────────────
+            ("K","Copper Line Sets","COPPER-LS","Copper Line Set",          5.43, 0,   10),
+            # ── L: Equipment Mounting Kits ───────────────────────────
+            ("L","Equipment Mounting Kits","EMKV-1","Mounting Kit \u2014 Vertical 31\u00d731", 51.56, 0, 10),
+            ("L","Equipment Mounting Kits","EMKV-2","Mounting Kit \u2014 Vertical (large)",    53.59, 0, 20),
+            ("L","Equipment Mounting Kits","EMKH", "Mounting Kit \u2014 Horizontal",           61.85, 0, 30),
+            # ── M: Humidifiers ───────────────────────────────────────
+            ("M","Humidifiers","HUM-BYPASS","Bypass Humidifier",          312.33, 0,   10),
+            ("M","Humidifiers","HUM-POWER","Power Humidifier",            424.22, 0,   20),
+            # ── N: Air Cleaners ──────────────────────────────────────
+            ("N","Air Cleaners","AC-1","Air Cleaner \u2014 Type 1",       161.10, 0,   10),
+            ("N","Air Cleaners","AC-2","Air Cleaner \u2014 Type 2",       245.80, 0,   20),
+            ("N","Air Cleaners","AC-3","Air Cleaner \u2014 Type 3",       398.50, 0,   30),
+            ("N","Air Cleaners","AC-4","Air Cleaner \u2014 Type 4",       512.00, 0,   40),
+            ("N","Air Cleaners","AC-5","Air Cleaner \u2014 Type 5",       784.25, 0,   50),
+            ("N","Air Cleaners","AC-6","Air Cleaner \u2014 HEPA",        1122.96, 0,   60),
+            # ── O: Energy Recovery Ventilator ────────────────────────
+            ("O","Energy Recovery Ventilator","ERV","Energy Recovery Ventilator", 2350.11, 0, 10),
+            # ── P: Duct Sealing ──────────────────────────────────────
+            ("P","Duct Sealing","MASTIC-PKG","Mastic Duct Sealing Package", 70.00, 0,  10),
+            # ── Q: Laundry Chutes ────────────────────────────────────
+            ("Q","Laundry Chutes","LAUNDRY","Laundry Chute Kit",           85.00, 0,   10),
+            # ── R: Fresh-Air ─────────────────────────────────────────
+            ("R","Fresh-Air","FRESH-AIR","Fresh-Air Damper & Insulated Duct", 125.00, 0, 10),
+            # ── S: Transfer Grill ────────────────────────────────────
+            ("S","Transfer Grill","XFER-GRILL","Transfer Grill w/ Hexacomb", 55.00, 0, 10),
+            # ── T: Zone Control Dampers ──────────────────────────────
+            ("T","Zone Control Dampers","APR-2Z","Aprilaire \u2014 2 Zone",  890.84, 0, 10),
+            ("T","Zone Control Dampers","APR-3Z","Aprilaire \u2014 3 Zone", 1304.95, 0, 20),
+            ("T","Zone Control Dampers","APR-4Z","Aprilaire \u2014 4 Zone", 1364.86, 0, 30),
+            ("T","Zone Control Dampers","APR-5Z","Aprilaire \u2014 5 Zone", 1742.76, 0, 40),
+            ("T","Zone Control Dampers","EWC-2Z","EWC \u2014 2 Zone",      1503.49, 0, 50),
+            ("T","Zone Control Dampers","EWC-3Z","EWC \u2014 3 Zone",      2077.46, 0, 60),
+            ("T","Zone Control Dampers","EWC-4Z","EWC \u2014 4 Zone",      2664.17, 0, 70),
+        ]
+
+        for cat_code, cat_name, v_code, v_name, per_kit, per_foot, sort in VARIANTS:
+            db.add(KitVariant(
+                category_code=cat_code, category_name=cat_name,
+                variant_code=v_code,   variant_name=v_name,
+                per_kit=per_kit,       per_foot=per_foot,
+                sort_order=sort,       active=True,
+            ))
+        db.commit()
+    finally:
+        db.close()
+
+_seed_kit_variants()
 
 app = FastAPI(
     title="HVAC Bid System — POC",

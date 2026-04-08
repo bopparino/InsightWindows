@@ -106,7 +106,7 @@ function EmailQuoteModal({ plan, currentUser, onClose, onSent }) {
     </div>
   )
 }
-import KitCalculator from '../components/KitCalculator'
+import KitPicker from '../components/KitPicker'
 import { useAuth } from '../context/AuthContext'
 
 const STATUS_FLOW = ['draft', 'proposed', 'contracted', 'complete']
@@ -1062,13 +1062,10 @@ export default function PlanDetail() {
                 </table>
               )}
 
-              {/* Add line item */}
+              {/* Kit picker modal */}
               {kitZone?.systemId === sys.id && (
-                <KitCalculator
-                  planId={parseInt(id)}
-                  systemId={sys.id}
+                <KitPicker
                   zoneName={sys.zone_label || `Zone ${sys.system_number}`}
-                  existingDescriptions={kitZone.existingDescriptions}
                   onAddItems={(items) => addKitItems.mutate({ systemId: sys.id, items })}
                   onClose={() => setKitZone(null)}
                 />
@@ -1088,12 +1085,7 @@ export default function PlanDetail() {
                   <button className="btn-secondary btn-sm"
                     style={{ background: 'var(--blue-light)', color: 'var(--blue)',
                       border: '1px solid var(--blue-mid)' }}
-                    onClick={() => setKitZone({
-                      systemId: sys.id,
-                      existingDescriptions: new Set(
-                        sys.line_items.map(li => li.description.toLowerCase().trim())
-                      ),
-                    })}>
+                    onClick={() => setKitZone({ systemId: sys.id })}>
                     Kit pricing
                   </button>
                 </div>
