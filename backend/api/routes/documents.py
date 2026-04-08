@@ -877,7 +877,7 @@ def build_top_sheet_html(plan, db=None) -> str:
     kit_map = {}  # variant_code → markup_divisor
     if part_numbers and db:
         variants = db.query(KV).filter(KV.variant_code.in_(part_numbers)).all()
-        kit_map = {v.variant_code: float(v.markup_divisor) for v in variants}
+        kit_map = {v.variant_code: float(v.markup_divisor) if v.markup_divisor is not None else 1.0 for v in variants}
 
     # Split bid total into: items with embedded margin vs. straight material
     embedded_revenue = 0.0  # bid value of items with divisor < 1.0
@@ -916,7 +916,7 @@ def build_top_sheet_html(plan, db=None) -> str:
     for code, label, pct in PHASES:
         ph_hours    = round(estimated_hours_total * pct, 2)
         ph_labor    = round(ph_hours * LABOR_RATE_PER_HOUR, 2)
-        ph_material = round(material_cost * pct, 2)
+        ph_material = round(material_revenue * pct, 2)
         ph_other    = 0.0
         ph_total    = round(ph_labor + ph_material + ph_other, 2)
         phase_rows_html += f"""
@@ -930,7 +930,18 @@ def build_top_sheet_html(plan, db=None) -> str:
           <td class="num bold">${ph_total:,.2f}</td>
         </tr>"""
 
-    delta_color = "#16a34a" if profit >= 0 else "#dc2626"
+    delta_color   = "#16a34a" if profit >= 0 else "#dc2626"
+    profit_cls    = "profit-positive" if profit >= 0 else "profit-negative"
+    embedded_cost_row = (
+        f'<div class="kv"><span>Kit Items w/ Embedded Margin (cost portion)</span>'
+        f'<span class="val">${embedded_cost:,.2f}</span></div>'
+        if embedded_cost > 0 else ''
+    )
+    embedded_margin_row = (
+        f'<div class="kv"><span>Kit Embedded Margin</span>'
+        f'<span class="val" style="color:#16a34a">+${embedded_margin:,.2f}</span></div>'
+        if embedded_margin > 0 else ''
+    )
 
     return f"""<!DOCTYPE html>
 <html><head><meta charset="UTF-8">
@@ -1018,7 +1029,7 @@ def build_top_sheet_html(plan, db=None) -> str:
     <div class="box">
       <h3>Cost Structure</h3>
       <div class="kv"><span>Material / Component Cost</span><span class="val">${material_revenue:,.2f}</span></div>
-      {'<div class="kv"><span>Kit Items w/ Embedded Margin (cost portion)</span><span class="val">$' + f'{embedded_cost:,.2f}' + '</span></div>' if embedded_cost > 0 else ''}
+      {embedded_cost_row}
       <div class="kv"><span>Estimated Field Labor ({estimated_hours_total:.1f} hrs @ ${LABOR_RATE_PER_HOUR:.2f}/hr)</span>
                       <span class="val">${labor_cost:,.2f}</span></div>
       <div class="kv"><span>Production O/H ({PROD_OH_PCT*100:.0f}%)</span>
@@ -1037,18 +1048,18 @@ def build_top_sheet_html(plan, db=None) -> str:
     <div class="box">
       <h3>Margin Summary</h3>
       <div class="kv"><span>Total Direct Cost</span><span class="val">${direct_cost:,.2f}</span></div>
-      {'<div class="kv"><span>Kit Embedded Margin</span><span class="val" style="color:#16a34a">+$' + f'{embedded_margin:,.2f}' + '</span></div>' if embedded_margin > 0 else ''}
+      {embedded_margin_row}
       <div class="kv highlight"><span>Suggested Price ({MARKUP_TARGET*100-100:.0f}% markup)</span>
                       <span class="val">${suggested:,.2f}</span></div>
       <div class="kv"><span><strong>Selling Price (quoted)</strong></span>
                       <span class="val"><strong>${selling:,.2f}</strong></span></div>
       <div class="kv" style="border-top:2px solid #1e3a5f; margin-top:4px; padding-top:6px;">
         <span><strong>Gross Profit</strong></span>
-        <span class="val {'profit-positive' if profit >= 0 else 'profit-negative'}">${profit:,.2f}</span>
+        <span class="val {profit_cls}">${profit:,.2f}</span>
       </div>
       <div class="kv">
         <span><strong>Gross Profit %</strong></span>
-        <span class="val {'profit-positive' if profit >= 0 else 'profit-negative'}">{gross_profit:.1f}%</span>
+        <span class="val {profit_cls}">{gross_profit:.1f}%</span>
       </div>
     </div>
   </div>
