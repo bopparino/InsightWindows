@@ -22,26 +22,32 @@ router = APIRouter()
 # ── Schemas ───────────────────────────────────────────────────
 
 class KitVariantIn(BaseModel):
-    category_code: str
-    category_name: str
-    variant_code:  str
-    variant_name:  str
-    per_kit:       float = 0
-    per_foot:      float = 0
-    sort_order:    int   = 10
-    active:        bool  = True
+    category_code:  str
+    category_name:  str
+    variant_code:   str
+    variant_name:   str
+    per_kit:        float = 0
+    per_foot:       float = 0
+    markup_divisor: float = 1.0
+    sort_order:     int   = 10
+    active:         bool  = True
 
 
 def _serialize(v: KitVariant) -> dict:
+    divisor = float(v.markup_divisor) if v.markup_divisor else 1.0
+    per_kit = float(v.per_kit)
     return {
-        "id":            v.id,
-        "category_code": v.category_code,
-        "category_name": v.category_name,
-        "variant_code":  v.variant_code,
-        "variant_name":  v.variant_name,
-        "per_kit":       float(v.per_kit),
-        "per_foot":      float(v.per_foot),
-        "sort_order":    v.sort_order,
+        "id":              v.id,
+        "category_code":   v.category_code,
+        "category_name":   v.category_name,
+        "variant_code":    v.variant_code,
+        "variant_name":    v.variant_name,
+        "per_kit":         per_kit,            # bid price (builder pays this)
+        "per_foot":        float(v.per_foot),
+        "markup_divisor":  divisor,
+        "internal_cost":   round(per_kit * divisor, 4),  # Metcalfe's cost
+        "margin_pct":      round((1 - divisor) * 100, 1) if divisor < 1.0 else 0.0,
+        "sort_order":      v.sort_order,
     }
 
 

@@ -857,31 +857,57 @@ PHASES = [
 
 
 def build_top_sheet_html(plan, db=None) -> str:
+    from models.models import KitVariant as KV
     co  = _get_company(db)
     now = datetime.datetime.now().strftime("%B %d, %Y")
 
-    # ── Compute totals from line items ────────────────────────────────────────
+    # ── Collect all line items ────────────────────────────────────────────────
     all_li = [
         li for ht in plan.house_types
         for sys in ht.systems
         for li in sys.line_items
     ]
-    material_cost = sum(float(li.quantity) * float(li.unit_price) for li in all_li)
 
-    # Estimate total labor hours based on material cost proxy
-    # Rule of thumb from the 2019 data: labor ≈ 24.6% of selling price
-    # We back-calculate from material as a starting point
-    estimated_hours_total = round(material_cost / LABOR_RATE_PER_HOUR * 0.35, 1)
+    # ── Bid total = what builder is charged ───────────────────────────────────
+    bid_total = sum(float(li.quantity) * float(li.unit_price) for li in all_li)
+
+    # ── Identify embedded-margin items via part_number → kit variant lookup ──
+    # Kit picker stores variant_code in part_number field
+    part_numbers = [li.part_number for li in all_li if li.part_number]
+    kit_map = {}  # variant_code → markup_divisor
+    if part_numbers and db:
+        variants = db.query(KV).filter(KV.variant_code.in_(part_numbers)).all()
+        kit_map = {v.variant_code: float(v.markup_divisor) for v in variants}
+
+    # Split bid total into: items with embedded margin vs. straight material
+    embedded_revenue = 0.0  # bid value of items with divisor < 1.0
+    embedded_cost    = 0.0  # internal cost of those same items
+    material_revenue = 0.0  # bid value of straight material/component items
+
+    for li in all_li:
+        ext = float(li.quantity) * float(li.unit_price)
+        divisor = kit_map.get(li.part_number, 1.0) if li.part_number else 1.0
+        if divisor < 1.0:
+            embedded_revenue += ext
+            embedded_cost    += ext * divisor
+        else:
+            material_revenue += ext
+
+    embedded_margin = embedded_revenue - embedded_cost
+
+    # ── Estimate field labor on the straight-material portion ─────────────────
+    estimated_hours_total = round(material_revenue / LABOR_RATE_PER_HOUR * 0.35, 1)
     labor_cost = estimated_hours_total * LABOR_RATE_PER_HOUR
 
-    direct_cost  = material_cost + labor_cost
+    # ── Total internal cost structure ─────────────────────────────────────────
+    direct_cost  = material_revenue + embedded_cost + labor_cost
     overhead     = direct_cost * OVERHEAD_PCT
     backcharges  = direct_cost * BACKCHARGE_PCT
     prod_oh      = direct_cost * PROD_OH_PCT
     misc_costs   = overhead + backcharges + prod_oh
     total_cost   = direct_cost + misc_costs
     suggested    = total_cost * MARKUP_TARGET
-    selling      = material_cost  # the actual bid total on the quote
+    selling      = bid_total
     profit       = selling - total_cost
     gross_profit = (profit / selling * 100) if selling else 0
 
@@ -980,7 +1006,7 @@ def build_top_sheet_html(plan, db=None) -> str:
         <td colspan="2">Sub Total</td>
         <td class="num">{estimated_hours_total:.2f}</td>
         <td class="num">${labor_cost:,.2f}</td>
-        <td class="num">${material_cost:,.2f}</td>
+        <td class="num">${material_revenue:,.2f}</td>
         <td class="num">—</td>
         <td class="num">${direct_cost:,.2f}</td>
       </tr>
@@ -991,8 +1017,9 @@ def build_top_sheet_html(plan, db=None) -> str:
     <!-- Cost structure -->
     <div class="box">
       <h3>Cost Structure</h3>
-      <div class="kv"><span>Material Cost</span><span class="val">${material_cost:,.2f}</span></div>
-      <div class="kv"><span>Estimated Labor ({estimated_hours_total:.1f} hrs @ ${LABOR_RATE_PER_HOUR:.2f}/hr)</span>
+      <div class="kv"><span>Material / Component Cost</span><span class="val">${material_revenue:,.2f}</span></div>
+      {'<div class="kv"><span>Kit Items w/ Embedded Margin (cost portion)</span><span class="val">$' + f'{embedded_cost:,.2f}' + '</span></div>' if embedded_cost > 0 else ''}
+      <div class="kv"><span>Estimated Field Labor ({estimated_hours_total:.1f} hrs @ ${LABOR_RATE_PER_HOUR:.2f}/hr)</span>
                       <span class="val">${labor_cost:,.2f}</span></div>
       <div class="kv"><span>Production O/H ({PROD_OH_PCT*100:.0f}%)</span>
                       <span class="val">${prod_oh:,.2f}</span></div>
@@ -1001,7 +1028,7 @@ def build_top_sheet_html(plan, db=None) -> str:
       <div class="kv"><span>Overhead ({OVERHEAD_PCT*100:.0f}%)</span>
                       <span class="val">${overhead:,.2f}</span></div>
       <div class="kv" style="border-top:2px solid #1e3a5f; margin-top:4px; padding-top:6px;">
-        <span><strong>Total Cost</strong></span>
+        <span><strong>Total Internal Cost</strong></span>
         <span class="val"><strong>${total_cost:,.2f}</strong></span>
       </div>
     </div>
@@ -1010,12 +1037,13 @@ def build_top_sheet_html(plan, db=None) -> str:
     <div class="box">
       <h3>Margin Summary</h3>
       <div class="kv"><span>Total Direct Cost</span><span class="val">${direct_cost:,.2f}</span></div>
+      {'<div class="kv"><span>Kit Embedded Margin</span><span class="val" style="color:#16a34a">+$' + f'{embedded_margin:,.2f}' + '</span></div>' if embedded_margin > 0 else ''}
       <div class="kv highlight"><span>Suggested Price ({MARKUP_TARGET*100-100:.0f}% markup)</span>
                       <span class="val">${suggested:,.2f}</span></div>
       <div class="kv"><span><strong>Selling Price (quoted)</strong></span>
                       <span class="val"><strong>${selling:,.2f}</strong></span></div>
       <div class="kv" style="border-top:2px solid #1e3a5f; margin-top:4px; padding-top:6px;">
-        <span><strong>Profit</strong></span>
+        <span><strong>Gross Profit</strong></span>
         <span class="val {'profit-positive' if profit >= 0 else 'profit-negative'}">${profit:,.2f}</span>
       </div>
       <div class="kv">

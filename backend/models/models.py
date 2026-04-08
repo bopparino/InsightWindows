@@ -205,6 +205,7 @@ class KitVariant(Base):
     variant_name    = Column(String(200), nullable=False)
     per_kit         = Column(Numeric(10, 4), nullable=False, default=0)
     per_foot        = Column(Numeric(10, 4), nullable=False, default=0)
+    markup_divisor  = Column(Numeric(5, 4),  nullable=False, default=1.0)  # selling = per_kit; cost = per_kit * divisor
     sort_order      = Column(Integer, default=10)
     active          = Column(Boolean, default=True)
 

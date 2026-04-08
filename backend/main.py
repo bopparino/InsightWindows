@@ -67,6 +67,8 @@ def _run_migrations():
             active        BOOLEAN NOT NULL DEFAULT TRUE
         )""",
         "CREATE INDEX IF NOT EXISTS ix_kit_variants_category ON kit_variants(category_code)",
+        # v1.6 — markup divisor (selling = per_kit; internal cost = per_kit * markup_divisor)
+        "ALTER TABLE kit_variants ADD COLUMN IF NOT EXISTS markup_divisor NUMERIC(5,4) NOT NULL DEFAULT 1.0",
     ]
     with engine.connect() as conn:
         for sql in migrations:
@@ -208,71 +210,84 @@ def _fix_kit_variants():
     Idempotent corrections to the 2019 kit variant data.
     Safe to run on every startup — UPDATEs are no-ops when already correct,
     INSERTs use WHERE NOT EXISTS to skip duplicates.
-    """
-    fixes = [
-        # ── Category C: correct labels, add missing exhaust variants ─────────
-        # What was labeled KITCH-EXH is actually the Dryer (wall cap, 1st floor)
-        "UPDATE kit_variants SET variant_code='DRYER-WALL', variant_name='Dryer Vent to Wall Cap (1st Floor)', sort_order=30 WHERE variant_code='KITCH-EXH'",
-        "UPDATE kit_variants SET variant_code='DRYER-ROOF', variant_name='Dryer Vent thru Roof (2nd Floor)', sort_order=40 WHERE variant_code='DRYER-VENT'",
-        # Missing range/kitchen exhaust variants
-        """INSERT INTO kit_variants (category_code,category_name,variant_code,variant_name,per_kit,per_foot,sort_order,active)
-           SELECT 'C','Exhaust Runs','RANGE-ROOF','Range Exhaust thru Roof 6\"',87.41,0,50,TRUE
-           WHERE NOT EXISTS (SELECT 1 FROM kit_variants WHERE variant_code='RANGE-ROOF')""",
-        """INSERT INTO kit_variants (category_code,category_name,variant_code,variant_name,per_kit,per_foot,sort_order,active)
-           SELECT 'C','Exhaust Runs','RANGE-WALL','Range Exhaust to Wall Cap 6\"',56.14,0,60,TRUE
-           WHERE NOT EXISTS (SELECT 1 FROM kit_variants WHERE variant_code='RANGE-WALL')""",
-        """INSERT INTO kit_variants (category_code,category_name,variant_code,variant_name,per_kit,per_foot,sort_order,active)
-           SELECT 'C','Exhaust Runs','RANGE-DOWN','Range Exhaust Downdraft 6\"',102.90,0,70,TRUE
-           WHERE NOT EXISTS (SELECT 1 FROM kit_variants WHERE variant_code='RANGE-DOWN')""",
-        """INSERT INTO kit_variants (category_code,category_name,variant_code,variant_name,per_kit,per_foot,sort_order,active)
-           SELECT 'C','Exhaust Runs','RANGE-TELE','Range Exhaust Telescopic Downdraft 6\"',136.06,0,80,TRUE
-           WHERE NOT EXISTS (SELECT 1 FROM kit_variants WHERE variant_code='RANGE-TELE')""",
-        """INSERT INTO kit_variants (category_code,category_name,variant_code,variant_name,per_kit,per_foot,sort_order,active)
-           SELECT 'C','Exhaust Runs','RANGE-DLUX','Range Exhaust Deluxe Updraft 10\"',248.73,0,90,TRUE
-           WHERE NOT EXISTS (SELECT 1 FROM kit_variants WHERE variant_code='RANGE-DLUX')""",
 
-        # ── Category D: Class B Flues are priced PER FOOT, not per kit ───────
+    per_kit = bid price (what builder is charged).
+    markup_divisor = internal cost as fraction of bid price
+        e.g. 0.65 means internal cost = bid_price * 0.65, margin = 35%.
+        1.0 means cost ≈ bid price (margin comes from labor efficiency, not per-item markup).
+    """
+    def ins(cat_code, cat_name, v_code, v_name, per_kit, per_foot, sort, divisor=1.0):
+        return f"""INSERT INTO kit_variants
+            (category_code,category_name,variant_code,variant_name,per_kit,per_foot,markup_divisor,sort_order,active)
+            SELECT '{cat_code}','{cat_name}','{v_code}','{v_name}',{per_kit},{per_foot},{divisor},{sort},TRUE
+            WHERE NOT EXISTS (SELECT 1 FROM kit_variants WHERE variant_code='{v_code}')"""
+
+    fixes = [
+        # ── Category C: correct labels ────────────────────────────────────────
+        "UPDATE kit_variants SET variant_code='DRYER-WALL', variant_name='Dryer Vent to Wall Cap (1st Floor)', sort_order=30 WHERE variant_code='KITCH-EXH'",
+        "UPDATE kit_variants SET variant_code='DRYER-ROOF', variant_name='Dryer Vent thru Roof (2nd Floor)',  sort_order=40 WHERE variant_code='DRYER-VENT'",
+        # Missing range/kitchen exhaust variants (material-only cost, markup_divisor=1.0)
+        ins('C','Exhaust Runs','RANGE-ROOF', 'Range Exhaust thru Roof 6"',       87.41,  0, 50),
+        ins('C','Exhaust Runs','RANGE-WALL', 'Range Exhaust to Wall Cap 6"',     56.14,  0, 60),
+        ins('C','Exhaust Runs','RANGE-DOWN', 'Range Exhaust Downdraft 6"',      102.90,  0, 70),
+        ins('C','Exhaust Runs','RANGE-TELE', 'Range Exhaust Telescopic 6"',     136.06,  0, 80),
+        ins('C','Exhaust Runs','RANGE-DLUX', 'Range Exhaust Deluxe Updraft 10"',248.73,  0, 90),
+
+        # ── Category D: Class B Flues — per FOOT not per kit ─────────────────
         "UPDATE kit_variants SET per_kit=0, per_foot=9.83  WHERE variant_code='4\" B-VENT'",
         "UPDATE kit_variants SET per_kit=0, per_foot=11.78 WHERE variant_code='5\" B-VENT'",
         "UPDATE kit_variants SET per_kit=0, per_foot=19.54 WHERE variant_code='6\" B-VENT'",
 
-        # ── Category N: correct air cleaner prices and model names ───────────
-        "UPDATE kit_variants SET per_kit=161.10, variant_name='Honeywell HF100F2002 16x25 Media'      WHERE variant_code='AC-1'",
-        "UPDATE kit_variants SET per_kit=161.10, variant_name='Honeywell HF100F2010 20x25 Media'      WHERE variant_code='AC-2'",
-        "UPDATE kit_variants SET per_kit=956.36, variant_name='Trion HE1400 16x25 Electronic'         WHERE variant_code='AC-3'",
-        "UPDATE kit_variants SET per_kit=979.68, variant_name='Trion HE2000 20x25 Electronic'         WHERE variant_code='AC-4'",
-        "UPDATE kit_variants SET per_kit=1027.55, variant_name='Honeywell HF300E1019 16x25 Electronic' WHERE variant_code='AC-5'",
-        "UPDATE kit_variants SET per_kit=1122.96, variant_name='Honeywell HF300E1035 20x25 HEPA'      WHERE variant_code='AC-6'",
+        # ── Category H: rename mis-labeled Attic condensate drain ────────────
+        "UPDATE kit_variants SET variant_code='COND-ATTIC', variant_name='Condensate Drain \u2014 Attic Unit (50 ft)' WHERE variant_code='COND-PUMP-UP'",
 
-        # ── Category P: Duct Sealing — correct total cost ────────────────────
-        "UPDATE kit_variants SET per_kit=125.65 WHERE variant_code='MASTIC-PKG'",
+        # ── Category N: correct air cleaner prices to real model numbers ─────
+        "UPDATE kit_variants SET per_kit=161.10,  variant_name='Honeywell HF100F2002 16x25 Media'       WHERE variant_code='AC-1'",
+        "UPDATE kit_variants SET per_kit=161.10,  variant_name='Honeywell HF100F2010 20x25 Media'       WHERE variant_code='AC-2'",
+        "UPDATE kit_variants SET per_kit=956.36,  variant_name='Trion HE1400 16x25 Electronic'          WHERE variant_code='AC-3'",
+        "UPDATE kit_variants SET per_kit=979.68,  variant_name='Trion HE2000 20x25 Electronic'          WHERE variant_code='AC-4'",
+        "UPDATE kit_variants SET per_kit=1027.55, variant_name='Honeywell HF300E1019 16x25 Electronic'  WHERE variant_code='AC-5'",
+        "UPDATE kit_variants SET per_kit=1122.96, variant_name='Honeywell HF300E1035 20x25 HEPA'        WHERE variant_code='AC-6'",
 
-        # ── Category Q: Laundry Chutes — correct 1-story, add 2-story ────────
-        "UPDATE kit_variants SET per_kit=319.03, variant_name='Laundry Chute \u2014 One Story', sort_order=10 WHERE variant_code='LAUNDRY'",
-        """INSERT INTO kit_variants (category_code,category_name,variant_code,variant_name,per_kit,per_foot,sort_order,active)
-           SELECT 'Q','Laundry Chutes','LAUNDRY-2ST','Laundry Chute \u2014 Two Story',417.57,0,20,TRUE
-           WHERE NOT EXISTS (SELECT 1 FROM kit_variants WHERE variant_code='LAUNDRY-2ST')""",
+        # ── Category P: Duct Sealing — selling price = cost / 0.69 ──────────
+        # cost=125.65, selling=182.10
+        "UPDATE kit_variants SET per_kit=182.10, markup_divisor=0.69 WHERE variant_code='MASTIC-PKG'",
 
-        # ── Category R: Fresh-Air — replace placeholder with 5 actual systems ─
+        # ── Category Q: Laundry Chutes — selling price = cost / 0.55 ─────────
+        # 1-story cost=319.03 → sell=580.05; 2-story cost=417.57 → sell=759.22
+        "UPDATE kit_variants SET per_kit=580.05, markup_divisor=0.55, variant_name='Laundry Chute \u2014 One Story', sort_order=10 WHERE variant_code='LAUNDRY'",
+        ins('Q','Laundry Chutes','LAUNDRY-2ST','Laundry Chute \u2014 Two Story', 759.22, 0, 20, 0.55),
+
+        # ── Category R: Fresh-Air — selling price = cost / 0.69 ─────────────
+        # costs: FAS-1=278.53 FAS-2=300.00 FAS-3=332.12 FAS-4=392.34 FAS-5=228.70
         "UPDATE kit_variants SET active=FALSE WHERE variant_code='FRESH-AIR'",
-        """INSERT INTO kit_variants (category_code,category_name,variant_code,variant_name,per_kit,per_foot,sort_order,active)
-           SELECT 'R','Fresh-Air','FAS-1','Aprilaire 8126X to Air Handler',278.53,0,10,TRUE
-           WHERE NOT EXISTS (SELECT 1 FROM kit_variants WHERE variant_code='FAS-1')""",
-        """INSERT INTO kit_variants (category_code,category_name,variant_code,variant_name,per_kit,per_foot,sort_order,active)
-           SELECT 'R','Fresh-Air','FAS-2','Broan MD6TU to 14x14 Filter Grill',300.00,0,20,TRUE
-           WHERE NOT EXISTS (SELECT 1 FROM kit_variants WHERE variant_code='FAS-2')""",
-        """INSERT INTO kit_variants (category_code,category_name,variant_code,variant_name,per_kit,per_foot,sort_order,active)
-           SELECT 'R','Fresh-Air','FAS-3','Broan MD8TU to 14x14 Filter Grill',332.12,0,30,TRUE
-           WHERE NOT EXISTS (SELECT 1 FROM kit_variants WHERE variant_code='FAS-3')""",
-        """INSERT INTO kit_variants (category_code,category_name,variant_code,variant_name,per_kit,per_foot,sort_order,active)
-           SELECT 'R','Fresh-Air','FAS-4','Broan MD10TU to 14x14 Filter Grill',392.34,0,40,TRUE
-           WHERE NOT EXISTS (SELECT 1 FROM kit_variants WHERE variant_code='FAS-4')""",
-        """INSERT INTO kit_variants (category_code,category_name,variant_code,variant_name,per_kit,per_foot,sort_order,active)
-           SELECT 'R','Fresh-Air','FAS-5','Honeywell Y8150 to Air Handler',228.70,0,50,TRUE
-           WHERE NOT EXISTS (SELECT 1 FROM kit_variants WHERE variant_code='FAS-5')""",
+        ins('R','Fresh-Air','FAS-1','Aprilaire 8126X to Air Handler',        403.66, 0, 10, 0.69),
+        ins('R','Fresh-Air','FAS-2','Broan MD6TU to 14x14 Filter Grill',     434.78, 0, 20, 0.69),
+        ins('R','Fresh-Air','FAS-3','Broan MD8TU to 14x14 Filter Grill',     481.33, 0, 30, 0.69),
+        ins('R','Fresh-Air','FAS-4','Broan MD10TU to 14x14 Filter Grill',    568.61, 0, 40, 0.69),
+        ins('R','Fresh-Air','FAS-5','Honeywell Y8150 to Air Handler',         331.45, 0, 50, 0.69),
 
-        # ── Category S: Transfer Grill — correct total cost ──────────────────
-        "UPDATE kit_variants SET per_kit=28.17 WHERE variant_code='XFER-GRILL'",
+        # ── Category S: Transfer Grill — selling price = cost / 0.65 ─────────
+        # cost=28.17, selling=43.34
+        "UPDATE kit_variants SET per_kit=43.34, markup_divisor=0.65 WHERE variant_code='XFER-GRILL'",
+
+        # ── Category T: fix Aprilaire labels, set markup_divisor=0.65 ────────
+        # APR-4Z ($1364.86 cost) is actually the 2-or-3 Zone Heat Pump (AA 6303)
+        # APR-5Z ($1742.76 cost) is actually the 4-Zone (AA 6404)
+        # selling = cost / 0.65
+        "UPDATE kit_variants SET per_kit=1370.52, markup_divisor=0.65 WHERE variant_code='APR-2Z'",
+        "UPDATE kit_variants SET per_kit=2007.62, markup_divisor=0.65 WHERE variant_code='APR-3Z'",
+        "UPDATE kit_variants SET per_kit=2099.78, markup_divisor=0.65, variant_name='Aprilaire 6303 \u2014 2 or 3 Zone Heat Pump' WHERE variant_code='APR-4Z'",
+        "UPDATE kit_variants SET per_kit=2680.86, markup_divisor=0.65, variant_name='Aprilaire 6404 \u2014 4 Zone'               WHERE variant_code='APR-5Z'",
+        "UPDATE kit_variants SET per_kit=2313.06, markup_divisor=0.65 WHERE variant_code='EWC-2Z'",
+        "UPDATE kit_variants SET per_kit=3195.32, markup_divisor=0.65 WHERE variant_code='EWC-3Z'",
+        "UPDATE kit_variants SET per_kit=4098.72, markup_divisor=0.65 WHERE variant_code='EWC-4Z'",
+
+        # ── Category U: Misc. Accessories (filter racks & grills) ────────────
+        ins('U','Misc. Accessories','FR-16X25', 'Filter Rack 16x25 (Shop Made)',  16.62, 0, 10),
+        ins('U','Misc. Accessories','FR-20X25', 'Filter Rack 20x25 (Shop Made)',  16.80, 0, 20),
+        ins('U','Misc. Accessories','FG-14X14', 'Filter Grill 14x14',             10.54, 0, 30),
+        ins('U','Misc. Accessories','FG-20X20', 'Filter Grill 20x20',             17.46, 0, 40),
     ]
     with engine.connect() as conn:
         for sql in fixes:
