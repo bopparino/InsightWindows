@@ -644,6 +644,60 @@ function AddHouseTypeForm({ planId, onDone }) {
   )
 }
 
+// ── Zone header with inline label editing ─────────────────────
+function ZoneHeader({ sys, isOnly, onLabelSave, onDelete }) {
+  const [editing, setEditing] = useState(false)
+  const [label, setLabel] = useState(sys.zone_label || '')
+
+  function handleBlur() {
+    setEditing(false)
+    const trimmed = label.trim()
+    if (trimmed !== (sys.zone_label || '')) onLabelSave(trimmed || null)
+  }
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+      <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--gray-800)', flexShrink: 0 }}>
+        Zone {sys.system_number}
+      </span>
+      {editing ? (
+        <input
+          value={label}
+          onChange={e => setLabel(e.target.value)}
+          onBlur={handleBlur}
+          onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') { setLabel(sys.zone_label || ''); setEditing(false) } }}
+          placeholder="Label (e.g. Upstairs, Master)"
+          autoFocus
+          style={{ fontSize: 13, padding: '3px 8px', flex: 1, maxWidth: 260 }}
+        />
+      ) : (
+        <span
+          onClick={() => { setLabel(sys.zone_label || ''); setEditing(true) }}
+          style={{ fontSize: 13, color: sys.zone_label ? 'var(--gray-700)' : 'var(--gray-300)',
+            fontStyle: sys.zone_label ? 'normal' : 'italic',
+            cursor: 'text', padding: '2px 4px', borderRadius: 4,
+            border: '1px dashed transparent',
+          }}
+          onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--gray-200)'}
+          onMouseLeave={e => e.currentTarget.style.borderColor = 'transparent'}
+          title="Click to add/edit label">
+          {sys.zone_label || 'add label…'}
+        </span>
+      )}
+      {!isOnly && (
+        <button
+          onClick={onDelete}
+          style={{ marginLeft: 'auto', background: 'none', border: 'none',
+            color: 'var(--gray-300)', cursor: 'pointer', fontSize: 16,
+            padding: '2px 4px', lineHeight: 1 }}
+          title="Delete this zone">
+          ×
+        </button>
+      )}
+    </div>
+  )
+}
+
 // ── Constants ─────────────────────────────────────────────────
 const LABOR_RATE   = 86
 const SERVICE_RATE = 32
@@ -831,6 +885,21 @@ export default function PlanDetail() {
   const linkEquipment = useMutation({
     mutationFn: ({ systemId, equipmentSystemId }) =>
       systems.update(parseInt(id), systemId, { equipment_system_id: equipmentSystemId }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plan', id] }),
+  })
+
+  const addZone = useMutation({
+    mutationFn: (houseTypeId) => systems.add(parseInt(id), houseTypeId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plan', id] }),
+  })
+
+  const deleteZone = useMutation({
+    mutationFn: (systemId) => systems.delete(parseInt(id), systemId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plan', id] }),
+  })
+
+  const updateZoneLabel = useMutation({
+    mutationFn: ({ systemId, zone_label }) => systems.update(parseInt(id), systemId, { zone_label }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['plan', id] }),
   })
 
@@ -1241,11 +1310,16 @@ export default function PlanDetail() {
               borderBottom: sysIdx < ht.systems.length - 1 ? '1px solid var(--gray-100)' : 'none',
             }}>
               {/* Zone header */}
-              <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--gray-800)',
-                marginBottom: 12 }}>
-                Zone {sys.system_number}
-                {sys.zone_label ? ` — ${sys.zone_label}` : ''}
-              </div>
+              <ZoneHeader
+                sys={sys}
+                planId={parseInt(id)}
+                isOnly={ht.systems.length === 1}
+                onLabelSave={(label) => updateZoneLabel.mutate({ systemId: sys.id, zone_label: label })}
+                onDelete={() => {
+                  if (window.confirm(`Delete Zone ${sys.system_number}${sys.zone_label ? ` — ${sys.zone_label}` : ''}?\n\nAll line items in this zone will be lost.`))
+                    deleteZone.mutate(sys.id)
+                }}
+              />
 
               {/* Equipment row */}
               <div style={{
@@ -1364,6 +1438,15 @@ export default function PlanDetail() {
               )}
             </div>
           ))}
+
+          {/* Add zone */}
+          <button
+            className="btn-secondary btn-sm"
+            style={{ marginBottom: 16 }}
+            disabled={addZone.isPending}
+            onClick={() => addZone.mutate(ht.id)}>
+            + Add zone
+          </button>
 
           {/* Draws */}
           <DrawSchedule planId={parseInt(id)} houseTypeId={ht.id} draws={ht.draws} />

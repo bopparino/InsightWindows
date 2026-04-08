@@ -149,7 +149,9 @@ export const draws = {
 }
 
 export const systems = {
-  update: (planId, systemId, data) => api.patch(`/plans/${planId}/systems/${systemId}`, data).then(r => r.data),
+  update:    (planId, systemId, data) => api.patch(`/plans/${planId}/systems/${systemId}`, data).then(r => r.data),
+  add:       (planId, houseTypeId)    => api.post(`/plans/${planId}/house-types/${houseTypeId}/systems`).then(r => r.data),
+  delete:    (planId, systemId)       => api.delete(`/plans/${planId}/systems/${systemId}`).then(r => r.data),
 }
 
 export const search = {

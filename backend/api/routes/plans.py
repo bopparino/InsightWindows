@@ -114,38 +114,43 @@ def log_event(db: Session, plan_id: int, event_type: str, description: str, user
 
 # ── Routes ────────────────────────────────────────────────────
 
+LABOR_RATE   = 86
+SERVICE_RATE = 32
+PERMIT_COST  = 170
+
+def _calc_plan_total(plan: Plan) -> float:
+    """Compute true final bid across all systems using the real bid math."""
+    total = 0.0
+    factor = float(plan.factor) if plan.factor else 0.69
+    for ht in plan.house_types:
+        for sys in ht.systems:
+            mat_cost    = sum(float(li.quantity) * float(li.unit_price) for li in sys.line_items)
+            mat_selling = mat_cost / factor if factor > 0 else 0
+            equip_sell  = float(sys.equipment_system.bid_price) if sys.equipment_system else 0
+            labor_amt   = float(sys.labor_hrs or 0) * LABOR_RATE
+            service_amt = int(sys.service_qty or 0) * SERVICE_RATE
+            permit_amt  = PERMIT_COST if sys.permit_yn else 0
+            tax_amt     = mat_cost * float(sys.sales_tax_pct or 0.06)
+            total += mat_selling + equip_sell + labor_amt + service_amt + permit_amt + tax_amt
+    return total
+
+
 @router.get("/")
 def list_plans(status: Optional[str] = None, db: Session = Depends(get_db),
                current_user: User = Depends(get_current_user)):
-    # Compute total_bid per plan in SQL — avoids loading all line items into memory
-    total_subq = (
-        select(
-            HouseType.plan_id,
-            func.coalesce(
-                func.sum(LineItem.quantity * LineItem.unit_price), 0
-            ).label("total_bid"),
-        )
-        .join(System, System.house_type_id == HouseType.id)
-        .join(LineItem, LineItem.system_id == System.id)
-        .group_by(HouseType.plan_id)
-        .subquery()
-    )
-
     q = (
-        db.query(Plan, func.coalesce(total_subq.c.total_bid, 0).label("total_bid"))
-        .outerjoin(total_subq, total_subq.c.plan_id == Plan.id)
-        .join(Plan.project)
-        .join(Project.builder)
+        db.query(Plan)
         .options(
             joinedload(Plan.project).joinedload(Project.builder),
+            joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.line_items),
+            joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.equipment_system),
         )
     )
     if status:
         q = q.filter(Plan.status == status)
-    # Account managers only see their own plans
     if current_user.role == "account_manager":
         q = q.filter(Plan.estimator_initials == current_user.initials)
-    rows = q.order_by(Plan.created_at.desc()).all()
+    plans_list = q.order_by(Plan.created_at.desc()).all()
 
     return [
         {
@@ -160,9 +165,9 @@ def list_plans(status: Optional[str] = None, db: Session = Depends(get_db),
             "number_of_zones": p.number_of_zones,
             "created_at":      p.created_at,
             "contracted_at":   p.contracted_at,
-            "total_bid":       float(total_bid),
+            "total_bid":       round(_calc_plan_total(p), 2),
         }
-        for p, total_bid in rows
+        for p in plans_list
     ]
 
 
@@ -979,6 +984,31 @@ def update_system(plan_id: int, system_id: int, data: SystemUpdate, db: Session 
         raise HTTPException(404, "System not found")
     for k, v in data.model_dump(exclude_none=True).items():
         setattr(system, k, v)
+    db.commit()
+    return {"ok": True}
+
+
+@router.post("/{plan_id}/house-types/{house_type_id}/systems", status_code=201)
+def add_system(plan_id: int, house_type_id: int, db: Session = Depends(get_db),
+               current_user: User = Depends(get_current_user)):
+    ht = db.query(HouseType).filter_by(id=house_type_id).first()
+    if not ht or ht.plan_id != plan_id:
+        raise HTTPException(404, "House type not found")
+    existing = db.query(System).filter_by(house_type_id=house_type_id).all()
+    next_num = f"{len(existing) + 1:02d}"
+    sys = System(house_type_id=house_type_id, system_number=next_num)
+    db.add(sys)
+    db.commit()
+    return {"id": sys.id, "system_number": sys.system_number}
+
+
+@router.delete("/{plan_id}/systems/{system_id}")
+def delete_system(plan_id: int, system_id: int, db: Session = Depends(get_db),
+                  current_user: User = Depends(get_current_user)):
+    sys = db.query(System).filter_by(id=system_id).first()
+    if not sys:
+        raise HTTPException(404, "System not found")
+    db.delete(sys)
     db.commit()
     return {"ok": True}
 
