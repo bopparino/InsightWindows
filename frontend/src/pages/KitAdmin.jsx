@@ -299,6 +299,7 @@ function CategorySection({ cat, editingId, savingId, addingCat, deletingId, onEd
               <TH right w={100}>Your Cost</TH>
               <TH right w={110}>Per Foot</TH>
               <TH center w={60}>Sort</TH>
+              <TH w={100}>Price Set</TH>
               <TH w={190}>Actions</TH>
             </tr>
           </thead>
@@ -341,6 +342,11 @@ function CategorySection({ cat, editingId, savingId, addingCat, deletingId, onEd
                     <td style={{ padding: '8px 8px', textAlign: 'center', color: 'var(--gray-400)', fontSize: 12 }}>
                       {v.sort_order}
                     </td>
+                    <td style={{ padding: '8px 8px', fontSize: 11, color: 'var(--gray-400)', whiteSpace: 'nowrap' }}>
+                      {v.price_updated_at
+                        ? new Date(v.price_updated_at).toLocaleDateString()
+                        : '—'}
+                    </td>
                     <td style={{ padding: '8px 8px', whiteSpace: 'nowrap' }}>
                       <button className="btn-secondary btn-sm" onClick={() => toggleComponents(v.id)} style={{ marginRight: 6 }}>
                         {expandedComponents.has(v.id) ? 'Hide Parts' : 'Parts'}
@@ -353,7 +359,7 @@ function CategorySection({ cat, editingId, savingId, addingCat, deletingId, onEd
                   </tr>
                   {expandedComponents.has(v.id) && (
                     <tr key={`${v.id}-components`} style={{ borderBottom: '1px solid var(--gray-100)' }}>
-                      <td colSpan={8} style={{ padding: 0 }}>
+                      <td colSpan={9} style={{ padding: 0 }}>
                         <ComponentEditor variant={v} />
                       </td>
                     </tr>

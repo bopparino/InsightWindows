@@ -82,7 +82,8 @@ def _serialize(v: KitVariant) -> dict:
         "markup_divisor":  divisor,
         "internal_cost":   round(per_kit * divisor, 4),  # Metcalfe's cost
         "margin_pct":      round((1 - divisor) * 100, 1) if divisor < 1.0 else 0.0,
-        "sort_order":      v.sort_order,
+        "sort_order":        v.sort_order,
+        "price_updated_at":  v.price_updated_at.isoformat() if v.price_updated_at else None,
     }
 
 

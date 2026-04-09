@@ -217,8 +217,9 @@ class KitVariant(Base):
     per_kit         = Column(Numeric(10, 4), nullable=False, default=0)
     per_foot        = Column(Numeric(10, 4), nullable=False, default=0)
     markup_divisor  = Column(Numeric(5, 4),  nullable=False, default=1.0)  # selling = per_kit; cost = per_kit * divisor
-    sort_order      = Column(Integer, default=10)
-    active          = Column(Boolean, default=True)
+    sort_order        = Column(Integer, default=10)
+    active            = Column(Boolean, default=True)
+    price_updated_at  = Column(DateTime, nullable=True)   # set when per_kit changes
     kit_components  = relationship("KitComponent", back_populates="kit_variant",
                                    cascade="all, delete-orphan", order_by="KitComponent.sort_order")
 

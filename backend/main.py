@@ -119,6 +119,8 @@ def _run_migrations():
                 USING NULLIF(TRIM(sort_order::text), '')::INTEGER;
             END IF;
         END $$""",
+        # v2.4 — price audit trail on kit variants
+        "ALTER TABLE kit_variants ADD COLUMN IF NOT EXISTS price_updated_at TIMESTAMP",
     ]
     with engine.connect() as conn:
         for sql in migrations:
@@ -170,15 +172,19 @@ def _seed_kit_variants():
         existing = {v.variant_code: v for v in db.query(KitVariant).all()}
         added = updated = 0
 
+        import datetime as _dt
+        now = _dt.datetime.utcnow()
         for cat_code, cat_name, v_code, v_name, per_kit, per_foot, sort in VARIANTS:
             if v_code in existing:
                 row = existing[v_code]
-                # Update price and name if changed
+                price_changed = float(row.per_kit) != per_kit or float(row.per_foot) != per_foot
                 row.category_name = cat_name
                 row.variant_name  = v_name
                 row.per_kit       = per_kit
                 row.per_foot      = per_foot
                 row.sort_order    = sort
+                if price_changed:
+                    row.price_updated_at = now
                 updated += 1
             else:
                 db.add(KitVariant(
@@ -186,6 +192,7 @@ def _seed_kit_variants():
                     variant_code=v_code,   variant_name=v_name,
                     per_kit=per_kit,       per_foot=per_foot,
                     sort_order=sort,       active=True,
+                    price_updated_at=now,
                 ))
                 added += 1
 

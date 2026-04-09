@@ -43,8 +43,23 @@ def _get_company(db: Session = None) -> dict:
 
 
 def _zone_bid(sys, factor: float) -> dict:
-    """Compute full bid breakdown for one system/zone."""
-    mat_cost    = sum(float(li.quantity) * float(li.unit_price) for li in sys.line_items)
+    """Compute full bid breakdown for one system/zone.
+
+    For kit line items that have snapshotted components, mat_cost uses the
+    actual component unit_costs (true internal cost).  For non-kit items
+    (manually entered) mat_cost uses unit_price (bid price), since there is
+    no separate cost basis.
+    """
+    mat_cost = 0.0
+    for li in sys.line_items:
+        active_comps = [c for c in (li.components or []) if not c.excluded]
+        if li.kit_variant_id and active_comps:
+            # True cost: sum of (component qty × component unit_cost) × line item qty
+            comp_cost = sum(float(c.quantity) * float(c.unit_cost) for c in active_comps)
+            mat_cost += float(li.quantity) * comp_cost
+        else:
+            # No component data — fall back to bid price as cost proxy
+            mat_cost += float(li.quantity) * float(li.unit_price)
     mat_selling = mat_cost / factor if factor > 0 else 0.0
     equip       = float(sys.equipment_system.bid_price) if sys.equipment_system else 0.0
     labor       = float(sys.labor_hrs or 0) * LABOR_RATE

@@ -17,6 +17,7 @@ const CATEGORY_GROUPS = [
   { label: 'IAQ',         codes: ['M','N','O','V','W'] },
   { label: 'Fresh Air',   codes: ['R'] },
   { label: 'Accessories', codes: ['P','Q','S','T','U'] },
+  { label: 'Controls',    codes: ['X'] },
 ]
 
 export default function PriceBook() {
