@@ -199,27 +199,19 @@ def export_plans_csv(status: Optional[str] = None, db: Session = Depends(get_db)
                      current_user: User = Depends(get_current_user)):
     """Download the plans list as a CSV file."""
     import csv, io
-    total_subq = (
-        select(
-            HouseType.plan_id,
-            func.coalesce(func.sum(LineItem.quantity * LineItem.unit_price), 0).label("total_bid"),
-        )
-        .join(System, System.house_type_id == HouseType.id)
-        .join(LineItem, LineItem.system_id == System.id)
-        .group_by(HouseType.plan_id)
-        .subquery()
-    )
     q = (
-        db.query(Plan, func.coalesce(total_subq.c.total_bid, 0).label("total_bid"))
-        .outerjoin(total_subq, total_subq.c.plan_id == Plan.id)
-        .join(Plan.project).join(Project.builder)
-        .options(joinedload(Plan.project).joinedload(Project.builder))
+        db.query(Plan)
+        .options(
+            joinedload(Plan.project).joinedload(Project.builder),
+            joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.line_items),
+            joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.equipment_system),
+        )
     )
     if status:
         q = q.filter(Plan.status == status)
     if current_user.role == "account_manager":
         q = q.filter(Plan.estimator_initials == current_user.initials)
-    rows = q.order_by(Plan.created_at.desc()).all()
+    plans_list = q.order_by(Plan.created_at.desc()).all()
 
     output = io.StringIO()
     writer = csv.writer(output)
@@ -228,12 +220,12 @@ def export_plans_csv(status: Optional[str] = None, db: Session = Depends(get_db)
         "Builder", "House Type", "Zones", "Total Bid",
         "Estimator", "Created", "Contracted",
     ])
-    for p, total_bid in rows:
+    for p in plans_list:
         writer.writerow([
             p.plan_number, p.status,
             p.project.code, p.project.name, p.project.builder.name,
             p.house_type or "", p.number_of_zones,
-            f"{float(total_bid):.2f}", p.estimator_name,
+            f"{_calc_plan_total(p):.2f}", p.estimator_name,
             p.created_at.strftime("%Y-%m-%d") if p.created_at else "",
             p.contracted_at.strftime("%Y-%m-%d") if p.contracted_at else "",
         ])
