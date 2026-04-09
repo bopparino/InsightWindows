@@ -22,14 +22,25 @@ PERMIT_COST  = 170    # $ per permit
 
 LOGO_B64 = None
 
+# Resolve the backend root directory regardless of cwd at runtime.
+# documents.py lives at  <backend>/api/routes/documents.py  → 3 levels up = <backend>
+_BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+def _resolve_logo_path(path: str) -> str:
+    """Return an absolute path; relative paths are resolved from the backend root."""
+    if not path:
+        return ""
+    return path if os.path.isabs(path) else os.path.join(_BACKEND_DIR, path)
+
 
 def get_logo_b64() -> str:
     """Load logo as base64 so it embeds directly in HTML — no path issues."""
     global LOGO_B64
     if LOGO_B64:
         return LOGO_B64
-    logo_path = settings.COMPANY_LOGO_PATH
-    if os.path.exists(logo_path):
+    logo_path = _resolve_logo_path(settings.COMPANY_LOGO_PATH)
+    if logo_path and os.path.exists(logo_path):
         with open(logo_path, "rb") as f:
             ext = os.path.splitext(logo_path)[1].lower().replace(".", "")
             mime = "jpeg" if ext in ("jpg", "jpeg") else ext

@@ -350,8 +350,14 @@ def _seed_company_logo():
     If the DB company_settings row has no logo, embed the static logo as base64.
     Runs on every startup — no-op if logo is already set or file doesn't exist.
     """
-    logo_path = settings.COMPANY_LOGO_PATH
-    if not logo_path or not os.path.exists(logo_path):
+    raw = settings.COMPANY_LOGO_PATH
+    if not raw:
+        return
+    # Resolve relative paths from the backend directory (where main.py lives)
+    _backend_dir = os.path.dirname(os.path.abspath(__file__))
+    logo_path = raw if os.path.isabs(raw) else os.path.join(_backend_dir, raw)
+    if not os.path.exists(logo_path):
+        print(f"Logo seed: file not found at {logo_path}")
         return
     from core.database import SessionLocal
     import base64
