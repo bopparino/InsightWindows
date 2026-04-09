@@ -656,23 +656,26 @@ function Sidebar({ onOpenHelp, onOpenFeedback, isMobile = false, mobileOpen = fa
 
   const navItemStyle = (isActive) => ({
     display: 'flex', alignItems: 'center',
-    gap: collapsed ? 0 : 10,
-    justifyContent: collapsed ? 'center' : 'flex-start',
-    padding: '9px 12px', borderRadius: 8, marginBottom: 2,
-    textDecoration: 'none', fontSize: 14,
+    gap: (collapsed && !isMobile) ? 0 : 12,
+    justifyContent: (collapsed && !isMobile) ? 'center' : 'flex-start',
+    minHeight: isMobile ? 44 : 'auto',
+    padding: isMobile ? '0 12px' : '9px 12px',
+    borderRadius: isMobile ? 10 : 8, marginBottom: 2,
+    textDecoration: 'none', fontSize: isMobile ? 15 : 14,
     fontWeight: isActive ? 600 : 400,
     color: isActive ? 'white' : 'rgba(255,255,255,0.6)',
     background: isActive ? 'rgba(255,255,255,0.15)' : 'transparent',
     transition: 'all 0.15s',
+    WebkitTapHighlightColor: 'transparent',
   })
 
   function renderSection(items, sectionKey) {
     if (!items.length) return null
     return (
       <div style={{ marginBottom: 4 }}>
-        {!collapsed && (
+        {(!collapsed || isMobile) && (
           <div style={{
-            padding: '8px 12px 4px', fontSize: 10, fontWeight: 700,
+            padding: '10px 12px 4px', fontSize: 10, fontWeight: 700,
             color: 'rgba(255,255,255,0.35)', letterSpacing: '0.09em', textTransform: 'uppercase',
           }}>
             {SECTION_LABELS[sectionKey]}
@@ -709,79 +712,95 @@ function Sidebar({ onOpenHelp, onOpenFeedback, isMobile = false, mobileOpen = fa
         {/* Drawer */}
         <aside style={{
           position: 'fixed', top: 0, left: 0, bottom: 0,
-          width: 240, background: 'var(--sidebar-bg)',
+          width: 280, background: 'var(--sidebar-bg)',
           display: 'flex', flexDirection: 'column',
           zIndex: 1000,
-          boxShadow: '4px 0 20px rgba(0,0,0,0.3)',
+          boxShadow: '4px 0 24px rgba(0,0,0,0.35)',
           transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)',
-          transition: 'transform 0.25s ease',
+          transition: 'transform 0.28s cubic-bezier(0.4,0,0.2,1)',
           overflow: 'hidden',
         }}>
-          {/* Header */}
+          {/* Header — safe area top */}
           <div style={{
-            padding: '20px 16px',
+            paddingTop: 'max(env(safe-area-inset-top), 16px)',
+            paddingLeft: 'max(env(safe-area-inset-left), 20px)',
+            paddingRight: 20,
+            paddingBottom: 16,
             borderBottom: '1px solid rgba(255,255,255,0.1)',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
             <img src={logo} alt="Metcalfe" style={{
-              height: 72, width: 'auto', objectFit: 'contain',
+              height: 68, width: 'auto', objectFit: 'contain',
               filter: 'brightness(0) invert(1)',
             }} />
+            {/* 44×44 close button */}
             <button onClick={onMobileClose} style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: 'rgba(255,255,255,0.5)', fontSize: 22, lineHeight: 1, padding: 4,
+              background: 'rgba(255,255,255,0.08)', border: 'none', cursor: 'pointer',
+              color: 'rgba(255,255,255,0.7)', borderRadius: 10,
+              width: 44, height: 44, fontSize: 22, lineHeight: 1,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>×</button>
           </div>
 
           {/* Nav */}
-          <nav style={{ padding: '12px 10px', flex: 1, overflowY: 'auto' }}>
+          <nav style={{ padding: '8px 12px', flex: 1, overflowY: 'auto' }}>
             {renderSection(adminItems, 'admin')}
             {adminItems.length > 0 && opsItems.length > 0 && (
-              <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '8px 4px' }} />
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '6px 4px' }} />
             )}
             {renderSection(opsItems, 'ops')}
           </nav>
 
-          {/* Footer */}
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', padding: '8px 10px' }}>
+          {/* Footer — safe area bottom */}
+          <div style={{
+            borderTop: '1px solid rgba(255,255,255,0.1)',
+            padding: '8px 12px',
+            paddingBottom: 'max(env(safe-area-inset-bottom), 12px)',
+          }}>
             <NavLink to="/settings" onClick={onMobileClose}
               style={({ isActive }) => ({
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '8px 12px', borderRadius: 8, marginBottom: 4,
-                textDecoration: 'none', fontSize: 13,
-                color: isActive ? 'white' : 'rgba(255,255,255,0.5)',
+                display: 'flex', alignItems: 'center', gap: 12,
+                minHeight: 44, padding: '0 12px', borderRadius: 10, marginBottom: 2,
+                textDecoration: 'none', fontSize: 14,
+                color: isActive ? 'white' : 'rgba(255,255,255,0.55)',
                 background: isActive ? 'rgba(255,255,255,0.15)' : 'transparent',
               })}
             >
-              <span style={{ width: 20, display: 'flex', justifyContent: 'center' }}>{ICONS.settings}</span>
+              <span style={{ width: 20, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>{ICONS.settings}</span>
               Settings
             </NavLink>
+
+            {/* User row */}
             <div style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              padding: '8px 12px', marginBottom: 4,
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '10px 12px', marginBottom: 6,
             }}>
               <div style={{
-                width: 28, height: 28, borderRadius: '50%',
+                width: 36, height: 36, borderRadius: '50%',
                 background: 'rgba(255,255,255,0.2)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 11, fontWeight: 700, color: 'white', flexShrink: 0,
+                fontSize: 12, fontWeight: 700, color: 'white', flexShrink: 0,
               }}>{user?.initials || '?'}</div>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 500, color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: 14, fontWeight: 500, color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {user?.full_name}
                 </div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>
                   {ROLE_LABELS[user?.role] || user?.role}
                 </div>
               </div>
             </div>
+
+            {/* Sign out — full-width 44pt button */}
             <button onClick={handleLogout} style={{
-              width: '100%', background: 'none', color: 'rgba(255,255,255,0.4)',
-              border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8,
-              padding: '6px 12px', fontSize: 12, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              width: '100%', minHeight: 44,
+              background: 'rgba(255,255,255,0.06)',
+              color: 'rgba(255,255,255,0.55)',
+              border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10,
+              fontSize: 14, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             }}>
-              <span style={{ width: 20, display: 'flex', justifyContent: 'center' }}>{ICONS.signout}</span>
+              <span style={{ display: 'flex' }}>{ICONS.signout}</span>
               Sign out
             </button>
           </div>
@@ -986,30 +1005,51 @@ function AppLayout() {
           <div style={{
             position: 'sticky', top: 0, zIndex: 100,
             background: 'var(--sidebar-bg)',
-            display: 'flex', alignItems: 'center', gap: 12,
-            padding: '10px 14px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+            display: 'flex', alignItems: 'center', gap: 8,
+            // Safe-area-inset-top clears Dynamic Island / notch
+            paddingTop: 'max(env(safe-area-inset-top), 12px)',
+            paddingBottom: 10,
+            paddingLeft: 'max(env(safe-area-inset-left), 14px)',
+            paddingRight: 'max(env(safe-area-inset-right), 14px)',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
           }}>
+            {/* Hamburger — 44×44 touch target */}
             <button
               onClick={() => setNavOpen(true)}
               style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: 'rgba(255,255,255,0.8)', padding: 4,
-                display: 'flex', alignItems: 'center',
+                background: 'rgba(255,255,255,0.08)',
+                border: 'none', cursor: 'pointer',
+                color: 'rgba(255,255,255,0.9)',
+                width: 44, height: 44, borderRadius: 10,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
               }}
             >
-              {/* Hamburger */}
-              <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                <path d="M3 6h16M3 11h16M3 16h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M2.5 5h15M2.5 10h15M2.5 15h15" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/>
               </svg>
             </button>
             <img src={logo} alt="Metcalfe" style={{
-              height: 36, width: 'auto', objectFit: 'contain',
-              filter: 'brightness(0) invert(1)',
+              height: 40, width: 'auto', objectFit: 'contain',
+              filter: 'brightness(0) invert(1)', flexShrink: 0,
             }} />
           </div>
         )}
-        <main className={isMobile ? 'mobile-main' : ''} style={{ flex: 1, padding: isMobile ? undefined : '32px 40px', width: '100%', boxSizing: 'border-box' }}>
+        <main style={{
+          flex: 1, width: '100%', boxSizing: 'border-box',
+          padding: isMobile
+            ? 'var(--mobile-pad)'
+            : '32px 40px',
+          paddingBottom: isMobile
+            ? 'max(calc(env(safe-area-inset-bottom) + 16px), 24px)'
+            : undefined,
+          paddingLeft: isMobile
+            ? 'max(calc(env(safe-area-inset-left) + 14px), 14px)'
+            : undefined,
+          paddingRight: isMobile
+            ? 'max(calc(env(safe-area-inset-right) + 14px), 14px)'
+            : undefined,
+        }}>
           <Routes>
             <Route path="/"            element={isAccountManager ? <Navigate to="/plans" replace /> : <Dashboard />} />
             <Route path="/plans"       element={<PlansList />} />

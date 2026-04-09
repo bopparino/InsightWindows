@@ -605,30 +605,70 @@ aside nav a:hover {
 
 /* ═══════════════════════════════════════════════════════════
    MOBILE / RESPONSIVE  — ≤768px
-   Sidebar becomes a drawer. Tables scroll horizontally.
-   Form grids collapse to single column.
+   Optimized for iPhone 17 (402×874 CSS px, 3× DPR).
+   Sidebar becomes a drawer, safe-area insets applied via JS,
+   touch targets ≥44pt, tap highlight suppressed.
 ═══════════════════════════════════════════════════════════ */
 
+:root {
+  /* Mobile content padding — overridden in JS for safe areas */
+  --mobile-pad: 16px 14px;
+}
+
 /* Horizontal-scroll wrapper for wide tables on mobile */
-.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  /* subtle shadow hint that content scrolls */
+  background:
+    linear-gradient(to right, var(--card-bg) 20%, transparent) left center,
+    linear-gradient(to left,  var(--card-bg) 20%, transparent) right center,
+    radial-gradient(ellipse at left,  rgba(0,0,0,0.08) 0%, transparent 70%) left center,
+    radial-gradient(ellipse at right, rgba(0,0,0,0.08) 0%, transparent 70%) right center;
+  background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%;
+  background-repeat: no-repeat;
+  background-attachment: local, local, scroll, scroll;
+}
 
 @media (max-width: 768px) {
-  /* Main content padding */
-  .mobile-main { padding: 16px 14px !important; }
+  /* Prevent double-tap zoom on interactive elements */
+  button, a, input, select, textarea {
+    touch-action: manipulation;
+  }
+
+  /* Remove tap highlight (we style :active ourselves) */
+  * { -webkit-tap-highlight-color: transparent; }
 
   /* Page header stacks vertically */
   .page-header {
     flex-direction: column;
-    gap: 12px;
-    margin-bottom: 18px;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 16px;
   }
+  /* Actions row (search inputs etc.) fills width */
+  .page-header > :last-child { width: 100%; }
 
   /* Form grids collapse to single column */
   .form-row-2, .form-row-3 { grid-template-columns: 1fr !important; }
 
   /* Cards get tighter padding */
-  .card { padding: 14px !important; }
+  .card { padding: 14px 12px !important; border-radius: 10px !important; }
 
-  /* Page title a bit smaller */
-  .page-title { font-size: 20px !important; }
+  /* Page title */
+  .page-title { font-size: 22px !important; letter-spacing: -0.03em !important; }
+
+  /* Table text slightly smaller so rows fit */
+  .table td, .table th { padding: 10px 10px !important; font-size: 13px !important; }
+
+  /* Buttons full-width where sensible */
+  .btn-mobile-full { width: 100%; }
+
+  /* Minimum touch target for standalone buttons */
+  button { min-height: 44px; }
+  /* But not tiny icon buttons that set their own size */
+  button[style*="width: 44"] { min-height: unset; }
+
+  /* Inputs: bigger tap area */
+  input, select, textarea { font-size: 16px !important; } /* 16px prevents iOS auto-zoom */
 }
