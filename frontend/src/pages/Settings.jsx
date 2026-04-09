@@ -10,9 +10,9 @@ const ROLE_LABELS = {
   account_manager:   'Account Manager',
 }
 const ROLE_COLORS = {
-  admin:             { bg: '#fdf4ff', text: '#6b21a8', border: '#e9d5ff' },
-  account_executive: { bg: '#eff6ff', text: '#1e40af', border: '#bfdbfe' },
-  account_manager:   { bg: '#f0fdf4', text: '#166534', border: '#bbf7d0' },
+  admin:             { bg: 'var(--status-complete-bg)',    text: 'var(--status-complete-text)',    border: 'var(--status-complete-border)'    },
+  account_executive: { bg: 'var(--blue-light)',            text: 'var(--blue-mid)',                border: 'var(--gray-300)'                  },
+  account_manager:   { bg: 'var(--status-contracted-bg)',  text: 'var(--status-contracted-text)',  border: 'var(--status-contracted-border)'  },
 }
 
 // Mini theme preview card rendered inside the selector

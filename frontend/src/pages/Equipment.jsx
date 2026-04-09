@@ -362,7 +362,7 @@ function CategoryCard({ category, systems, manageMode, selected, onToggle, onTog
             <div style={{ fontSize: 13, fontWeight: 600, color: category.color }}>
               {systems.length} systems
               {manageMode && selected.size > 0 && systems.some(s => selected.has(s.id)) && (
-                <span style={{ color: '#dc2626', marginLeft: 8 }}>
+                <span style={{ color: 'var(--danger)', marginLeft: 8 }}>
                   ({systems.filter(s => selected.has(s.id)).length} selected)
                 </span>
               )}
@@ -569,7 +569,7 @@ export default function Equipment() {
           {manageMode && selected.size > 0 && (
             <div style={{
               position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
-              background: '#1e293b', color: 'white', borderRadius: 12,
+              background: 'var(--sidebar-bg)', color: 'white', borderRadius: 12,
               padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 16,
               boxShadow: '0 8px 32px rgba(0,0,0,0.3)', zIndex: 200,
               fontSize: 14, whiteSpace: 'nowrap',
@@ -584,7 +584,7 @@ export default function Equipment() {
               <button
                 onClick={handleBulkRetire}
                 disabled={bulkRetire.isPending}
-                style={{ background: '#dc2626', border: 'none', borderRadius: 6,
+                style={{ background: 'var(--danger)', border: 'none', borderRadius: 6,
                   color: 'white', padding: '6px 16px', cursor: 'pointer',
                   fontWeight: 600, fontSize: 13 }}>
                 {bulkRetire.isPending ? 'Retiring...' : `Retire ${selected.size}`}

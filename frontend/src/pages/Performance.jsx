@@ -72,8 +72,8 @@ const DEFAULT_ESTIMATOR_COLORS = [
 function WinRateBadge({ rate }) {
   if (rate === null || rate === undefined) return <span style={{ color: 'var(--gray-300)' }}>—</span>
   const pct = Math.round(rate * 100)
-  const color = pct >= 60 ? '#16a34a' : pct >= 40 ? '#f59e0b' : '#dc2626'
-  const bg    = pct >= 60 ? '#f0fdf4'  : pct >= 40 ? '#fffbeb'  : '#fef2f2'
+  const color = pct >= 60 ? 'var(--status-contracted-text)' : pct >= 40 ? 'var(--status-proposed-text)' : 'var(--status-lost-text)'
+  const bg    = pct >= 60 ? 'var(--status-contracted-bg)'   : pct >= 40 ? 'var(--status-proposed-bg)'   : 'var(--status-lost-bg)'
   return (
     <span style={{
       fontSize: 12, fontWeight: 700, padding: '2px 8px',

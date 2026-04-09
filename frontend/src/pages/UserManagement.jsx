@@ -105,7 +105,7 @@ function EditUserModal({ user, onClose, onSave }) {
         </div>
 
         <div style={{ padding: 24 }}>
-          {msg   && <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0',
+          {msg   && <div style={{ background: 'var(--status-contracted-bg)', border: '1px solid var(--status-contracted-border)',
             color: 'var(--success)', padding: '8px 14px', borderRadius: 8,
             fontSize: 13, marginBottom: 14 }}>{msg}</div>}
           {error && <div className="error-msg">{error}</div>}
@@ -353,7 +353,7 @@ export default function UserManagement() {
                             )) deactivate.mutate(u.id)
                           }}
                           style={{ background: 'none', color: 'var(--danger)',
-                            border: '1px solid #fecaca', borderRadius: 6,
+                            border: '1px solid var(--status-lost-border)', borderRadius: 6,
                             padding: '4px 10px', fontSize: 12, cursor: 'pointer' }}>
                           Deactivate
                         </button>

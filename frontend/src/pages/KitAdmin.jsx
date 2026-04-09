@@ -174,7 +174,7 @@ function CategorySection({ cat, editingId, savingId, addingCat, deletingId, onEd
                     {v.markup_divisor < 1.0
                       ? <span>
                           {fmt(v.internal_cost)}
-                          <span style={{ marginLeft: 4, fontSize: 10, color: '#16a34a', fontWeight: 600 }}>
+                          <span style={{ marginLeft: 4, fontSize: 10, color: 'var(--success)', fontWeight: 600 }}>
                             {v.margin_pct}%
                           </span>
                         </span>

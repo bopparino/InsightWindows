@@ -216,7 +216,7 @@ export default function Builders() {
           <button onClick={() => { if (window.confirm(`Delete ${selected.size} builder(s)? Those with projects will be skipped.`)) bulkDelete.mutate() }}
             disabled={bulkDelete.isPending}
             style={{ fontSize: 12, padding: '3px 10px', borderRadius: 6,
-              background: 'white', border: '1px solid #fecaca',
+              background: 'var(--card-bg)', border: '1px solid var(--status-lost-border)',
               color: 'var(--danger)', cursor: 'pointer' }}>
             Delete selected
           </button>

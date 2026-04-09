@@ -349,9 +349,9 @@ function FeedbackModal({ onClose }) {
                 {[['bug', 'Bug'], ['idea', 'Idea'], ['feedback', 'Other']].map(([val, label]) => (
                   <button key={val} type="button" onClick={() => setType(val)} style={{
                     flex: 1, padding: '6px 0', borderRadius: 7, fontSize: 13, cursor: 'pointer', fontWeight: type === val ? 600 : 400,
-                    border: `1px solid ${type === val ? 'var(--accent, #4f8ef7)' : 'var(--border, rgba(0,0,0,0.15))'}`,
-                    background: type === val ? 'var(--blue-light, #e8f0fe)' : 'var(--body-bg)',
-                    color: type === val ? 'var(--accent, #4f8ef7)' : 'var(--text-muted)',
+                    border: `1px solid ${type === val ? 'var(--accent)' : 'var(--gray-200)'}`,
+                    background: type === val ? 'var(--blue-light)' : 'var(--body-bg)',
+                    color: type === val ? 'var(--accent)' : 'var(--gray-400)',
                   }}>{label}</button>
                 ))}
               </div>
@@ -387,7 +387,7 @@ function FeedbackModal({ onClose }) {
               }}>Cancel</button>
               <button type="submit" disabled={status === 'sending'} style={{
                 padding: '8px 20px', borderRadius: 8, border: 'none', cursor: 'pointer',
-                fontSize: 13, fontWeight: 600, background: 'var(--accent, #4f8ef7)', color: '#fff',
+                fontSize: 13, fontWeight: 600, background: 'var(--accent)', color: '#fff',
                 opacity: status === 'sending' ? 0.7 : 1,
               }}>
                 {status === 'sending' ? 'Sending…' : 'Submit'}
@@ -698,7 +698,7 @@ function Sidebar({ onOpenHelp, onOpenFeedback }) {
             <img
               src={logo}
               alt="Metcalfe Heating & Air Conditioning"
-              style={{ height: 48, width: 'auto', maxWidth: 180, objectFit: 'contain',
+              style={{ height: 62, width: 'auto', maxWidth: 200, objectFit: 'contain',
                 filter: 'brightness(0) invert(1)', display: 'block' }}
             />
           </div>

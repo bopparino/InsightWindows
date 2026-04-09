@@ -338,10 +338,10 @@ export default function KitCalculator({ planId, systemId, zoneName, onAddItems, 
               <>
                 {/* Stale inputs warning */}
                 {stale && (
-                  <div style={{ background: '#fefce8', border: '1px solid #fde68a',
+                  <div style={{ background: 'var(--status-proposed-bg)', border: '1px solid var(--status-proposed-border)',
                     borderRadius: 8, padding: '10px 16px', marginBottom: 16,
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 13, color: '#92400e' }}>
+                    <span style={{ fontSize: 13, color: 'var(--status-proposed-text)' }}>
                       Inputs changed — results below may be outdated
                     </span>
                     <button className="btn-primary btn-sm"
@@ -355,9 +355,9 @@ export default function KitCalculator({ planId, systemId, zoneName, onAddItems, 
 
                 {/* Dupe warning */}
                 {dupeCount > 0 && (
-                  <div style={{ background: '#fff7ed', border: '1px solid #fed7aa',
+                  <div style={{ background: 'var(--status-proposed-bg)', border: '1px solid var(--status-proposed-border)',
                     borderRadius: 8, padding: '10px 16px', marginBottom: 16,
-                    fontSize: 13, color: '#9a3412' }}>
+                    fontSize: 13, color: 'var(--status-proposed-text)' }}>
                     {dupeCount} item{dupeCount > 1 ? 's are' : ' is'} already in this zone and will be skipped.
                   </div>
                 )}
@@ -415,7 +415,7 @@ export default function KitCalculator({ planId, systemId, zoneName, onAddItems, 
                               </span>
                               {dupe && (
                                 <span style={{ fontSize: 11, marginLeft: 8,
-                                  color: '#9a3412', background: '#fff7ed',
+                                  color: 'var(--status-proposed-text)', background: 'var(--status-proposed-bg)',
                                   padding: '1px 6px', borderRadius: 99 }}>
                                   already in zone
                                 </span>

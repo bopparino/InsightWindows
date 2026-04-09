@@ -56,8 +56,8 @@ function EmailQuoteModal({ plan, currentUser, onClose, onSent }) {
         ) : (
           <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
             {!currentUser?.email && (
-              <div style={{ background: '#fefce8', border: '1px solid #fde68a',
-                borderRadius: 6, padding: '8px 12px', fontSize: 13, color: '#92400e' }}>
+              <div style={{ background: 'var(--status-proposed-bg)', border: '1px solid var(--status-proposed-border)',
+                borderRadius: 6, padding: '8px 12px', fontSize: 13, color: 'var(--status-proposed-text)' }}>
                 Your account has no email address — builder replies will go to the shared
                 SMTP inbox instead of you. Ask an admin to add your email in User Management.
               </div>
@@ -88,8 +88,8 @@ function EmailQuoteModal({ plan, currentUser, onClose, onSent }) {
               The quote PDF will be attached. Replies go directly to you.
             </div>
             {status === 'error' && (
-              <div style={{ fontSize: 13, color: '#dc2626', background: '#fff1f2',
-                border: '1px solid #fecaca', borderRadius: 6, padding: '8px 12px' }}>
+              <div style={{ fontSize: 13, color: 'var(--status-lost-text)', background: 'var(--status-lost-bg)',
+                border: '1px solid var(--status-lost-border)', borderRadius: 6, padding: '8px 12px' }}>
                 {errMsg}
               </div>
             )}
@@ -1763,7 +1763,7 @@ function DrawSchedule({ planId, houseTypeId, draws }) {
                   Edit
                 </button>
                 <button onClick={() => { if (window.confirm('Delete this draw?')) deleteDraw.mutate(d.draw_number) }}
-                  style={{ fontSize: 11, background: 'none', border: '1px solid #fecaca',
+                  style={{ fontSize: 11, background: 'none', border: '1px solid var(--status-lost-border)',
                     borderRadius: 4, padding: '1px 6px', cursor: 'pointer', color: 'var(--danger)' }}>
                   ×
                 </button>
