@@ -9,7 +9,7 @@ export default function NewPlan() {
   const qc = useQueryClient()
 
   const [form, setForm] = useState({
-    project_id: '', house_type: '', number_of_zones: 1, notes: '',
+    project_id: '', house_type: '', number_of_zones: 1, factor: '0.69', notes: '',
   })
   const [copyFromId, setCopyFromId] = useState('')
   const [templateId, setTemplateId] = useState('')
@@ -143,10 +143,16 @@ export default function NewPlan() {
             </select>
           </div>
           <div>
-            <label>Notes</label>
-            <input placeholder="Optional notes"
-              value={form.notes} onChange={e => set('notes', e.target.value)} />
+            <label>Factor <span style={{ fontWeight: 400, color: 'var(--gray-400)' }}>(markup divisor, e.g. 0.69 = 31% margin)</span></label>
+            <input type="number" step="0.01" min="0.1" max="1" placeholder="0.69"
+              value={form.factor} onChange={e => set('factor', e.target.value)} />
           </div>
+        </div>
+
+        <div style={{ marginBottom: 12 }}>
+          <label>Notes</label>
+          <input placeholder="Optional notes"
+            value={form.notes} onChange={e => set('notes', e.target.value)} />
         </div>
 
         {templateOptions.length > 0 && (
@@ -326,6 +332,7 @@ export default function NewPlan() {
               project_id: parseInt(form.project_id),
               house_type: form.house_type,
               number_of_zones: form.number_of_zones,
+              factor: parseFloat(form.factor) || 0.69,
               notes: form.notes,
             })}>
             {createPlan.isPending ? 'Creating...' : 'Create Plan'}

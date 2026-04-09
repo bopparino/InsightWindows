@@ -541,7 +541,7 @@ function AddHouseTypeForm({ planId, onDone }) {
 }
 
 // ── Zone header with inline label editing ─────────────────────
-function ZoneHeader({ sys, isOnly, onLabelSave, onDelete }) {
+function ZoneHeader({ sys, isOnly, onLabelSave, onDelete, zoneBid }) {
   const [editing, setEditing] = useState(false)
   const [label, setLabel] = useState(sys.zone_label || '')
 
@@ -552,7 +552,7 @@ function ZoneHeader({ sys, isOnly, onLabelSave, onDelete }) {
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
       <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--gray-800)', flexShrink: 0 }}>
         Zone {sys.system_number}
       </span>
@@ -580,12 +580,19 @@ function ZoneHeader({ sys, isOnly, onLabelSave, onDelete }) {
           {sys.zone_label || 'add label…'}
         </span>
       )}
+      {/* Zone total always visible in header */}
+      {zoneBid > 0 && (
+        <span style={{ marginLeft: 'auto', fontWeight: 700, fontSize: 15, color: 'var(--blue)',
+          flexShrink: 0 }}>
+          ${zoneBid.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+        </span>
+      )}
       {!isOnly && (
         <button
           onClick={onDelete}
-          style={{ marginLeft: 'auto', background: 'none', border: 'none',
+          style={{ background: 'none', border: 'none',
             color: 'var(--gray-300)', cursor: 'pointer', fontSize: 16,
-            padding: '2px 4px', lineHeight: 1 }}
+            padding: '2px 4px', lineHeight: 1, flexShrink: 0 }}
           title="Delete this zone">
           ×
         </button>
@@ -602,6 +609,7 @@ const PERMIT_COST  = 170
 // ── Bid receipt (per zone) ─────────────────────────────────────
 function BidSummary({ planId, system, factor }) {
   const qc = useQueryClient()
+  const [expanded, setExpanded] = useState(false)
   const [fields, setFields] = useState({
     labor_hrs:     system.labor_hrs,
     service_qty:   system.service_qty,
@@ -648,106 +656,132 @@ function BidSummary({ planId, system, factor }) {
   const hintStyle = { fontSize: 12, color: 'var(--gray-400)' }
 
   return (
-    <div style={{ marginTop: 20, borderTop: '2px solid var(--gray-200)', paddingTop: 16 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
-        letterSpacing: '0.08em', color: 'var(--gray-400)', marginBottom: 10 }}>
-        Zone Bid Breakdown
-      </div>
+    <div style={{ marginTop: 16, borderTop: '2px solid var(--gray-100)', paddingTop: 12 }}>
 
-      {/* Materials */}
-      {matCost > 0 && (
-        <div style={rowStyle}>
-          <div style={labelStyle}>
-            Kit items &amp; materials
-            <span style={hintStyle}>÷ {factor.toFixed(2)} factor</span>
+      {/* Collapsed: just show total + expand toggle */}
+      {!expanded ? (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button
+            onClick={() => setExpanded(true)}
+            style={{ fontSize: 13, color: 'var(--gray-400)', background: 'none', border: 'none',
+              cursor: 'pointer', padding: '4px 0', display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ fontSize: 10 }}>▸</span> Adjust labor, permit &amp; tax
+          </button>
+          <span style={{ fontSize: 24, fontWeight: 800, color: 'var(--blue)' }}>
+            {fmt(finalBid)}
+          </span>
+        </div>
+      ) : (
+        /* Expanded: full breakdown */
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+              letterSpacing: '0.08em', color: 'var(--gray-400)' }}>
+              Zone Bid Breakdown
+            </div>
+            <button onClick={() => setExpanded(false)}
+              style={{ fontSize: 12, color: 'var(--gray-400)', background: 'none',
+                border: 'none', cursor: 'pointer' }}>
+              ▾ Hide
+            </button>
           </div>
-          <span style={amtStyle}>{fmt(matSelling)}</span>
+
+          {/* Materials */}
+          {matCost > 0 && (
+            <div style={rowStyle}>
+              <div style={labelStyle}>
+                Kit items &amp; materials
+                <span style={hintStyle}>÷ {factor.toFixed(2)} factor</span>
+              </div>
+              <span style={amtStyle}>{fmt(matSelling)}</span>
+            </div>
+          )}
+
+          {/* Equipment */}
+          {equipSell > 0 && (
+            <div style={rowStyle}>
+              <span style={labelStyle}>Equipment</span>
+              <span style={amtStyle}>{fmtP(equipSell)}</span>
+            </div>
+          )}
+
+          {/* Labor */}
+          <div style={rowStyle}>
+            <label style={{ ...labelStyle, cursor: 'default', margin: 0 }}>
+              Labor
+              <input
+                type="number" min="0" step="0.5"
+                value={fields.labor_hrs}
+                onChange={e => setFields(f => ({ ...f, labor_hrs: parseFloat(e.target.value) || 0 }))}
+                onBlur={e => commit({ labor_hrs: parseFloat(e.target.value) || 0 })}
+                style={inputStyle}
+              />
+              <span style={hintStyle}>hrs × ${LABOR_RATE}/hr</span>
+            </label>
+            <span style={amtStyle}>{fmtP(laborAmt)}</span>
+          </div>
+
+          {/* Service */}
+          <div style={rowStyle}>
+            <label style={{ ...labelStyle, cursor: 'default', margin: 0 }}>
+              Service calls
+              <input
+                type="number" min="0" step="1"
+                value={fields.service_qty}
+                onChange={e => setFields(f => ({ ...f, service_qty: parseInt(e.target.value) || 0 }))}
+                onBlur={e => commit({ service_qty: parseInt(e.target.value) || 0 })}
+                style={inputStyle}
+              />
+              <span style={hintStyle}>× ${SERVICE_RATE} each</span>
+            </label>
+            <span style={amtStyle}>{fmtP(serviceAmt)}</span>
+          </div>
+
+          {/* Permit */}
+          <div style={rowStyle}>
+            <label style={{ ...labelStyle, cursor: 'pointer', margin: 0 }}>
+              <input
+                type="checkbox" checked={fields.permit_yn}
+                onChange={e => commit({ permit_yn: e.target.checked })}
+                style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--blue)' }}
+              />
+              Permit required
+              <span style={hintStyle}>${PERMIT_COST} flat</span>
+            </label>
+            <span style={{ ...amtStyle, color: fields.permit_yn ? 'var(--gray-800)' : 'var(--gray-300)' }}>
+              {fmtP(permitAmt)}
+            </span>
+          </div>
+
+          {/* Sales tax */}
+          <div style={{ ...rowStyle, borderBottom: 'none' }}>
+            <label style={{ ...labelStyle, cursor: 'default', margin: 0 }}>
+              Sales tax
+              <input
+                type="number" min="0" max="20" step="0.5"
+                value={parseFloat((fields.sales_tax_pct * 100).toFixed(1))}
+                onChange={e => setFields(f => ({ ...f, sales_tax_pct: (parseFloat(e.target.value) || 0) / 100 }))}
+                onBlur={e => commit({ sales_tax_pct: (parseFloat(e.target.value) || 0) / 100 })}
+                style={inputStyle}
+              />
+              <span style={hintStyle}>% on materials</span>
+            </label>
+            <span style={amtStyle}>{fmtP(taxAmt)}</span>
+          </div>
+
+          {/* Final bid */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            marginTop: 14, paddingTop: 14, borderTop: '3px solid var(--gray-800)' }}>
+            <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--gray-900)',
+              textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+              Zone Bid
+            </span>
+            <span style={{ fontSize: 26, fontWeight: 800, color: 'var(--blue)' }}>
+              {fmt(finalBid)}
+            </span>
+          </div>
         </div>
       )}
-
-      {/* Equipment */}
-      {equipSell > 0 && (
-        <div style={rowStyle}>
-          <span style={labelStyle}>Equipment</span>
-          <span style={amtStyle}>{fmtP(equipSell)}</span>
-        </div>
-      )}
-
-      {/* Labor */}
-      <div style={rowStyle}>
-        <label style={{ ...labelStyle, cursor: 'default', margin: 0 }}>
-          Labor
-          <input
-            type="number" min="0" step="0.5"
-            value={fields.labor_hrs}
-            onChange={e => setFields(f => ({ ...f, labor_hrs: parseFloat(e.target.value) || 0 }))}
-            onBlur={e => commit({ labor_hrs: parseFloat(e.target.value) || 0 })}
-            style={inputStyle}
-          />
-          <span style={hintStyle}>hrs × ${LABOR_RATE}/hr</span>
-        </label>
-        <span style={amtStyle}>{fmtP(laborAmt)}</span>
-      </div>
-
-      {/* Service */}
-      <div style={rowStyle}>
-        <label style={{ ...labelStyle, cursor: 'default', margin: 0 }}>
-          Service calls
-          <input
-            type="number" min="0" step="1"
-            value={fields.service_qty}
-            onChange={e => setFields(f => ({ ...f, service_qty: parseInt(e.target.value) || 0 }))}
-            onBlur={e => commit({ service_qty: parseInt(e.target.value) || 0 })}
-            style={inputStyle}
-          />
-          <span style={hintStyle}>× ${SERVICE_RATE} each</span>
-        </label>
-        <span style={amtStyle}>{fmtP(serviceAmt)}</span>
-      </div>
-
-      {/* Permit */}
-      <div style={rowStyle}>
-        <label style={{ ...labelStyle, cursor: 'pointer', margin: 0 }}>
-          <input
-            type="checkbox" checked={fields.permit_yn}
-            onChange={e => commit({ permit_yn: e.target.checked })}
-            style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--blue)' }}
-          />
-          Permit required
-          <span style={hintStyle}>${PERMIT_COST} flat</span>
-        </label>
-        <span style={{ ...amtStyle, color: fields.permit_yn ? 'var(--gray-800)' : 'var(--gray-300)' }}>
-          {fmtP(permitAmt)}
-        </span>
-      </div>
-
-      {/* Sales tax */}
-      <div style={{ ...rowStyle, borderBottom: 'none' }}>
-        <label style={{ ...labelStyle, cursor: 'default', margin: 0 }}>
-          Sales tax
-          <input
-            type="number" min="0" max="20" step="0.5"
-            value={parseFloat((fields.sales_tax_pct * 100).toFixed(1))}
-            onChange={e => setFields(f => ({ ...f, sales_tax_pct: (parseFloat(e.target.value) || 0) / 100 }))}
-            onBlur={e => commit({ sales_tax_pct: (parseFloat(e.target.value) || 0) / 100 })}
-            style={inputStyle}
-          />
-          <span style={hintStyle}>% on materials</span>
-        </label>
-        <span style={amtStyle}>{fmtP(taxAmt)}</span>
-      </div>
-
-      {/* Final bid */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        marginTop: 14, paddingTop: 14, borderTop: '3px solid var(--gray-800)' }}>
-        <span style={{ fontSize: 17, fontWeight: 700, color: 'var(--gray-900)',
-          textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-          Zone Bid
-        </span>
-        <span style={{ fontSize: 26, fontWeight: 800, color: 'var(--blue)' }}>
-          {fmt(finalBid)}
-        </span>
-      </div>
     </div>
   )
 }
@@ -1087,43 +1121,34 @@ export default function PlanDetail() {
             {plan.contracted_at && ` · ${new Date(plan.contracted_at).toLocaleDateString()}`}
           </div>
         </div>
-        <div className="card" style={{ background: 'var(--blue-light)', border: '1px solid var(--blue-mid)', position: 'relative' }}>
+        <div className="card" style={{ background: 'var(--blue-light)', border: '1px solid var(--blue-mid)' }}>
           <div style={{ fontSize: 12, color: 'var(--blue)', marginBottom: 4, fontWeight: 600 }}>Total Bid</div>
           <div style={{ fontWeight: 800, fontSize: 28, color: 'var(--blue)', lineHeight: 1 }}>
             ${totalBid.toLocaleString('en-US', { minimumFractionDigits: 2 })}
           </div>
-          <div style={{ fontSize: 12, color: 'var(--blue)', opacity: 0.7, marginTop: 6 }}>
-            Factor {plan.factor.toFixed(2)} · {((1 - plan.factor) * 100).toFixed(0)}% margin
-            <button
-              onClick={() => { setFactorInput(String(plan.factor)); setEditingFactor(true) }}
-              style={{ marginLeft: 6, background: 'none', border: 'none', color: 'var(--blue)',
-                cursor: 'pointer', fontSize: 12, padding: 0, opacity: 0.7 }}
-              title="Edit factor">✎</button>
+          {/* Always-visible margin editor */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10 }}>
+            <span style={{ fontSize: 12, color: 'var(--blue)', opacity: 0.8 }}>Margin</span>
+            <input
+              type="number" min="1" max="60" step="1"
+              value={editingFactor ? factorInput : Math.round((1 - plan.factor) * 100)}
+              onFocus={() => { setFactorInput(String(Math.round((1 - plan.factor) * 100))); setEditingFactor(true) }}
+              onChange={e => setFactorInput(e.target.value)}
+              onBlur={() => {
+                const pct = parseFloat(factorInput)
+                if (pct > 0 && pct < 100) updateFactor.mutate(+(1 - pct / 100).toFixed(4))
+                setEditingFactor(false)
+              }}
+              onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }}
+              style={{ width: 52, fontSize: 15, fontWeight: 700, textAlign: 'center',
+                background: 'white', border: '1px solid var(--blue-mid)', borderRadius: 6,
+                padding: '3px 4px', color: 'var(--blue)' }}
+            />
+            <span style={{ fontSize: 12, color: 'var(--blue)', opacity: 0.8 }}>%</span>
+            <span style={{ fontSize: 11, color: 'var(--blue)', opacity: 0.5, marginLeft: 2 }}>
+              factor {plan.factor.toFixed(2)}
+            </span>
           </div>
-          {editingFactor && (
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-              background: 'var(--blue-light)', borderRadius: 'var(--radius)',
-              display: 'flex', flexDirection: 'column', justifyContent: 'center',
-              alignItems: 'center', gap: 8, padding: 16, border: '2px solid var(--blue)' }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--blue)' }}>Edit Factor</div>
-              <input
-                type="number" min="0.01" max="1" step="0.01"
-                value={factorInput} autoFocus
-                onChange={e => setFactorInput(e.target.value)}
-                onBlur={() => {
-                  const f = parseFloat(factorInput)
-                  if (f > 0 && f <= 1) updateFactor.mutate(f)
-                  setEditingFactor(false)
-                }}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') e.currentTarget.blur()
-                  if (e.key === 'Escape') setEditingFactor(false)
-                }}
-                style={{ fontWeight: 700, fontSize: 24, width: 90, textAlign: 'center', padding: '4px 8px' }}
-              />
-              <div style={{ fontSize: 11, color: 'var(--gray-500)' }}>Enter to save · Esc to cancel</div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -1225,7 +1250,15 @@ export default function PlanDetail() {
             </div>
           </div>
 
-          {ht.systems.map((sys) => (
+          {ht.systems.map((sys) => {
+            const sysMatCost = sys.line_items.reduce((s, li) => s + li.extended_price, 0)
+            const sysZoneBid = (plan.factor > 0 ? sysMatCost / plan.factor : 0)
+              + (sys.equipment_system?.bid_price ?? 0)
+              + (sys.labor_hrs ?? 0) * LABOR_RATE
+              + (sys.service_qty ?? 0) * SERVICE_RATE
+              + (sys.permit_yn ? PERMIT_COST : 0)
+              + sysMatCost * (sys.sales_tax_pct ?? 0.06)
+            return (
             <div key={sys.id} style={{
               border: '1px solid var(--gray-200)', borderRadius: 10,
               overflow: 'hidden', marginBottom: 16,
@@ -1238,6 +1271,7 @@ export default function PlanDetail() {
                 <ZoneHeader
                   sys={sys}
                   isOnly={ht.systems.length === 1}
+                  zoneBid={sysZoneBid}
                   onLabelSave={(label) => updateZoneLabel.mutate({ systemId: sys.id, zone_label: label })}
                   onDelete={() => {
                     if (window.confirm(`Delete Zone ${sys.system_number}${sys.zone_label ? ` — ${sys.zone_label}` : ''}?\n\nAll line items in this zone will be lost.`))
@@ -1355,7 +1389,8 @@ export default function PlanDetail() {
                 />
               )}
             </div>
-          ))}
+          )
+          })}
 
           {/* Add zone */}
           <button

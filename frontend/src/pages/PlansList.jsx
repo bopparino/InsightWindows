@@ -230,8 +230,6 @@ export default function PlansList() {
                 <th>Plan #</th>
                 <th>Project</th>
                 <th>Builder</th>
-                <th>House type</th>
-                <th style={{ textAlign: 'center' }}>Zones</th>
                 <th style={{ textAlign: 'right' }}>Total bid</th>
                 <th style={{ textAlign: 'center' }}>Status</th>
                 <th style={{ textAlign: 'right', paddingRight: 20 }}>Created</th>
@@ -248,31 +246,24 @@ export default function PlansList() {
                     </td>
                     <td>
                       <Link to={`/plans/${p.id}`}
-                        style={{ fontWeight: 600, color: 'var(--blue-mid)' }}>
+                        style={{ fontWeight: 700, fontSize: 15, color: 'var(--blue-mid)' }}>
                         {p.plan_number}
                       </Link>
                     </td>
                     <td>
-                      {p.project_name}
-                      <span style={{ color: 'var(--gray-400)', fontSize: 12,
-                        marginLeft: 6 }}>({p.project_code})</span>
+                      <div style={{ fontWeight: 500 }}>{p.project_name}</div>
+                      <div style={{ color: 'var(--gray-400)', fontSize: 12 }}>{p.project_code}</div>
                     </td>
-                    <td style={{ fontSize: 13 }}>{p.builder_name}</td>
-                    <td style={{ fontSize: 13, color: 'var(--gray-600)' }}>
-                      {p.house_type || '—'}
-                    </td>
-                    <td style={{ textAlign: 'center', fontSize: 13 }}>
-                      {p.number_of_zones}
-                    </td>
-                    <td style={{ textAlign: 'right', fontWeight: 600, fontSize: 13 }}>
+                    <td>{p.builder_name}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 600 }}>
                       {p.total_bid > 0
                         ? '$' + p.total_bid.toLocaleString('en-US', { minimumFractionDigits: 2 })
                         : '—'}
                     </td>
                     <td style={{ textAlign: 'center' }}>
-                      <span style={{ fontSize: 12, padding: '3px 10px', borderRadius: 99,
-                        fontWeight: 500, background: s.bg, color: s.text,
-                        border: `1px solid ${s.border}` }}>
+                      <span style={{ fontSize: 13, padding: '4px 12px', borderRadius: 99,
+                        fontWeight: 600, background: s.bg, color: s.text,
+                        border: `1px solid ${s.border}`, display: 'inline-block' }}>
                         {p.status}
                       </span>
                     </td>

@@ -254,8 +254,7 @@ export default function Builders() {
                 <th>Contact</th>
                 <th>Phone</th>
                 <th>Email</th>
-                <th>Location</th>
-                <th style={{ width: 100 }}></th>
+                <th style={{ width: 130 }}></th>
               </tr>
             </thead>
             <tbody>
@@ -280,35 +279,25 @@ export default function Builders() {
                     <td style={{ fontSize: 13, color: 'var(--gray-600)' }}>
                       {b.email || '—'}
                     </td>
-                    <td style={{ fontSize: 13, color: 'var(--gray-600)' }}>
-                      {[b.city, b.state].filter(Boolean).join(', ') || '—'}
-                    </td>
                     <td style={{ textAlign: 'right', paddingRight: 16, whiteSpace: 'nowrap' }}>
-                      <button
+                      <button className="btn-secondary btn-sm"
                         onClick={() => setEditingId(editingId === b.id ? null : b.id)}
-                        style={{ background: 'none', color: 'var(--gray-400)',
-                          padding: '3px 7px', fontSize: 14, marginRight: 4,
-                          border: '1px solid var(--gray-200)', borderRadius: 6,
-                          cursor: 'pointer' }}
-                        title="Edit">
-                        ✎
+                        style={{ marginRight: 6 }}>
+                        {editingId === b.id ? 'Cancel' : 'Edit'}
                       </button>
-                      <button
+                      <button className="btn-danger btn-sm"
                         onClick={() => {
                           if (window.confirm(
                             `Delete builder "${b.name}" (${b.code})?\n\nThis will fail if any projects reference this builder.`
                           )) deleteBuilder.mutate(b.id)
-                        }}
-                        style={{ background: 'none', color: 'var(--danger)',
-                          border: '1px solid #fecaca', borderRadius: 6,
-                          padding: '3px 8px', fontSize: 12, cursor: 'pointer' }}>
+                        }}>
                         Delete
                       </button>
                     </td>
                   </tr>
                   {editingId === b.id && (
                     <tr key={`${b.id}-edit`}>
-                      <td colSpan={8} style={{ padding: '0 16px 16px' }}>
+                      <td colSpan={7} style={{ padding: '0 16px 16px' }}>
                         <BuilderForm
                           initial={{
                             code: b.code, name: b.name,

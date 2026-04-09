@@ -59,7 +59,7 @@ export default function Projects() {
 
   useEffect(() => { setPage(1) }, [search])
 
-  const { data: projectList = [], isLoading } = useQuery({
+  const { data: projectList = [], isLoading, refetch } = useQuery({
     queryKey: ['projects'], queryFn: projects.list,
   })
   const { data: builderList = [] } = useQuery({
@@ -226,24 +226,17 @@ export default function Projects() {
                       </span>
                     </td>
                     <td style={{ textAlign: 'right', paddingRight: 16, whiteSpace: 'nowrap' }}>
-                      <button
+                      <button className="btn-secondary btn-sm"
                         onClick={() => setEditingId(editingId === p.id ? null : p.id)}
-                        style={{ background: 'none', color: 'var(--gray-400)',
-                          padding: '3px 7px', fontSize: 14, marginRight: 4,
-                          border: '1px solid var(--gray-200)', borderRadius: 6,
-                          cursor: 'pointer' }}
-                        title="Edit">
-                        ✎
+                        style={{ marginRight: 6 }}>
+                        {editingId === p.id ? 'Cancel' : 'Edit'}
                       </button>
-                      <button
+                      <button className="btn-danger btn-sm"
                         onClick={() => {
                           if (window.confirm(
                             `Delete project "${p.name}" (${p.code})?\n\nThis will fail if any plans reference it.`
                           )) deleteProject.mutate(p.id)
-                        }}
-                        style={{ background: 'none', color: 'var(--danger)',
-                          border: '1px solid #fecaca', borderRadius: 6,
-                          padding: '3px 8px', fontSize: 12, cursor: 'pointer' }}>
+                        }}>
                         Delete
                       </button>
                     </td>
