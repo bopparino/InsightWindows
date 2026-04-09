@@ -164,6 +164,17 @@ export const kit = {
   createVariant:  (data)     => api.post('/kit/variants', data).then(r => r.data),
   updateVariant:  (id, data) => api.patch(`/kit/variants/${id}`, data).then(r => r.data),
   removeVariant:  (id)       => api.delete(`/kit/variants/${id}`).then(r => r.data),
+
+  // KitComponent (template) CRUD — admin only
+  listComponents:   (variantId)       => api.get(`/kit/variants/${variantId}/components`).then(r => r.data),
+  addComponent:     (variantId, data) => api.post(`/kit/variants/${variantId}/components`, data).then(r => r.data),
+  updateComponent:  (id, data)        => api.patch(`/kit/components/${id}`, data).then(r => r.data),
+  removeComponent:  (id)              => api.delete(`/kit/components/${id}`).then(r => r.data),
+
+  // LineItemComponent (bid snapshot) — estimator
+  listLineItemComponents:  (lineItemId) => api.get(`/kit/line-items/${lineItemId}/components`).then(r => r.data),
+  updateLineItemComponent: (id, data)   => api.patch(`/kit/line-item-components/${id}`, data).then(r => r.data),
+  removeLineItemComponent: (id)         => api.delete(`/kit/line-item-components/${id}`).then(r => r.data),
 }
 
 export const companyApi = {

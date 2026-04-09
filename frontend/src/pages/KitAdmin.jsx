@@ -5,12 +5,156 @@
  * markup_divisor < 1.0 means the item has an embedded margin:
  *   internal cost = per_kit × markup_divisor
  *   margin %      = (1 − markup_divisor) × 100
+ *
+ * Each variant can have template components (KitComponent) that define
+ * what gets snapshotted into a bid when the kit is selected.
  */
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { kit } from '../api/client'
 
 function fmt(n) { return n > 0 ? `$${Number(n).toFixed(2)}` : '—' }
+function fmtCost(n) { return n > 0 ? `$${Number(n).toFixed(4)}` : '$0.0000' }
+
+// ── Component Editor (per-variant template components) ────────
+function ComponentEditor({ variant }) {
+  const queryClient = useQueryClient()
+  const qKey = ['kit-components', variant.id]
+
+  const { data: components = [], isLoading } = useQuery({
+    queryKey: qKey,
+    queryFn:  () => kit.listComponents(variant.id),
+  })
+
+  const EMPTY = { description: '', part_number: '', quantity: '1', unit_cost: '', sort_order: '10' }
+  const [newRow, setNewRow] = useState(EMPTY)
+  const [editId, setEditId] = useState(null)
+  const [editRow, setEditRow] = useState({})
+
+  const addMut = useMutation({
+    mutationFn: (data) => kit.addComponent(variant.id, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: qKey }); setNewRow(EMPTY) },
+  })
+  const updateMut = useMutation({
+    mutationFn: ({ id, data }) => kit.updateComponent(id, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: qKey }); setEditId(null) },
+  })
+  const removeMut = useMutation({
+    mutationFn: (id) => kit.removeComponent(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: qKey }),
+  })
+
+  function startEdit(c) {
+    setEditId(c.id)
+    setEditRow({ description: c.description, part_number: c.part_number || '', quantity: String(c.quantity), unit_cost: String(c.unit_cost), sort_order: String(c.sort_order) })
+  }
+
+  function submitEdit() {
+    updateMut.mutate({ id: editId, data: {
+      description: editRow.description.trim(),
+      part_number: editRow.part_number.trim() || null,
+      quantity:    parseFloat(editRow.quantity) || 1,
+      unit_cost:   parseFloat(editRow.unit_cost) || 0,
+      sort_order:  parseInt(editRow.sort_order, 10) || 10,
+    }})
+  }
+
+  function submitNew() {
+    if (!newRow.description.trim()) return
+    addMut.mutate({
+      description: newRow.description.trim(),
+      part_number: newRow.part_number.trim() || null,
+      quantity:    parseFloat(newRow.quantity) || 1,
+      unit_cost:   parseFloat(newRow.unit_cost) || 0,
+      sort_order:  parseInt(newRow.sort_order, 10) || 10,
+    })
+  }
+
+  const inputStyle = { fontSize: 12, padding: '3px 5px', width: '100%' }
+  const tdStyle    = { padding: '4px 6px', verticalAlign: 'middle' }
+
+  return (
+    <div style={{ padding: '10px 16px 14px', background: 'var(--gray-50)', borderTop: '1px solid var(--gray-200)' }}>
+      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--gray-400)', marginBottom: 8 }}>
+        Template Components — {variant.variant_name}
+      </div>
+
+      {isLoading ? (
+        <span className="spinner" style={{ width: 16, height: 16 }} />
+      ) : (
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+          <thead>
+            <tr>
+              {['Sort', 'Description', 'Part #', 'Qty', 'Unit Cost', 'Ext Cost', ''].map((h, i) => (
+                <th key={i} style={{ padding: '4px 6px', textAlign: i >= 3 ? 'right' : 'left', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--gray-400)', borderBottom: '1px solid var(--gray-200)', whiteSpace: 'nowrap', width: i === 6 ? 100 : undefined }}>
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {components.map(c => (
+              editId === c.id ? (
+                <tr key={c.id} style={{ background: 'var(--blue-light)' }}>
+                  <td style={tdStyle}><input type="number" value={editRow.sort_order} onChange={e => setEditRow(r => ({...r, sort_order: e.target.value}))} style={{ ...inputStyle, width: 48, textAlign: 'center' }} /></td>
+                  <td style={tdStyle}><input value={editRow.description} onChange={e => setEditRow(r => ({...r, description: e.target.value}))} style={inputStyle} /></td>
+                  <td style={tdStyle}><input value={editRow.part_number} onChange={e => setEditRow(r => ({...r, part_number: e.target.value}))} style={{ ...inputStyle, width: 90 }} /></td>
+                  <td style={tdStyle}><input type="number" step="0.001" value={editRow.quantity} onChange={e => setEditRow(r => ({...r, quantity: e.target.value}))} style={{ ...inputStyle, width: 60, textAlign: 'right' }} /></td>
+                  <td style={tdStyle}><input type="number" step="0.0001" value={editRow.unit_cost} onChange={e => setEditRow(r => ({...r, unit_cost: e.target.value}))} style={{ ...inputStyle, width: 80, textAlign: 'right' }} /></td>
+                  <td style={{ ...tdStyle, textAlign: 'right', color: 'var(--gray-500)' }}>
+                    {fmtCost((parseFloat(editRow.quantity) || 0) * (parseFloat(editRow.unit_cost) || 0))}
+                  </td>
+                  <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
+                    <button className="btn-primary btn-sm" onClick={submitEdit} disabled={updateMut.isPending} style={{ marginRight: 4 }}>Save</button>
+                    <button className="btn-secondary btn-sm" onClick={() => setEditId(null)}>✕</button>
+                  </td>
+                </tr>
+              ) : (
+                <tr key={c.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
+                  <td style={{ ...tdStyle, textAlign: 'center', color: 'var(--gray-400)' }}>{c.sort_order}</td>
+                  <td style={tdStyle}>{c.description}</td>
+                  <td style={{ ...tdStyle, color: 'var(--gray-500)', fontFamily: 'monospace', fontSize: 11 }}>{c.part_number || '—'}</td>
+                  <td style={{ ...tdStyle, textAlign: 'right' }}>{c.quantity}</td>
+                  <td style={{ ...tdStyle, textAlign: 'right' }}>{fmtCost(c.unit_cost)}</td>
+                  <td style={{ ...tdStyle, textAlign: 'right', color: 'var(--gray-500)' }}>{fmtCost(c.extended_cost)}</td>
+                  <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
+                    <button className="btn-secondary btn-sm" onClick={() => startEdit(c)} style={{ marginRight: 4 }}>Edit</button>
+                    <button className="btn-danger btn-sm" onClick={() => { if (window.confirm(`Remove "${c.description}" from template?`)) removeMut.mutate(c.id) }} disabled={removeMut.isPending}>✕</button>
+                  </td>
+                </tr>
+              )
+            ))}
+
+            {/* Add new component row */}
+            <tr style={{ background: 'var(--card-bg)', borderTop: '1px dashed var(--gray-200)' }}>
+              <td style={tdStyle}><input type="number" placeholder="10" value={newRow.sort_order} onChange={e => setNewRow(r => ({...r, sort_order: e.target.value}))} style={{ ...inputStyle, width: 48, textAlign: 'center' }} /></td>
+              <td style={tdStyle}><input placeholder="Description" value={newRow.description} onChange={e => setNewRow(r => ({...r, description: e.target.value}))} style={inputStyle} /></td>
+              <td style={tdStyle}><input placeholder="Part #" value={newRow.part_number} onChange={e => setNewRow(r => ({...r, part_number: e.target.value}))} style={{ ...inputStyle, width: 90 }} /></td>
+              <td style={tdStyle}><input type="number" step="0.001" placeholder="1" value={newRow.quantity} onChange={e => setNewRow(r => ({...r, quantity: e.target.value}))} style={{ ...inputStyle, width: 60, textAlign: 'right' }} /></td>
+              <td style={tdStyle}><input type="number" step="0.0001" placeholder="0.00" value={newRow.unit_cost} onChange={e => setNewRow(r => ({...r, unit_cost: e.target.value}))} style={{ ...inputStyle, width: 80, textAlign: 'right' }} /></td>
+              <td style={{ ...tdStyle, textAlign: 'right', color: 'var(--gray-400)', fontSize: 11 }}>
+                {fmtCost((parseFloat(newRow.quantity) || 0) * (parseFloat(newRow.unit_cost) || 0))}
+              </td>
+              <td style={tdStyle}>
+                <button className="btn-primary btn-sm" onClick={submitNew} disabled={addMut.isPending || !newRow.description.trim()}>
+                  {addMut.isPending ? '…' : '+ Add'}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      )}
+
+      {components.length > 0 && (
+        <div style={{ marginTop: 6, textAlign: 'right', fontSize: 11, color: 'var(--gray-400)' }}>
+          Total template cost: <strong style={{ color: 'var(--gray-600)' }}>
+            {fmtCost(components.reduce((s, c) => s + c.extended_cost, 0))}
+          </strong>
+        </div>
+      )}
+    </div>
+  )
+}
 
 // ── Inline edit row ───────────────────────────────────────────
 function EditRow({ v, cat, onSave, onCancel, saving }) {
@@ -102,6 +246,15 @@ function AddRow({ cat, onAdd, adding }) {
 // ── Single category accordion ─────────────────────────────────
 function CategorySection({ cat, editingId, savingId, addingCat, deletingId, onEdit, onAdd, onDelete }) {
   const [open, setOpen] = useState(false)
+  const [expandedComponents, setExpandedComponents] = useState(new Set())
+
+  function toggleComponents(variantId) {
+    setExpandedComponents(prev => {
+      const next = new Set(prev)
+      next.has(variantId) ? next.delete(variantId) : next.add(variantId)
+      return next
+    })
+  }
 
   const TH = ({ children, right, center, w }) => (
     <th style={{
@@ -146,7 +299,7 @@ function CategorySection({ cat, editingId, savingId, addingCat, deletingId, onEd
               <TH right w={100}>Your Cost</TH>
               <TH right w={110}>Per Foot</TH>
               <TH center w={60}>Sort</TH>
-              <TH w={140}>Actions</TH>
+              <TH w={190}>Actions</TH>
             </tr>
           </thead>
           <tbody>
@@ -157,43 +310,55 @@ function CategorySection({ cat, editingId, savingId, addingCat, deletingId, onEd
                   onCancel={() => onEdit(null, null)}
                   saving={savingId === v.id} />
               ) : (
-                <tr key={v.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
-                  <td style={{ padding: '8px 8px', color: 'var(--gray-500)', fontFamily: 'monospace', fontSize: 11 }}>
-                    {v.variant_code}
-                  </td>
-                  <td style={{ padding: '8px 8px' }}>{v.variant_name}</td>
-                  <td style={{ padding: '8px 8px', textAlign: 'right', fontWeight: 600 }}>
-                    {fmt(v.per_kit)}
-                  </td>
-                  <td style={{ padding: '8px 8px', textAlign: 'center', fontSize: 12,
-                    color: v.markup_divisor < 1.0 ? '#166534' : 'var(--gray-300)' }}>
-                    {v.markup_divisor < 1.0 ? `${v.margin_pct}%` : '—'}
-                  </td>
-                  <td style={{ padding: '8px 8px', textAlign: 'right', fontSize: 12,
-                    color: v.markup_divisor < 1.0 ? 'var(--gray-600)' : 'var(--gray-300)' }}>
-                    {v.markup_divisor < 1.0
-                      ? <span>
-                          {fmt(v.internal_cost)}
-                          <span style={{ marginLeft: 4, fontSize: 10, color: 'var(--success)', fontWeight: 600 }}>
-                            {v.margin_pct}%
+                <>
+                  <tr key={v.id} style={{ borderBottom: expandedComponents.has(v.id) ? 'none' : '1px solid var(--gray-100)' }}>
+                    <td style={{ padding: '8px 8px', color: 'var(--gray-500)', fontFamily: 'monospace', fontSize: 11 }}>
+                      {v.variant_code}
+                    </td>
+                    <td style={{ padding: '8px 8px' }}>{v.variant_name}</td>
+                    <td style={{ padding: '8px 8px', textAlign: 'right', fontWeight: 600 }}>
+                      {fmt(v.per_kit)}
+                    </td>
+                    <td style={{ padding: '8px 8px', textAlign: 'center', fontSize: 12,
+                      color: v.markup_divisor < 1.0 ? '#166534' : 'var(--gray-300)' }}>
+                      {v.markup_divisor < 1.0 ? `${v.margin_pct}%` : '—'}
+                    </td>
+                    <td style={{ padding: '8px 8px', textAlign: 'right', fontSize: 12,
+                      color: v.markup_divisor < 1.0 ? 'var(--gray-600)' : 'var(--gray-300)' }}>
+                      {v.markup_divisor < 1.0
+                        ? <span>
+                            {fmt(v.internal_cost)}
+                            <span style={{ marginLeft: 4, fontSize: 10, color: 'var(--success)', fontWeight: 600 }}>
+                              {v.margin_pct}%
+                            </span>
                           </span>
-                        </span>
-                      : '—'}
-                  </td>
-                  <td style={{ padding: '8px 8px', textAlign: 'right',
-                    color: v.per_foot > 0 ? 'var(--gray-700)' : 'var(--gray-300)' }}>
-                    {v.per_foot > 0 ? `$${v.per_foot.toFixed(2)}/ft` : '—'}
-                  </td>
-                  <td style={{ padding: '8px 8px', textAlign: 'center', color: 'var(--gray-400)', fontSize: 12 }}>
-                    {v.sort_order}
-                  </td>
-                  <td style={{ padding: '8px 8px', whiteSpace: 'nowrap' }}>
-                    <button className="btn-secondary btn-sm" onClick={() => onEdit(v.id, null)} style={{ marginRight: 6 }}>Edit</button>
-                    <button className="btn-danger btn-sm" onClick={() => onDelete(v)} disabled={deletingId === v.id}>
-                      {deletingId === v.id ? '…' : 'Remove'}
-                    </button>
-                  </td>
-                </tr>
+                        : '—'}
+                    </td>
+                    <td style={{ padding: '8px 8px', textAlign: 'right',
+                      color: v.per_foot > 0 ? 'var(--gray-700)' : 'var(--gray-300)' }}>
+                      {v.per_foot > 0 ? `$${v.per_foot.toFixed(2)}/ft` : '—'}
+                    </td>
+                    <td style={{ padding: '8px 8px', textAlign: 'center', color: 'var(--gray-400)', fontSize: 12 }}>
+                      {v.sort_order}
+                    </td>
+                    <td style={{ padding: '8px 8px', whiteSpace: 'nowrap' }}>
+                      <button className="btn-secondary btn-sm" onClick={() => toggleComponents(v.id)} style={{ marginRight: 6 }}>
+                        {expandedComponents.has(v.id) ? 'Hide Parts' : 'Parts'}
+                      </button>
+                      <button className="btn-secondary btn-sm" onClick={() => onEdit(v.id, null)} style={{ marginRight: 6 }}>Edit</button>
+                      <button className="btn-danger btn-sm" onClick={() => onDelete(v)} disabled={deletingId === v.id}>
+                        {deletingId === v.id ? '…' : 'Remove'}
+                      </button>
+                    </td>
+                  </tr>
+                  {expandedComponents.has(v.id) && (
+                    <tr key={`${v.id}-components`} style={{ borderBottom: '1px solid var(--gray-100)' }}>
+                      <td colSpan={8} style={{ padding: 0 }}>
+                        <ComponentEditor variant={v} />
+                      </td>
+                    </tr>
+                  )}
+                </>
               )
             )}
             <AddRow cat={cat} onAdd={onAdd} adding={addingCat === cat.code} />

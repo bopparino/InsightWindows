@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session, joinedload
 from core.database import get_db
 from core.config import settings
 from core.security import get_current_user
-from models.models import Plan, Document, HouseType, System, Project, User, EventLog, CompanySettings
+from models.models import Plan, Document, HouseType, System, LineItem, Project, User, EventLog, CompanySettings, LineItemComponent
 import os, datetime, base64, smtplib, logging, json
 
 logger = logging.getLogger(__name__)
@@ -297,7 +297,7 @@ def generate_quote(plan_id: int, db: Session = Depends(get_db),
                    current_user: User = Depends(get_current_user)):
     plan = db.query(Plan).options(
         joinedload(Plan.project).joinedload(Project.builder),
-        joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.line_items),
+        joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.line_items).joinedload(LineItem.components),
         joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.equipment_system),
         joinedload(Plan.house_types).joinedload(HouseType.draws),
     ).filter_by(id=plan_id).first()
@@ -392,7 +392,7 @@ def preview_quote(plan_id: int, db: Session = Depends(get_db),
     from fastapi.responses import HTMLResponse
     plan = db.query(Plan).options(
         joinedload(Plan.project).joinedload(Project.builder),
-        joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.line_items),
+        joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.line_items).joinedload(LineItem.components),
         joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.equipment_system),
         joinedload(Plan.house_types).joinedload(HouseType.draws),
     ).filter_by(id=plan_id).first()
@@ -541,19 +541,43 @@ def build_field_sheet_html(plan, db=None) -> str:
                 f'</tr>'
             )
 
-        # Line item rows (no prices — just description + qty + checkbox)
+        # Line item rows — kit items are exploded into their components
         li_rows = ""
         for sys in sorted(ht.systems, key=lambda x: x.system_number):
             label = sys.zone_label or f"Zone {sys.system_number}"
             for li in sorted(sys.line_items, key=lambda x: x.sort_order):
-                li_rows += (
-                    f'<tr>'
-                    f'<td class="zone-col">{label}</td>'
-                    f'<td class="desc-col">{li.description}</td>'
-                    f'<td class="qty-col">{float(li.quantity):.0f}</td>'
-                    f'<td class="chk-col"><div class="checkbox"></div></td>'
-                    f'</tr>'
-                )
+                active_components = [c for c in (li.components or []) if not c.excluded]
+                if li.kit_variant_id and active_components:
+                    # Kit header row
+                    li_rows += (
+                        f'<tr class="kit-header-row">'
+                        f'<td class="zone-col">{label}</td>'
+                        f'<td class="desc-col"><strong>{li.description}</strong>'
+                        f' <span class="kit-badge">KIT</span></td>'
+                        f'<td class="qty-col">{float(li.quantity):.3g}</td>'
+                        f'<td class="chk-col"></td>'
+                        f'</tr>'
+                    )
+                    # Component sub-rows
+                    for comp in sorted(active_components, key=lambda x: x.sort_order):
+                        pn_html = f' <span class="part-num">{comp.part_number}</span>' if comp.part_number else ''
+                        li_rows += (
+                            f'<tr class="kit-comp-row">'
+                            f'<td class="zone-col"></td>'
+                            f'<td class="desc-col kit-comp-desc">↳ {comp.description}{pn_html}</td>'
+                            f'<td class="qty-col">{float(comp.quantity):.3g}</td>'
+                            f'<td class="chk-col"><div class="checkbox"></div></td>'
+                            f'</tr>'
+                        )
+                else:
+                    li_rows += (
+                        f'<tr>'
+                        f'<td class="zone-col">{label}</td>'
+                        f'<td class="desc-col">{li.description}</td>'
+                        f'<td class="qty-col">{float(li.quantity):.3g}</td>'
+                        f'<td class="chk-col"><div class="checkbox"></div></td>'
+                        f'</tr>'
+                    )
 
         house_sections += f"""
         <div class="ht-block">
@@ -638,6 +662,15 @@ def build_field_sheet_html(plan, db=None) -> str:
 
   .footer {{ border-top:1px solid #ccc; padding-top:8px; font-size:7pt; color:#888;
              display:flex; justify-content:space-between; margin-top:16px; }}
+
+  /* Kit rows on field sheet */
+  tr.kit-header-row td {{ background:#f0f0f0; border-top:1px solid #ccc; }}
+  tr.kit-comp-row td {{ background:#fafafa; }}
+  .kit-comp-desc {{ padding-left:18px !important; font-size:8pt; color:#444; }}
+  .kit-badge {{ font-size:6.5pt; font-weight:700; text-transform:uppercase;
+                letter-spacing:0.04em; background:#333; color:white;
+                border-radius:2px; padding:1px 4px; vertical-align:middle; }}
+  .part-num {{ font-family:monospace; font-size:7pt; color:#888; }}
 </style>
 </head>
 <body>
@@ -701,7 +734,7 @@ def generate_field_sheet(plan_id: int, db: Session = Depends(get_db),
                          current_user: User = Depends(get_current_user)):
     plan = db.query(Plan).options(
         joinedload(Plan.project).joinedload(Project.builder),
-        joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.line_items),
+        joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.line_items).joinedload(LineItem.components),
         joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.equipment_system),
     ).filter_by(id=plan_id).first()
 
@@ -967,7 +1000,7 @@ def generate_top_sheet(plan_id: int, db: Session = Depends(get_db),
                        current_user: User = Depends(get_current_user)):
     plan = db.query(Plan).options(
         joinedload(Plan.project).joinedload(Project.builder),
-        joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.line_items),
+        joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.line_items).joinedload(LineItem.components),
         joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.equipment_system),
     ).filter_by(id=plan_id).first()
     if not plan:

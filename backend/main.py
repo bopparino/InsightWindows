@@ -79,6 +79,32 @@ def _run_migrations():
         # v2.1 — scope of work (includes / excludes) on plan
         "ALTER TABLE plans ADD COLUMN IF NOT EXISTS includes TEXT",
         "ALTER TABLE plans ADD COLUMN IF NOT EXISTS excludes TEXT",
+        # v2.2 — kit component templates
+        """CREATE TABLE IF NOT EXISTS kit_components (
+            id             SERIAL PRIMARY KEY,
+            kit_variant_id INTEGER NOT NULL REFERENCES kit_variants(id) ON DELETE CASCADE,
+            sort_order     INTEGER NOT NULL DEFAULT 10,
+            description    VARCHAR(200) NOT NULL,
+            part_number    VARCHAR(60),
+            quantity       NUMERIC(8,3) NOT NULL DEFAULT 1,
+            unit_cost      NUMERIC(10,4) NOT NULL DEFAULT 0
+        )""",
+        "CREATE INDEX IF NOT EXISTS ix_kit_components_variant ON kit_components(kit_variant_id)",
+        # v2.2 — kit variant back-ref on line items
+        "ALTER TABLE line_items ADD COLUMN IF NOT EXISTS kit_variant_id INTEGER REFERENCES kit_variants(id)",
+        # v2.2 — snapshotted components per bid line item
+        """CREATE TABLE IF NOT EXISTS line_item_components (
+            id               SERIAL PRIMARY KEY,
+            line_item_id     INTEGER NOT NULL REFERENCES line_items(id) ON DELETE CASCADE,
+            kit_component_id INTEGER REFERENCES kit_components(id) ON DELETE SET NULL,
+            sort_order       INTEGER NOT NULL DEFAULT 10,
+            description      VARCHAR(200) NOT NULL,
+            part_number      VARCHAR(60),
+            quantity         NUMERIC(8,3) NOT NULL DEFAULT 1,
+            unit_cost        NUMERIC(10,4) NOT NULL DEFAULT 0,
+            excluded         BOOLEAN NOT NULL DEFAULT FALSE
+        )""",
+        "CREATE INDEX IF NOT EXISTS ix_line_item_components_li ON line_item_components(line_item_id)",
     ]
     with engine.connect() as conn:
         for sql in migrations:

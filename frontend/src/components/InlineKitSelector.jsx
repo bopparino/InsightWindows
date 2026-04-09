@@ -61,12 +61,13 @@ export default function InlineKitSelector({ planId, systemId }) {
       : selectedVariant.variant_name
 
     addItem.mutate({
-      description:  desc,
-      quantity:     q,
-      unit_price:   parseFloat(price.toFixed(4)),
-      pricing_flag: activeCode,   // category code as pricing_flag for grouping
-      sort_order:   '50',
-      part_number:  selectedVariant.variant_code,
+      description:   desc,
+      quantity:      q,
+      unit_price:    parseFloat(price.toFixed(4)),
+      pricing_flag:  activeCode,   // category code as pricing_flag for grouping
+      sort_order:    '50',
+      part_number:   selectedVariant.variant_code,
+      kit_variant_id: selectedVariant.id,
     })
   }
 

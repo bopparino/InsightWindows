@@ -10,7 +10,7 @@ import re
 from core.database import get_db
 from core.config import settings
 from core.security import get_current_user
-from models.models import Plan, Project, Builder, HouseType, System, LineItem, Draw, EventLog, Document, User, PlanComment, PlanTask
+from models.models import Plan, Project, Builder, HouseType, System, LineItem, Draw, EventLog, Document, User, PlanComment, PlanTask, KitVariant, KitComponent, LineItemComponent
 
 router = APIRouter()
 
@@ -548,7 +548,7 @@ def get_plan(plan_id: int, db: Session = Depends(get_db),
              current_user: User = Depends(get_current_user)):
     plan = db.query(Plan).options(
         joinedload(Plan.project).joinedload(Project.builder),
-        joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.line_items),
+        joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.line_items).joinedload(LineItem.components),
         joinedload(Plan.house_types).joinedload(HouseType.draws),
         joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.equipment_system),
     ).filter_by(id=plan_id).first()
@@ -622,6 +622,21 @@ def get_plan(plan_id: int, db: Session = Depends(get_db),
                                 "pwk_price": float(li.pwk_price or 0),
                                 "draw_stage": li.draw_stage,
                                 "part_number": li.part_number,
+                                "kit_variant_id": li.kit_variant_id,
+                                "components": [
+                                    {
+                                        "id": c.id,
+                                        "kit_component_id": c.kit_component_id,
+                                        "sort_order": c.sort_order,
+                                        "description": c.description,
+                                        "part_number": c.part_number,
+                                        "quantity": float(c.quantity),
+                                        "unit_cost": float(c.unit_cost),
+                                        "excluded": bool(c.excluded),
+                                        "extended_cost": round(float(c.quantity) * float(c.unit_cost), 4),
+                                    }
+                                    for c in sorted(li.components, key=lambda x: x.sort_order)
+                                ],
                             }
                             for li in sorted(s.line_items, key=lambda x: x.sort_order)
                         ],
@@ -805,7 +820,7 @@ def duplicate_house_type(plan_id: int, house_type_id: int, db: Session = Depends
         db.add(new_sys)
         db.flush()
         for li in sys.line_items:
-            db.add(LineItem(
+            new_li = LineItem(
                 system_id=new_sys.id,
                 sort_order=li.sort_order,
                 pricing_flag=li.pricing_flag,
@@ -816,7 +831,22 @@ def duplicate_house_type(plan_id: int, house_type_id: int, db: Session = Depends
                 draw_stage=li.draw_stage,
                 part_number=li.part_number,
                 notes=li.notes,
-            ))
+                kit_variant_id=li.kit_variant_id,
+            )
+            db.add(new_li)
+            db.flush()
+            # Copy kit components snapshot
+            for comp in li.components:
+                db.add(LineItemComponent(
+                    line_item_id=new_li.id,
+                    kit_component_id=comp.kit_component_id,
+                    sort_order=comp.sort_order,
+                    description=comp.description,
+                    part_number=comp.part_number,
+                    quantity=comp.quantity,
+                    unit_cost=comp.unit_cost,
+                    excluded=comp.excluded,
+                ))
 
     # Copy draws
     for draw in source.draws:
@@ -858,6 +888,7 @@ class LineItemCreate(BaseModel):
     draw_stage: Optional[str] = None
     part_number: Optional[str] = None
     notes: Optional[str] = None
+    kit_variant_id: Optional[int] = None
 
 class LineItemUpdate(BaseModel):
     description: Optional[str] = None
@@ -897,8 +928,35 @@ def add_line_item(plan_id: int, system_id: int, data: LineItemCreate, db: Sessio
     system = db.query(System).filter_by(id=system_id).first()
     if not system:
         raise HTTPException(404, "System not found")
+
+    # Validate kit_variant_id if supplied
+    if data.kit_variant_id:
+        variant = db.query(KitVariant).filter_by(id=data.kit_variant_id, active=True).first()
+        if not variant:
+            raise HTTPException(404, "Kit variant not found")
+
     li = LineItem(system_id=system_id, **data.model_dump())
     db.add(li)
+    db.flush()  # get li.id before inserting components
+
+    # Snapshot kit components into the bid line item
+    if data.kit_variant_id:
+        template_components = (db.query(KitComponent)
+                                 .filter_by(kit_variant_id=data.kit_variant_id)
+                                 .order_by(KitComponent.sort_order)
+                                 .all())
+        for kc in template_components:
+            db.add(LineItemComponent(
+                line_item_id=li.id,
+                kit_component_id=kc.id,
+                sort_order=kc.sort_order,
+                description=kc.description,
+                part_number=kc.part_number,
+                quantity=kc.quantity,
+                unit_cost=kc.unit_cost,
+                excluded=False,
+            ))
+
     db.commit()
     return {"id": li.id}
 
@@ -979,7 +1037,7 @@ def copy_from_plan(plan_id: int, source_plan_id: int, db: Session = Depends(get_
                    current_user: User = Depends(get_current_user)):
     plan = db.query(Plan).filter_by(id=plan_id).first()
     source = db.query(Plan).options(
-        joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.line_items),
+        joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.line_items).joinedload(LineItem.components),
         joinedload(Plan.house_types).joinedload(HouseType.draws),
     ).filter_by(id=source_plan_id).first()
     if not plan or not source:
@@ -1005,7 +1063,7 @@ def copy_from_plan(plan_id: int, source_plan_id: int, db: Session = Depends(get_
             db.add(new_sys)
             db.flush()
             for li in sys.line_items:
-                db.add(LineItem(
+                new_li = LineItem(
                     system_id=new_sys.id,
                     sort_order=li.sort_order,
                     pricing_flag=li.pricing_flag,
@@ -1015,7 +1073,21 @@ def copy_from_plan(plan_id: int, source_plan_id: int, db: Session = Depends(get_
                     pwk_price=li.pwk_price,
                     draw_stage=li.draw_stage,
                     part_number=li.part_number,
-                ))
+                    kit_variant_id=li.kit_variant_id,
+                )
+                db.add(new_li)
+                db.flush()
+                for comp in li.components:
+                    db.add(LineItemComponent(
+                        line_item_id=new_li.id,
+                        kit_component_id=comp.kit_component_id,
+                        sort_order=comp.sort_order,
+                        description=comp.description,
+                        part_number=comp.part_number,
+                        quantity=comp.quantity,
+                        unit_cost=comp.unit_cost,
+                        excluded=comp.excluded,
+                    ))
         for draw in ht.draws:
             db.add(Draw(
                 house_type_id=new_ht.id,

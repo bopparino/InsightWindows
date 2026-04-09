@@ -139,18 +139,22 @@ class System(Base):
 
 class LineItem(Base):
     __tablename__ = "line_items"
-    id           = Column(Integer, primary_key=True)
-    system_id    = Column(Integer, ForeignKey("systems.id"), nullable=False)
-    sort_order   = Column(String(10), nullable=False)
-    pricing_flag = Column(String(10), default="standard")
-    description  = Column(Text, nullable=False)
-    quantity     = Column(Numeric(8, 2), default=1)
-    unit_price   = Column(Numeric(10, 2), default=0)
-    pwk_price    = Column(Numeric(10, 2))
-    draw_stage   = Column(String(20))
-    part_number  = Column(String(40))
-    notes        = Column(Text)
-    system       = relationship("System", back_populates="line_items")
+    id              = Column(Integer, primary_key=True)
+    system_id       = Column(Integer, ForeignKey("systems.id"), nullable=False)
+    sort_order      = Column(String(10), nullable=False)
+    pricing_flag    = Column(String(10), default="standard")
+    description     = Column(Text, nullable=False)
+    quantity        = Column(Numeric(8, 2), default=1)
+    unit_price      = Column(Numeric(10, 2), default=0)
+    pwk_price       = Column(Numeric(10, 2))
+    draw_stage      = Column(String(20))
+    part_number     = Column(String(40))
+    notes           = Column(Text)
+    kit_variant_id  = Column(Integer, ForeignKey("kit_variants.id"), nullable=True)
+    system          = relationship("System", back_populates="line_items")
+    kit_variant     = relationship("KitVariant")
+    components      = relationship("LineItemComponent", back_populates="line_item",
+                                   cascade="all, delete-orphan", order_by="LineItemComponent.sort_order")
 
 
 class Draw(Base):
@@ -215,6 +219,43 @@ class KitVariant(Base):
     markup_divisor  = Column(Numeric(5, 4),  nullable=False, default=1.0)  # selling = per_kit; cost = per_kit * divisor
     sort_order      = Column(Integer, default=10)
     active          = Column(Boolean, default=True)
+    kit_components  = relationship("KitComponent", back_populates="kit_variant",
+                                   cascade="all, delete-orphan", order_by="KitComponent.sort_order")
+
+
+class KitComponent(Base):
+    """
+    Template component definition for a KitVariant.
+    Defines what parts get snapshotted into a bid when this kit is selected.
+    """
+    __tablename__ = "kit_components"
+    id             = Column(Integer, primary_key=True)
+    kit_variant_id = Column(Integer, ForeignKey("kit_variants.id"), nullable=False, index=True)
+    sort_order     = Column(Integer, nullable=False, default=10)
+    description    = Column(String(200), nullable=False)
+    part_number    = Column(String(60))
+    quantity       = Column(Numeric(8, 3), nullable=False, default=1)
+    unit_cost      = Column(Numeric(10, 4), nullable=False, default=0)
+    kit_variant    = relationship("KitVariant", back_populates="kit_components")
+
+
+class LineItemComponent(Base):
+    """
+    Snapshotted component on a specific bid line item (kit instance).
+    Estimators can edit quantity or mark excluded without touching the template.
+    """
+    __tablename__ = "line_item_components"
+    id                = Column(Integer, primary_key=True)
+    line_item_id      = Column(Integer, ForeignKey("line_items.id"), nullable=False, index=True)
+    kit_component_id  = Column(Integer, ForeignKey("kit_components.id"), nullable=True)  # back-ref to template
+    sort_order        = Column(Integer, nullable=False, default=10)
+    description       = Column(String(200), nullable=False)
+    part_number       = Column(String(60))
+    quantity          = Column(Numeric(8, 3), nullable=False, default=1)
+    unit_cost         = Column(Numeric(10, 4), nullable=False, default=0)
+    excluded          = Column(Boolean, nullable=False, default=False)  # soft-remove ("we have stock")
+    line_item         = relationship("LineItem", back_populates="components")
+    kit_component     = relationship("KitComponent")
 
 
 class Suggestion(Base):

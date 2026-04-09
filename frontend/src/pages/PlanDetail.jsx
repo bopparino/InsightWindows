@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { plans, documents, lineItems, houseTypes, equipment, houseTypeApi, systems, draws as drawsApi, search } from '../api/client'
+import { plans, documents, lineItems, houseTypes, equipment, houseTypeApi, systems, draws as drawsApi, search, kit } from '../api/client'
 import InlineKitSelector from '../components/InlineKitSelector'
 
 // ── Email Quote modal ─────────────────────────────────────────
@@ -223,15 +223,87 @@ function EquipmentPicker({ planId, systemId, onSelect, onClose }) {
 }
 
 // ── Inline edit row ───────────────────────────────────────────
+// ── Kit component sub-row (within a bid line item) ───────────
+function KitComponentRow({ planId, comp }) {
+  const qc = useQueryClient()
+  const [qty, setQty] = useState(String(comp.quantity))
+  const [dirty, setDirty] = useState(false)
+
+  const updateMut = useMutation({
+    mutationFn: (data) => kit.updateLineItemComponent(comp.id, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['plan', String(planId)] }); setDirty(false) },
+  })
+
+  function commitQty() {
+    const q = parseFloat(qty)
+    if (!isNaN(q) && q !== comp.quantity) {
+      updateMut.mutate({ quantity: q })
+    } else {
+      setQty(String(comp.quantity))
+      setDirty(false)
+    }
+  }
+
+  function toggleExcluded() {
+    updateMut.mutate({ excluded: !comp.excluded })
+  }
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 8,
+      padding: '4px 12px 4px 28px',
+      opacity: comp.excluded ? 0.4 : 1,
+      borderBottom: '1px solid var(--gray-100)',
+      fontSize: 12,
+    }}>
+      <span style={{ color: 'var(--gray-400)', fontSize: 10, flexShrink: 0 }}>└</span>
+      <span style={{ flex: 1, color: comp.excluded ? 'var(--gray-400)' : 'var(--gray-700)',
+        textDecoration: comp.excluded ? 'line-through' : 'none' }}>
+        {comp.description}
+        {comp.part_number && (
+          <span style={{ marginLeft: 6, color: 'var(--gray-400)', fontFamily: 'monospace', fontSize: 10 }}>
+            {comp.part_number}
+          </span>
+        )}
+      </span>
+      <input
+        type="number" min="0" step="0.001"
+        value={dirty ? qty : comp.quantity}
+        disabled={comp.excluded}
+        onChange={e => { setQty(e.target.value); setDirty(true) }}
+        onBlur={commitQty}
+        onKeyDown={e => e.key === 'Enter' && commitQty()}
+        style={{ width: 52, fontSize: 12, textAlign: 'center', padding: '2px 4px' }}
+      />
+      <span style={{ color: 'var(--gray-400)', fontSize: 11, width: 70, textAlign: 'right', flexShrink: 0 }}>
+        {comp.excluded ? '—' : `$${(comp.quantity * comp.unit_cost).toFixed(4)}`}
+      </span>
+      <button
+        onClick={toggleExcluded}
+        title={comp.excluded ? 'Include' : 'Exclude (we have stock)'}
+        disabled={updateMut.isPending}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', flexShrink: 0,
+          fontSize: 14, color: comp.excluded ? 'var(--success)' : 'var(--gray-300)' }}>
+        {comp.excluded ? '↩' : '✕'}
+      </button>
+    </div>
+  )
+}
+
 function LineItemRow({ planId, li, onDelete }) {
   const qc = useQueryClient()
   const [editing, setEditing] = useState(false)
+  const [showComponents, setShowComponents] = useState(false)
   const [form, setForm] = useState({
     description: li.description,
     quantity:    li.quantity,
     unit_price:  li.unit_price,
   })
   const [suggestions, setSuggestions] = useState([])
+
+  const isKit = !!li.kit_variant_id
+  const components = li.components || []
+  const activeComponents = components.filter(c => !c.excluded)
 
   useEffect(() => {
     if (!editing) return
@@ -312,32 +384,63 @@ function LineItemRow({ planId, li, onDelete }) {
   }
 
   return (
-    <div
-      onClick={() => setEditing(true)}
-      style={{ display: 'flex', alignItems: 'center', gap: 12,
-        padding: '9px 12px', cursor: 'pointer',
-        borderBottom: '1px solid var(--gray-100)', borderRadius: 4 }}
-      onMouseEnter={e => e.currentTarget.style.background = 'var(--gray-50)'}
-      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-      <span style={{ flex: 1, fontSize: 14, color: 'var(--gray-800)' }}>
-        {li.description}
-        {li.quantity !== 1 && (
-          <span style={{ fontSize: 12, color: 'var(--gray-400)', marginLeft: 6 }}>
-            ×{li.quantity}
+    <div>
+      <div
+        onClick={() => setEditing(true)}
+        style={{ display: 'flex', alignItems: 'center', gap: 12,
+          padding: '9px 12px', cursor: 'pointer',
+          borderBottom: (isKit && showComponents) ? 'none' : '1px solid var(--gray-100)', borderRadius: 4 }}
+        onMouseEnter={e => e.currentTarget.style.background = 'var(--gray-50)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+        <span style={{ flex: 1, fontSize: 14, color: 'var(--gray-800)' }}>
+          {li.description}
+          {li.quantity !== 1 && (
+            <span style={{ fontSize: 12, color: 'var(--gray-400)', marginLeft: 6 }}>
+              ×{li.quantity}
+            </span>
+          )}
+          {isKit && (
+            <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+              letterSpacing: '0.05em', color: 'var(--blue-mid)', background: 'var(--blue-light)',
+              borderRadius: 4, padding: '1px 5px' }}>
+              Kit
+            </span>
+          )}
+        </span>
+        {li.extended_price > 0 && (
+          <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--gray-700)', flexShrink: 0 }}>
+            ${li.extended_price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
           </span>
         )}
-      </span>
-      {li.extended_price > 0 && (
-        <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--gray-700)', flexShrink: 0 }}>
-          ${li.extended_price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-        </span>
+        {isKit && components.length > 0 && (
+          <button
+            onClick={e => { e.stopPropagation(); setShowComponents(s => !s) }}
+            title="Show/hide components"
+            style={{ background: 'none', border: '1px solid var(--gray-200)', borderRadius: 4,
+              color: 'var(--gray-400)', fontSize: 11, cursor: 'pointer', padding: '2px 6px', flexShrink: 0 }}>
+            {showComponents ? '▴' : `▾ ${activeComponents.length}/${components.length}`}
+          </button>
+        )}
+        <button
+          onClick={e => { e.stopPropagation(); if (window.confirm('Remove this item?')) onDelete(li.id) }}
+          style={{ background: 'none', border: 'none', color: 'var(--gray-300)',
+            fontSize: 20, cursor: 'pointer', padding: '0 2px', flexShrink: 0, lineHeight: 1 }}>
+          ×
+        </button>
+      </div>
+      {isKit && showComponents && components.length > 0 && (
+        <div style={{ borderBottom: '1px solid var(--gray-100)' }}>
+          <div style={{ padding: '3px 12px 3px 28px', display: 'flex', gap: 8, fontSize: 10,
+            fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--gray-400)',
+            borderBottom: '1px solid var(--gray-100)' }}>
+            <span style={{ flex: 1 }}>Component</span>
+            <span style={{ width: 52, textAlign: 'center' }}>Qty</span>
+            <span style={{ width: 70, textAlign: 'right' }}>Cost</span>
+            <span style={{ width: 22 }} />
+          </div>
+          {components.map(c => <KitComponentRow key={c.id} planId={planId} comp={c} />)}
+        </div>
       )}
-      <button
-        onClick={e => { e.stopPropagation(); if (window.confirm('Remove this item?')) onDelete(li.id) }}
-        style={{ background: 'none', border: 'none', color: 'var(--gray-300)',
-          fontSize: 20, cursor: 'pointer', padding: '0 2px', flexShrink: 0, lineHeight: 1 }}>
-        ×
-      </button>
     </div>
   )
 }
