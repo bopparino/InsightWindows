@@ -111,100 +111,138 @@ def _seed_admin():
 _seed_admin()
 
 def _seed_kit_variants():
-    """Seed the 2019 kit variant pricing table if empty."""
+    """
+    Upsert 2019 master price kit variants on every startup.
+    Inserts missing rows; updates per_kit/per_foot/name on existing rows
+    so prices are always correct even after a re-deploy.
+    Source: MASTER PRICES New 2019.xls, Section P fixed chart.
+    """
     from core.database import SessionLocal
     db = SessionLocal()
     try:
-        if db.query(KitVariant).first():
-            return  # already seeded
-
+        # (category_code, category_name, variant_code, variant_name, per_kit, per_foot, sort_order)
         VARIANTS = [
-            # ── A: Sheet Metal Runs ──────────────────────────────────
-            ("A","Sheet Metal Runs","4\" SMR","4\" Sheet Metal Run",       19.34, 1.04, 10),
-            ("A","Sheet Metal Runs","5\" SMR","5\" Sheet Metal Run",       19.86, 1.40, 20),
-            ("A","Sheet Metal Runs","6\" SMR","6\" Sheet Metal Run",       18.64, 1.41, 30),
-            ("A","Sheet Metal Runs","7\" SMR","7\" Sheet Metal Run",       23.85, 1.85, 40),
-            ("A","Sheet Metal Runs","8\" SMR","8\" Sheet Metal Run",       31.58, 2.08, 50),
-            # ── B: Ductboard Runs (R8) ───────────────────────────────
-            ("B","Ductboard Runs (R8)","4\" DBR","4\" Ductboard Run R8",   38.25, 1.57, 10),
-            ("B","Ductboard Runs (R8)","5\" DBR","5\" Ductboard Run R8",   41.94, 1.72, 20),
-            ("B","Ductboard Runs (R8)","6\" DBR","6\" Ductboard Run R8",   44.06, 1.83, 30),
-            ("B","Ductboard Runs (R8)","7\" DBR","7\" Ductboard Run R8",   48.50, 2.02, 40),
-            ("B","Ductboard Runs (R8)","8\" DBR","8\" Ductboard Run R8",   54.31, 2.25, 50),
-            # ── C: Exhaust Runs ──────────────────────────────────────
-            ("C","Exhaust Runs","BATH-FAN","Bath Fan",                     30.97, 0,    10),
-            ("C","Exhaust Runs","BATH-EXH","Bath Exhaust",                 62.37, 0,    20),
-            ("C","Exhaust Runs","KITCH-EXH","Kitchen Exhaust",             56.65, 0,    30),
-            ("C","Exhaust Runs","DRYER-VENT","Dryer Vent",                 89.10, 0,    40),
-            # ── D: Class B Flues ─────────────────────────────────────
-            ("D","Class B Flues","4\" B-VENT","4\" Class B Flue",           9.83, 0,   10),
-            ("D","Class B Flues","5\" B-VENT","5\" Class B Flue",          11.78, 0,   20),
-            ("D","Class B Flues","6\" B-VENT","6\" Class B Flue",          19.54, 0,   30),
-            # ── E: B Vent Connectors ─────────────────────────────────
-            ("E","B Vent Connectors","CONN-1","B Vent Connector Type 1",  121.08, 0,   10),
-            ("E","B Vent Connectors","CONN-2","B Vent Connector Type 2",  129.88, 0,   20),
-            ("E","B Vent Connectors","CONN-3","B Vent Connector Type 3",  130.71, 0,   30),
-            ("E","B Vent Connectors","CONN-4","B Vent Connector Type 4",  183.45, 0,   40),
-            # ── F: Combustion Air ────────────────────────────────────
-            ("F","Combustion Air","COMB-AIR","Combustion Air Kit",         31.88, 0,   10),
-            # ── G: PVC Flues ─────────────────────────────────────────
-            ("G","PVC Flues","PVC2X21DP","2\" Dual Pipe \u00d7 21\'",     139.29, 0,   10),
-            ("G","PVC Flues","PVC2X31DP","2\" Dual Pipe \u00d7 31\'",     151.20, 0,   20),
-            ("G","PVC Flues","PVC2X41DP","2\" Dual Pipe \u00d7 41\'",     164.91, 0,   30),
-            ("G","PVC Flues","PVC3X21DP","3\" Dual Pipe \u00d7 21\'",     193.13, 0,   40),
-            ("G","PVC Flues","PVC3X31DP","3\" Dual Pipe \u00d7 31\'",     220.99, 0,   50),
-            ("G","PVC Flues","PVC3X41DP","3\" Dual Pipe \u00d7 41\'",     253.70, 0,   60),
-            # ── H: Condensate Drain ──────────────────────────────────
-            ("H","Condensate Drain","COND-DRAIN","Condensate Drain",       12.92, 0,   10),
-            ("H","Condensate Drain","COND-PUMP-UP","Condensate Pump-Up",   39.11, 0,   20),
-            # ── I: Condensate Pump ───────────────────────────────────
-            ("I","Condensate Pump","COND-PUMP","Condensate Pump",         139.03, 0,   10),
-            # ── J: Control Wiring ────────────────────────────────────
-            ("J","Control Wiring","CTRL-WIRE","Control Wiring Kit",        46.76, 0,   10),
-            # ── K: Copper Line Sets (per foot) ───────────────────────
-            ("K","Copper Line Sets","COPPER-LS","Copper Line Set",          5.43, 0,   10),
-            # ── L: Equipment Mounting Kits ───────────────────────────
-            ("L","Equipment Mounting Kits","EMKV-1","Mounting Kit \u2014 Vertical 31\u00d731", 51.56, 0, 10),
-            ("L","Equipment Mounting Kits","EMKV-2","Mounting Kit \u2014 Vertical (large)",    53.59, 0, 20),
-            ("L","Equipment Mounting Kits","EMKH", "Mounting Kit \u2014 Horizontal",           61.85, 0, 30),
-            # ── M: Humidifiers ───────────────────────────────────────
-            ("M","Humidifiers","HUM-BYPASS","Bypass Humidifier",          312.33, 0,   10),
-            ("M","Humidifiers","HUM-POWER","Power Humidifier",            424.22, 0,   20),
-            # ── N: Air Cleaners ──────────────────────────────────────
-            ("N","Air Cleaners","AC-1","Air Cleaner \u2014 Type 1",       161.10, 0,   10),
-            ("N","Air Cleaners","AC-2","Air Cleaner \u2014 Type 2",       245.80, 0,   20),
-            ("N","Air Cleaners","AC-3","Air Cleaner \u2014 Type 3",       398.50, 0,   30),
-            ("N","Air Cleaners","AC-4","Air Cleaner \u2014 Type 4",       512.00, 0,   40),
-            ("N","Air Cleaners","AC-5","Air Cleaner \u2014 Type 5",       784.25, 0,   50),
-            ("N","Air Cleaners","AC-6","Air Cleaner \u2014 HEPA",        1122.96, 0,   60),
-            # ── O: Energy Recovery Ventilator ────────────────────────
-            ("O","Energy Recovery Ventilator","ERV","Energy Recovery Ventilator", 2350.11, 0, 10),
-            # ── P: Duct Sealing ──────────────────────────────────────
-            ("P","Duct Sealing","MASTIC-PKG","Mastic Duct Sealing Package", 70.00, 0,  10),
-            # ── Q: Laundry Chutes ────────────────────────────────────
-            ("Q","Laundry Chutes","LAUNDRY","Laundry Chute Kit",           85.00, 0,   10),
+            # ── A: Sheet Metal Runs (per-foot pricing) ───────────────
+            ("A","Sheet Metal Runs",'4" SMR', '4" Sheet Metal Run (10 ft)',  19.34, 1.04, 10),
+            ("A","Sheet Metal Runs",'5" SMR', '5" Sheet Metal Run (13 ft)',  19.86, 1.40, 20),
+            ("A","Sheet Metal Runs",'6" SMR', '6" Sheet Metal Run (13 ft)',  18.64, 1.41, 30),
+            ("A","Sheet Metal Runs",'7" SMR', '7" Sheet Metal Run (13 ft)',  23.85, 1.85, 40),
+            ("A","Sheet Metal Runs",'8" SMR', '8" Sheet Metal Run (5 ft)',   31.58, 2.08, 50),
+            # ── B: Ductboard Runs R8 (per-foot pricing) ──────────────
+            ("B","Ductboard Runs (R8)",'4" DBR', '4" Ductboard Run R8',  38.25, 1.57, 10),
+            ("B","Ductboard Runs (R8)",'5" DBR', '5" Ductboard Run R8',  41.94, 1.72, 20),
+            ("B","Ductboard Runs (R8)",'6" DBR', '6" Ductboard Run R8',  44.06, 1.83, 30),
+            ("B","Ductboard Runs (R8)",'7" DBR', '7" Ductboard Run R8',  48.50, 2.02, 40),
+            ("B","Ductboard Runs (R8)",'8" DBR', '8" Ductboard Run R8',  54.31, 2.25, 50),
+            # ── C: Exhaust Runs (PVC dual pipe — Section P) ──────────
+            ("C","Exhaust Runs","PVC2X21DP", '2" PVC Dual Pipe \u00d7 21\' thru Roof', 171.09, 0, 10),
+            ("C","Exhaust Runs","PVC2X31DP", '2" PVC Dual Pipe \u00d7 31\' thru Roof', 183.13, 0, 20),
+            ("C","Exhaust Runs","PVC2X41DP", '2" PVC Dual Pipe \u00d7 41\' thru Roof', 196.96, 0, 30),
+            ("C","Exhaust Runs","PVC3X21DP", '3" PVC Dual Pipe \u00d7 21\' thru Roof', 226.70, 0, 40),
+            ("C","Exhaust Runs","PVC3X31DP", '3" PVC Dual Pipe \u00d7 31\' thru Roof', 255.57, 0, 50),
+            ("C","Exhaust Runs","PVC3X41DP", '3" PVC Dual Pipe \u00d7 41\' thru Roof', 289.44, 0, 60),
+            # ── D: Class B Flues (per ft — Section P) ────────────────
+            ("D","Class B Flues",'4" B-VENT', '4" Class B Flue (per ft)',   9.83, 0, 10),
+            ("D","Class B Flues",'5" B-VENT', '5" Class B Flue (per ft)',  11.78, 0, 20),
+            ("D","Class B Flues",'6" B-VENT', '6" Class B Flue (per ft)',  19.54, 0, 30),
+            # ── E: B Vent Connectors (miscl chart 01-04) ─────────────
+            ("E","B Vent Connectors","CONN-1", '4" B Vent Connector \u2014 Townhouse Furnace',     121.08, 0, 10),
+            ("E","B Vent Connectors","CONN-2", '4" B Vent Connector \u2014 Townhouse HWH',         129.88, 0, 20),
+            ("E","B Vent Connectors","CONN-3", '4" B Vent Connector \u2014 Single Family Furnace', 130.71, 0, 30),
+            ("E","B Vent Connectors","CONN-4", '4" B Vent Connector \u2014 Single Family HWH',     183.45, 0, 40),
+            # ── F: Combustion Air ─────────────────────────────────────
+            ("F","Combustion Air","COMB-AIR", "Combustion Air Kit", 85.00, 0, 10),
+            # ── G: PVC Flues (refrigerant lines per ft — Section P) ──
+            ("G","PVC Flues","REF-LINES",    "Refrigerant Lines \u2014 copper (per ft)",         5.23, 0, 10),
+            ("G","PVC Flues","REF-LINES-118","Refrigerant Lines \u2014 1-1/8\" copper (per ft)", 12.65, 0, 20),
+            # ── H: Condensate Drain (Section P: CDA=$39.11, CDB=$11.68)
+            ("H","Condensate Drain","CDA", "Condensate Drain \u2014 Attic (A)",    39.11, 0, 10),
+            ("H","Condensate Drain","CDB", "Condensate Drain \u2014 Basement (B)", 11.68, 0, 20),
+            # ── I: Condensate Pump (Section P item 11A: $139.03) ─────
+            ("I","Condensate Pump","COND-PUMP", "Condensate Pump \u2014 CP1 (full assembly)", 139.03, 0, 10),
+            # ── J: Control Wiring (Section P: $46.76) ────────────────
+            ("J","Control Wiring","CTRL-WIRE", "Control Wiring 20/10", 46.76, 0, 10),
+            # ── K: Copper Line Sets ───────────────────────────────────
+            ("K","Copper Line Sets","LS-25", "Line Set 25 ft (3/8 x 3/4)",  130.83, 0, 10),
+            ("K","Copper Line Sets","LS-35", "Line Set 35 ft (3/8 x 3/4)",  183.16, 0, 20),
+            ("K","Copper Line Sets","LS-50", "Line Set 50 ft (3/8 x 3/4)",  261.65, 0, 30),
+            # ── L: Equipment Mounting Kits (miscl chart 05-07) ───────
+            ("L","Equipment Mounting Kits","EMKV-1", "EQ Mounting Kit Vertical 31\u00d731",  52.07, 0, 10),
+            ("L","Equipment Mounting Kits","EMKV-2", "EQ Mounting Kit Vertical 31\u00d736",  53.59, 0, 20),
+            ("L","Equipment Mounting Kits","EMKH",   "EQ Mounting Kit Horizontal 31\u00d760", 61.85, 0, 30),
+            # ── M: Humidifiers (Section P items 10-11) ───────────────
+            ("M","Humidifiers","HUM-BYPASS", "Aprilaire Model 600 Humidifier", 312.22, 0, 10),
+            ("M","Humidifiers","HUM-POWER",  "Aprilaire Model 700 Humidifier", 424.22, 0, 20),
+            # ── N: Air Cleaners (Section P items 12-17) ──────────────
+            ("N","Air Cleaners","AC-HE1400",    "Trion Electronic HE1400 16x25",        956.36, 0, 10),
+            ("N","Air Cleaners","AC-HE2000",    "Trion Electronic HE2000 20x25",        979.68, 0, 20),
+            ("N","Air Cleaners","AC-HF100-16",  "HYW Media HF100F2002 16x25",           161.10, 0, 30),
+            ("N","Air Cleaners","AC-HF100-20",  "HYW Media HF100F2010 20x25",           161.10, 0, 40),
+            ("N","Air Cleaners","AC-LX16",      "Lennox Media HCC16-28 w/HCXF16 MERV", 400.00, 0, 50),
+            ("N","Air Cleaners","AC-LX20",      "Lennox Media HCC20-28 w/HCXF20 MERV", 550.00, 0, 60),
+            ("N","Air Cleaners","AC-HF300-16",  "HYW Electronic HF300E1019 16x25",     1027.55, 0, 70),
+            ("N","Air Cleaners","AC-HF300-20",  "HYW Electronic HF300E1035 20x25",     1122.96, 0, 80),
+            # ── O: Energy Recovery Ventilator (Section P item 18) ────
+            ("O","Energy Recovery Ventilator","ERV",    "HYW ERV ER200",                          2351.45, 0, 10),
+            ("O","Energy Recovery Ventilator","AA-8145","Aprilaire Ventilation System Model 8145",  339.75, 0, 20),
+            # ── P: Duct Sealing (Section P item 19: $125.65) ─────────
+            ("P","Duct Sealing","MASTIC-PKG", "Mastic Duct Sealing Package", 125.65, 0, 10),
+            # ── Q: Laundry Chutes (Section P items 20-21) ────────────
+            ("Q","Laundry Chutes","LC1S", "Laundry Chute 10x10 \u2014 One Story", 319.03, 0, 10),
+            ("Q","Laundry Chutes","LC2S", "Laundry Chute 10x10 \u2014 Two Story", 417.57, 0, 20),
             # ── R: Fresh-Air ─────────────────────────────────────────
-            ("R","Fresh-Air","FRESH-AIR","Fresh-Air Damper & Insulated Duct", 125.00, 0, 10),
-            # ── S: Transfer Grill ────────────────────────────────────
-            ("S","Transfer Grill","XFER-GRILL","Transfer Grill w/ Hexacomb", 55.00, 0, 10),
-            # ── T: Zone Control Dampers ──────────────────────────────
-            ("T","Zone Control Dampers","APR-2Z","Aprilaire \u2014 2 Zone",  890.84, 0, 10),
-            ("T","Zone Control Dampers","APR-3Z","Aprilaire \u2014 3 Zone", 1304.95, 0, 20),
-            ("T","Zone Control Dampers","APR-4Z","Aprilaire \u2014 4 Zone", 1364.86, 0, 30),
-            ("T","Zone Control Dampers","APR-5Z","Aprilaire \u2014 5 Zone", 1742.76, 0, 40),
-            ("T","Zone Control Dampers","EWC-2Z","EWC \u2014 2 Zone",      1503.49, 0, 50),
-            ("T","Zone Control Dampers","EWC-3Z","EWC \u2014 3 Zone",      2077.46, 0, 60),
-            ("T","Zone Control Dampers","EWC-4Z","EWC \u2014 4 Zone",      2664.17, 0, 70),
+            ("R","Fresh-Air","CONCENTRIC", "Concentric Termination Kit",     39.60, 0, 10),
+            ("R","Fresh-Air","CN2220",     "Condensate Neutralizer CN2-220", 62.10, 0, 20),
+            # ── S: Transfer Grill (Section P: RETURN GRILL = $19.54) ─
+            ("S","Transfer Grill","RET-GRILL", "Return / Transfer Grill", 19.54, 0, 10),
+            # ── T: Zone Control Dampers (Section P items 22-25A) ─────
+            ("T","Zone Control Dampers","APR-2Z",        "Aprilaire 6202 \u2014 2 Zone / 2 Dampers",         890.84, 0, 10),
+            ("T","Zone Control Dampers","APR-3Z",        "Aprilaire 6203 \u2014 3 Zone / 3 Dampers",        1305.31, 0, 20),
+            ("T","Zone Control Dampers","APR-3Z-HP",     "Aprilaire 6303 \u2014 2-3 Zone / 3 Dampers (HP)", 1365.22, 0, 30),
+            ("T","Zone Control Dampers","APR-4Z",        "Aprilaire 6404 \u2014 4 Zone / 4 Dampers",        1743.12, 0, 40),
+            ("T","Zone Control Dampers","CARRIER-INF-4Z","Carrier Infinity 4-Zone System",                  3713.13, 0, 50),
+            ("T","Zone Control Dampers","EWC-2Z",        "EWC Model 3000-2 \u2014 2 Zone / 2 Dampers",      1503.49, 0, 60),
+            ("T","Zone Control Dampers","EWC-3Z",        "EWC Model 3000-3 \u2014 3 Zone / 3 Dampers",      2077.46, 0, 70),
+            ("T","Zone Control Dampers","EWC-4Z",        "EWC Model 5000-4 \u2014 4 Zone / 4 Dampers",      2664.17, 0, 80),
+            # ── U: Misc. Accessories (Section P items 26-29A) ────────
+            ("U","Misc. Accessories","TXV",      "TXV Valve",                              126.00, 0, 10),
+            ("U","Misc. Accessories","LPK",      "LP Kit",                                 128.00, 0, 20),
+            ("U","Misc. Accessories","SYW",      "Second Year Warranty",                   130.00, 0, 30),
+            ("U","Misc. Accessories","AK-14",    'IPG Air Knight 14"',                     887.00, 0, 40),
+            ("U","Misc. Accessories","AK-7",     'IPG Air Knight 7"',                      912.00, 0, 50),
+            ("U","Misc. Accessories","R454B",    "R-454B Refrigerant Surcharge",            42.90, 0, 60),
+            ("U","Misc. Accessories","FR-16X25", "Filter Rack 16x25 w/Filter",              16.62, 0, 70),
+            ("U","Misc. Accessories","FR-20X25", "Filter Rack 20x25 w/Filter",              16.80, 0, 80),
+            ("U","Misc. Accessories","SLABS",    "Polytex A/C Pads + Pump-Ups + Locking Caps", 42.52, 0, 90),
+            ("U","Misc. Accessories","WALLBRKT", 'Wall Brackets (36")',                    134.81, 0, 100),
         ]
 
+        # Build lookup of existing records by variant_code for upsert
+        existing = {v.variant_code: v for v in db.query(KitVariant).all()}
+        added = updated = 0
+
         for cat_code, cat_name, v_code, v_name, per_kit, per_foot, sort in VARIANTS:
-            db.add(KitVariant(
-                category_code=cat_code, category_name=cat_name,
-                variant_code=v_code,   variant_name=v_name,
-                per_kit=per_kit,       per_foot=per_foot,
-                sort_order=sort,       active=True,
-            ))
+            if v_code in existing:
+                row = existing[v_code]
+                # Update price and name if changed
+                row.category_name = cat_name
+                row.variant_name  = v_name
+                row.per_kit       = per_kit
+                row.per_foot      = per_foot
+                row.sort_order    = sort
+                updated += 1
+            else:
+                db.add(KitVariant(
+                    category_code=cat_code, category_name=cat_name,
+                    variant_code=v_code,   variant_name=v_name,
+                    per_kit=per_kit,       per_foot=per_foot,
+                    sort_order=sort,       active=True,
+                ))
+                added += 1
+
         db.commit()
+        if added or updated:
+            print(f"Kit variants: {added} added, {updated} updated.")
     finally:
         db.close()
 
