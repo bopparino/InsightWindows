@@ -347,45 +347,32 @@ _fix_kit_variants()
 
 def _seed_company_logo():
     """
-    Ensure the CompanySettings row exists and always has the static logo embedded.
-    Creates the row if missing; unconditionally refreshes logo_b64 from file
-    on every deploy so upgrades are never stale.
+    Ensure the CompanySettings row exists with the bundled logo.
+    Uses the pre-encoded constant so no runtime file I/O is needed.
     """
-    raw = settings.COMPANY_LOGO_PATH
-    if not raw:
+    try:
+        from static.logo_b64 import LOGO_DATA_URI as logo_b64
+    except ImportError:
+        print("[logo] logo_b64.py not found — skipping seed")
         return
-    # Resolve relative paths from the backend directory (where main.py lives)
-    _backend_dir = os.path.dirname(os.path.abspath(__file__))
-    logo_path = raw if os.path.isabs(raw) else os.path.join(_backend_dir, raw)
-    if not os.path.exists(logo_path):
-        print(f"[logo] file not found at {logo_path} — skipping logo seed")
-        return
-
-    import base64
-    ext  = os.path.splitext(logo_path)[1].lower().replace(".", "")
-    mime = "jpeg" if ext in ("jpg", "jpeg") else ext
-    with open(logo_path, "rb") as f:
-        logo_b64 = f"data:image/{mime};base64,{base64.b64encode(f.read()).decode()}"
 
     from core.database import SessionLocal
     db = SessionLocal()
     try:
         row = db.query(CompanySettings).first()
         if row is None:
-            # First ever startup — create the settings row with the logo
             db.add(CompanySettings(
                 company_name="Metcalfe Heating & Air Conditioning",
                 logo_b64=logo_b64,
             ))
             db.commit()
-            print("[logo] CompanySettings row created and logo seeded.")
-        elif row.logo_b64 != logo_b64:
-            # Row exists but logo is missing or stale — always refresh
+            print("[logo] CompanySettings row created with bundled logo.")
+        elif not row.logo_b64:
             row.logo_b64 = logo_b64
             db.commit()
-            print("[logo] logo_b64 refreshed from static file.")
+            print("[logo] logo_b64 seeded into existing row.")
         else:
-            print("[logo] logo already current, no update needed.")
+            print("[logo] logo already present in DB.")
     finally:
         db.close()
 

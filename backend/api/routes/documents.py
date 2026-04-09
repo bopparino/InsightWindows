@@ -20,36 +20,15 @@ LABOR_RATE   = 86     # $/hr
 SERVICE_RATE = 32     # $ per service visit
 PERMIT_COST  = 170    # $ per permit
 
-LOGO_B64 = None
-
-# Resolve the backend root directory regardless of cwd at runtime.
-# documents.py lives at  <backend>/api/routes/documents.py  → 3 levels up = <backend>
-_BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-
-def _resolve_logo_path(path: str) -> str:
-    """Return an absolute path; relative paths are resolved from the backend root."""
-    if not path:
-        return ""
-    return path if os.path.isabs(path) else os.path.join(_BACKEND_DIR, path)
-
-
-def get_logo_b64() -> str:
-    """Load logo as base64 so it embeds directly in HTML — no path issues."""
-    global LOGO_B64
-    if LOGO_B64:
-        return LOGO_B64
-    logo_path = _resolve_logo_path(settings.COMPANY_LOGO_PATH)
-    if logo_path and os.path.exists(logo_path):
-        with open(logo_path, "rb") as f:
-            ext = os.path.splitext(logo_path)[1].lower().replace(".", "")
-            mime = "jpeg" if ext in ("jpg", "jpeg") else ext
-            LOGO_B64 = f"data:image/{mime};base64,{base64.b64encode(f.read()).decode()}"
-    return LOGO_B64 or ""
+# Logo is pre-encoded at commit time — no runtime file I/O or DB seeding required.
+try:
+    from static.logo_b64 import LOGO_DATA_URI as _BUNDLED_LOGO
+except ImportError:
+    _BUNDLED_LOGO = ""
 
 
 def _get_company(db: Session = None) -> dict:
-    """Return company branding from DB, with safe defaults."""
+    """Return company branding from DB, with bundled logo as fallback."""
     if db:
         row = db.query(CompanySettings).first()
         if row:
@@ -58,9 +37,9 @@ def _get_company(db: Session = None) -> dict:
                 "phone":  row.phone or "",
                 "email":  row.email or "",
                 "footer": row.quote_footer or "",
-                "logo":   row.logo_b64 or get_logo_b64() or "",
+                "logo":   row.logo_b64 or _BUNDLED_LOGO,
             }
-    return {"name": "Metcalfe Heating & Air Conditioning", "phone": "", "email": "", "footer": "", "logo": get_logo_b64() or ""}
+    return {"name": "Metcalfe Heating & Air Conditioning", "phone": "", "email": "", "footer": "", "logo": _BUNDLED_LOGO}
 
 
 def _zone_bid(sys, factor: float) -> dict:
