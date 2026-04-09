@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { equipment, kit } from '../api/client'
+import { equipment } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 
 // ── Category detection ────────────────────────────────────────
@@ -48,14 +48,6 @@ const CATEGORIES = [
     icon: <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="3" stroke="currentColor" strokeWidth="1.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
     color: 'var(--gray-400)', bg: 'var(--gray-50)', border: 'var(--gray-200)',
   },
-]
-
-const CONSUMABLE_CATEGORIES = [
-  { id: 'sheet_metal', label: 'Sheet Metal',        color: 'var(--blue)',     bg: 'var(--blue-light)', border: 'var(--gray-200)' },
-  { id: 'flex_line',   label: 'Flex Duct',          color: 'var(--success)',  bg: 'var(--status-contracted-bg)', border: 'var(--status-contracted-border)' },
-  { id: 'refrigerant', label: 'Refrigerant',        color: 'var(--blue-mid)', bg: 'var(--blue-light)', border: 'var(--gray-300)' },
-  { id: 'drain',       label: 'Drain / Condensate', color: 'var(--accent)',   bg: 'var(--status-proposed-bg)', border: 'var(--status-proposed-border)' },
-  { id: 'mastic',      label: 'Mastic',             color: 'var(--gray-600)', bg: 'var(--gray-50)', border: 'var(--gray-200)' },
 ]
 
 // ── Add Manufacturer modal ────────────────────────────────────
@@ -208,11 +200,6 @@ function ComponentRow({ components, colCount }) {
               <div style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--gray-800)' }}>
                 {c.model_number}
               </div>
-              {c.cost != null && (
-                <div style={{ color: 'var(--gray-500)', marginTop: 2 }}>
-                  ${c.cost.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -282,19 +269,13 @@ function ManufacturerGroup({ mfr, mfrId, systems, color, manageMode, selected, o
                 <th style={{ padding: '7px 12px', textAlign: 'left', fontWeight: 600,
                   fontSize: 11, color: 'var(--gray-400)', textTransform: 'uppercase',
                   letterSpacing: '0.04em' }}>Description</th>
-                <th style={{ padding: '7px 12px', textAlign: 'right', fontWeight: 600,
-                  fontSize: 11, color: 'var(--gray-400)', textTransform: 'uppercase',
-                  letterSpacing: '0.04em' }}>Cost</th>
-                <th style={{ padding: '7px 18px', textAlign: 'right', fontWeight: 600,
-                  fontSize: 11, color: 'var(--gray-400)', textTransform: 'uppercase',
-                  letterSpacing: '0.04em' }}>Bid price</th>
               </tr>
             </thead>
             <tbody>
               {systems.map(s => {
                 const isExpanded = expandedId === s.id
                 const hasComponents = s.components && s.components.length > 0
-                const colCount = manageMode ? 5 : 5
+                const colCount = manageMode ? 3 : 3
                 return (
                   <>
                     <tr key={s.id}
@@ -327,14 +308,8 @@ function ManufacturerGroup({ mfr, mfrId, systems, color, manageMode, selected, o
                         {s.system_code}
                       </td>
                       <td style={{ padding: '8px 12px', color: 'var(--gray-600)',
-                        maxWidth: 340, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {s.description}
-                      </td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: 'var(--gray-500)' }}>
-                        ${s.component_cost.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                      </td>
-                      <td style={{ padding: '8px 18px', textAlign: 'right', fontWeight: 700, color: 'var(--gray-800)' }}>
-                        ${s.bid_price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                       </td>
                     </tr>
                     {isExpanded && hasComponents && (
@@ -423,76 +398,9 @@ function CategoryCard({ category, systems, manageMode, selected, onToggle, onTog
   )
 }
 
-// ── Consumables tab ───────────────────────────────────────────
-function ConsumablesTab() {
-  const { data: kitItems = [], isLoading } = useQuery({ queryKey: ['kit-items'], queryFn: kit.list })
-  const grouped = kitItems.reduce((acc, item) => {
-    if (!acc[item.category]) acc[item.category] = []
-    acc[item.category].push(item)
-    return acc
-  }, {})
-
-  if (isLoading) return <div style={{ textAlign: 'center', padding: 48 }}><span className="spinner" /></div>
-  if (kitItems.length === 0) return (
-    <div className="empty-state">
-      <p>No consumables loaded.</p>
-      <p style={{ fontSize: 13, marginTop: 8 }}>
-        Run <code style={{ background: 'var(--gray-100)', padding: '2px 6px', borderRadius: 4 }}>python db/seed_kit_items.py</code> to seed defaults.
-      </p>
-    </div>
-  )
-
-  return (
-    <div>
-      <div style={{ fontSize: 13, color: 'var(--gray-400)', marginBottom: 20 }}>
-        Consumable pricing used in the Kit Calculator.
-      </div>
-      {CONSUMABLE_CATEGORIES.map(cat => {
-        const items = grouped[cat.id] || []
-        if (!items.length) return null
-        return (
-          <div key={cat.id} style={{ border: `1px solid ${cat.border}`, borderRadius: 12,
-            overflow: 'hidden', marginBottom: 14 }}>
-            <div style={{ background: cat.bg, padding: '12px 18px',
-              borderBottom: `1px solid ${cat.border}`,
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontWeight: 700, fontSize: 14, color: cat.color }}>{cat.label}</div>
-              <div style={{ fontSize: 12, color: cat.color, opacity: 0.7 }}>{items.length} item{items.length !== 1 ? 's' : ''}</div>
-            </div>
-            <table style={{ width: '100%', borderCollapse: 'collapse', background: 'var(--card-bg)', fontSize: 13 }}>
-              <thead>
-                <tr style={{ background: 'var(--gray-50)' }}>
-                  {['Description','Unit','Base price','+ Per ton'].map(h => (
-                    <th key={h} style={{ padding: '7px 18px', textAlign: h === 'Description' ? 'left' : 'right',
-                      fontWeight: 600, fontSize: 11, color: 'var(--gray-400)',
-                      textTransform: 'uppercase', letterSpacing: '0.04em' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {items.sort((a, b) => a.sort_order - b.sort_order).map(item => (
-                  <tr key={item.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
-                    <td style={{ padding: '8px 18px' }}>{item.description}</td>
-                    <td style={{ padding: '8px 18px', textAlign: 'right', color: 'var(--gray-400)', fontSize: 12 }}>{item.unit}</td>
-                    <td style={{ padding: '8px 18px', textAlign: 'right', fontWeight: 600 }}>${item.base_price.toFixed(2)}</td>
-                    <td style={{ padding: '8px 18px', textAlign: 'right', color: item.price_per_ton > 0 ? cat.color : 'var(--gray-300)' }}>
-                      {item.price_per_ton > 0 ? `+$${item.price_per_ton.toFixed(2)}` : '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
 // ── Main page ─────────────────────────────────────────────────
 export default function Equipment() {
   const [searchParams] = useSearchParams()
-  const [tab, setTab]               = useState('systems')
   const [globalSearch, setGlobalSearch] = useState(() => searchParams.get('q') || '')
   const [manageMode, setManageMode] = useState(false)
   const [selected, setSelected]     = useState(new Set())
@@ -580,7 +488,7 @@ export default function Equipment() {
           </div>
         </div>
 
-        {isAdmin && tab === 'systems' && (
+        {isAdmin && (
           <div style={{ display: 'flex', gap: 8 }}>
             {manageMode ? (
               <>
@@ -615,26 +523,8 @@ export default function Equipment() {
         )}
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 20,
-        borderBottom: '2px solid var(--gray-200)', paddingBottom: 0 }}>
-        {[{ id: 'systems', label: 'Equipment Systems' }, { id: 'consumables', label: 'Consumables & Kit Items' }].map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            style={{
-              background: 'none', border: 'none', borderRadius: 0,
-              padding: '8px 18px', fontSize: 14, fontWeight: tab === t.id ? 600 : 400,
-              color: tab === t.id ? 'var(--blue)' : 'var(--gray-400)',
-              borderBottom: tab === t.id ? '2px solid var(--blue)' : '2px solid transparent',
-              marginBottom: -2, cursor: 'pointer',
-            }}>
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'systems' && (
-        <>
-          {manageMode && (
+      <>
+        {manageMode && (
             <div style={{
               background: 'var(--status-proposed-bg)', border: '1px solid var(--status-proposed-border)',
               borderRadius: 8, padding: '10px 16px', marginBottom: 16,
@@ -701,10 +591,7 @@ export default function Equipment() {
               </button>
             </div>
           )}
-        </>
-      )}
-
-      {tab === 'consumables' && <ConsumablesTab />}
+      </>
 
       {showAddMfr && (
         <AddManufacturerModal
