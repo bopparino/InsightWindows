@@ -82,6 +82,8 @@ class PlanUpdate(BaseModel):
     status:      Optional[str]   = None
     house_type:  Optional[str]   = None
     notes:       Optional[str]   = None
+    includes:    Optional[str]   = None
+    excludes:    Optional[str]   = None
     is_template: Optional[bool]  = None
     factor:      Optional[float] = None
 
@@ -560,7 +562,9 @@ def get_plan(plan_id: int, db: Session = Depends(get_db),
         "status": plan.status,
         "house_type": plan.house_type,
         "number_of_zones": plan.number_of_zones,
-        "notes": plan.notes,
+        "notes":    plan.notes,
+        "includes": plan.includes,
+        "excludes": plan.excludes,
         "is_template": plan.is_template,
         "factor": float(plan.factor) if plan.factor else 0.69,
         "estimator_name": plan.estimator_name,
@@ -658,6 +662,10 @@ def update_plan(plan_id: int, data: PlanUpdate, db: Session = Depends(get_db),
         plan.house_type = data.house_type
     if data.notes is not None:
         plan.notes = data.notes
+    if data.includes is not None:
+        plan.includes = data.includes
+    if data.excludes is not None:
+        plan.excludes = data.excludes
     if data.factor is not None:
         plan.factor = data.factor
     if data.is_template is not None:

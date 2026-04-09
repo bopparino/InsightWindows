@@ -75,6 +75,9 @@ def _run_migrations():
         "ALTER TABLE systems ADD COLUMN IF NOT EXISTS service_qty   INTEGER      NOT NULL DEFAULT 0",
         "ALTER TABLE systems ADD COLUMN IF NOT EXISTS permit_yn     BOOLEAN      NOT NULL DEFAULT FALSE",
         "ALTER TABLE systems ADD COLUMN IF NOT EXISTS sales_tax_pct NUMERIC(5,4) NOT NULL DEFAULT 0.06",
+        # v2.1 — scope of work (includes / excludes) on plan
+        "ALTER TABLE plans ADD COLUMN IF NOT EXISTS includes TEXT",
+        "ALTER TABLE plans ADD COLUMN IF NOT EXISTS excludes TEXT",
     ]
     with engine.connect() as conn:
         for sql in migrations:

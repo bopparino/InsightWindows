@@ -93,6 +93,8 @@ class Plan(Base):
     number_of_zones    = Column(SmallInteger, default=1)
     house_type         = Column(String(100))
     notes              = Column(Text)
+    includes           = Column(Text)
+    excludes           = Column(Text)
     is_template        = Column(Boolean, default=False, nullable=False)
     factor             = Column(Numeric(5, 4), default=0.69, nullable=False)
     contracted_at      = Column(DateTime, index=True)

@@ -211,6 +211,12 @@ def build_quote_html(plan, db=None) -> str:
   .draw-stage {{ font-size:7.5pt; color:#555; margin:2px 0; }}
   .draw-amt {{ font-size:10pt; font-weight:700; color:#111; }}
 
+  .scope-grid {{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; }}
+  .scope-box {{ border:1px solid #ccc; border-radius:4px; padding:10px 12px; }}
+  .scope-label {{ font-size:7.5pt; font-weight:700; text-transform:uppercase;
+                  letter-spacing:0.06em; color:#888; margin-bottom:6px; }}
+  .scope-items {{ font-size:8.5pt; color:#333; line-height:1.7; white-space:pre-wrap; }}
+
   .footer {{ border-top:1px solid #ccc; padding-top:10px; margin-top:4px;
              font-size:7.5pt; color:#888; display:flex; justify-content:space-between; }}
 </style>
@@ -269,6 +275,17 @@ def build_quote_html(plan, db=None) -> str:
   </div>
 
   {f'<div class="draws-section">{draws_html}</div>' if draws_html else ''}
+
+  {(
+    '<div class="scope-grid">'
+    + ('<div class="scope-box"><div class="scope-label">Scope Includes</div>'
+       + '<div class="scope-items">' + (plan.includes or '').replace('&','&amp;').replace('<','&lt;') + '</div></div>'
+       if plan.includes else '')
+    + ('<div class="scope-box"><div class="scope-label">Not Included</div>'
+       + '<div class="scope-items">' + (plan.excludes or '').replace('&','&amp;').replace('<','&lt;') + '</div></div>'
+       if plan.excludes else '')
+    + '</div>'
+  ) if (plan.includes or plan.excludes) else ''}
 
   <div class="footer">
     <span>{co["name"]} &middot; Plan # {plan.plan_number} &middot; {plan.estimator_name}</span>

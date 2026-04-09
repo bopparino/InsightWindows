@@ -865,6 +865,11 @@ export default function PlanDetail() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['plan', id] }),
   })
 
+  const updateScope = useMutation({
+    mutationFn: (data) => plans.update(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plan', id] }),
+  })
+
   const deleteLineItem = useMutation({
     mutationFn: (liId) => lineItems.delete(id, liId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['plan', id] }),
@@ -1421,14 +1426,44 @@ export default function PlanDetail() {
         </button>
       )}
 
-      {/* Notes */}
-      {plan.notes && (
-        <div className="card" style={{ marginTop: 8 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-600)',
-            marginBottom: 6 }}>NOTES</div>
-          <p style={{ fontSize: 14, color: 'var(--gray-600)' }}>{plan.notes}</p>
+      {/* Scope + Notes */}
+      <div className="card" style={{ marginTop: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-600)', marginBottom: 6 }}>INCLUDES</div>
+            <textarea
+              defaultValue={plan.includes || ''}
+              placeholder="What's included in this bid..."
+              rows={5}
+              style={{ width: '100%', fontSize: 13, resize: 'vertical', padding: '6px 8px',
+                border: '1px solid var(--gray-300)', borderRadius: 4, fontFamily: 'inherit' }}
+              onBlur={(e) => { if (e.target.value !== (plan.includes || '')) updateScope.mutate({ includes: e.target.value }) }}
+            />
+          </div>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-600)', marginBottom: 6 }}>NOT INCLUDED</div>
+            <textarea
+              defaultValue={plan.excludes || ''}
+              placeholder="What's excluded from this bid..."
+              rows={5}
+              style={{ width: '100%', fontSize: 13, resize: 'vertical', padding: '6px 8px',
+                border: '1px solid var(--gray-300)', borderRadius: 4, fontFamily: 'inherit' }}
+              onBlur={(e) => { if (e.target.value !== (plan.excludes || '')) updateScope.mutate({ excludes: e.target.value }) }}
+            />
+          </div>
         </div>
-      )}
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-600)', marginBottom: 6 }}>NOTES</div>
+          <textarea
+            defaultValue={plan.notes || ''}
+            placeholder="Internal notes..."
+            rows={3}
+            style={{ width: '100%', fontSize: 13, resize: 'vertical', padding: '6px 8px',
+              border: '1px solid var(--gray-300)', borderRadius: 4, fontFamily: 'inherit' }}
+            onBlur={(e) => { if (e.target.value !== (plan.notes || '')) updateScope.mutate({ notes: e.target.value }) }}
+          />
+        </div>
+      </div>
 
       {/* Activity */}
       <ActivityLog planId={parseInt(id)} />
