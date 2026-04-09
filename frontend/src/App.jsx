@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom'
 import { search as searchApi } from './api/client'
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -188,6 +188,19 @@ function fuzzyMatch(query, text) {
     if (t[i] === q[qi]) qi++
   }
   return qi === q.length
+}
+
+// ─── Mobile hook ──────────────────────────────────────────────────────────────
+
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)')
+    const handler = e => setIsMobile(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+  return isMobile
 }
 
 function RequireAuth({ children }) {
@@ -615,7 +628,7 @@ function CommandPalette({ onClose, onOpenHelp }) {
 
 // ─── Sidebar ───────────────────────────────────────────────────────────────────
 
-function Sidebar({ onOpenHelp, onOpenFeedback }) {
+function Sidebar({ onOpenHelp, onOpenFeedback, isMobile = false, mobileOpen = false, onMobileClose }) {
   const { user, logout } = useAuth()
   const { theme } = useTheme()
   const navigate = useNavigate()
@@ -667,14 +680,113 @@ function Sidebar({ onOpenHelp, onOpenFeedback }) {
         )}
         {items.map(({ to, label, icon }) => (
           <NavLink key={to} to={to} end={to === '/'}
-            title={collapsed ? label : undefined}
+            title={collapsed && !isMobile ? label : undefined}
+            onClick={isMobile ? onMobileClose : undefined}
             style={({ isActive }) => navItemStyle(isActive)}
           >
             <span style={iconWrap}>{ICONS[icon]}</span>
-            {!collapsed && label}
+            {(!collapsed || isMobile) && label}
           </NavLink>
         ))}
       </div>
+    )
+  }
+
+  if (isMobile) {
+    return (
+      <>
+        {/* Backdrop */}
+        {mobileOpen && (
+          <div
+            onClick={onMobileClose}
+            style={{
+              position: 'fixed', inset: 0,
+              background: 'rgba(0,0,0,0.45)',
+              zIndex: 999,
+            }}
+          />
+        )}
+        {/* Drawer */}
+        <aside style={{
+          position: 'fixed', top: 0, left: 0, bottom: 0,
+          width: 240, background: 'var(--sidebar-bg)',
+          display: 'flex', flexDirection: 'column',
+          zIndex: 1000,
+          boxShadow: '4px 0 20px rgba(0,0,0,0.3)',
+          transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)',
+          transition: 'transform 0.25s ease',
+          overflow: 'hidden',
+        }}>
+          {/* Header */}
+          <div style={{
+            padding: '20px 16px',
+            borderBottom: '1px solid rgba(255,255,255,0.1)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <img src={logo} alt="Metcalfe" style={{
+              height: 72, width: 'auto', objectFit: 'contain',
+              filter: 'brightness(0) invert(1)',
+            }} />
+            <button onClick={onMobileClose} style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'rgba(255,255,255,0.5)', fontSize: 22, lineHeight: 1, padding: 4,
+            }}>×</button>
+          </div>
+
+          {/* Nav */}
+          <nav style={{ padding: '12px 10px', flex: 1, overflowY: 'auto' }}>
+            {renderSection(adminItems, 'admin')}
+            {adminItems.length > 0 && opsItems.length > 0 && (
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '8px 4px' }} />
+            )}
+            {renderSection(opsItems, 'ops')}
+          </nav>
+
+          {/* Footer */}
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', padding: '8px 10px' }}>
+            <NavLink to="/settings" onClick={onMobileClose}
+              style={({ isActive }) => ({
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '8px 12px', borderRadius: 8, marginBottom: 4,
+                textDecoration: 'none', fontSize: 13,
+                color: isActive ? 'white' : 'rgba(255,255,255,0.5)',
+                background: isActive ? 'rgba(255,255,255,0.15)' : 'transparent',
+              })}
+            >
+              <span style={{ width: 20, display: 'flex', justifyContent: 'center' }}>{ICONS.settings}</span>
+              Settings
+            </NavLink>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '8px 12px', marginBottom: 4,
+            }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: '50%',
+                background: 'rgba(255,255,255,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 11, fontWeight: 700, color: 'white', flexShrink: 0,
+              }}>{user?.initials || '?'}</div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 500, color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {user?.full_name}
+                </div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>
+                  {ROLE_LABELS[user?.role] || user?.role}
+                </div>
+              </div>
+            </div>
+            <button onClick={handleLogout} style={{
+              width: '100%', background: 'none', color: 'rgba(255,255,255,0.4)',
+              border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8,
+              padding: '6px 12px', fontSize: 12, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            }}>
+              <span style={{ width: 20, display: 'flex', justifyContent: 'center' }}>{ICONS.signout}</span>
+              Sign out
+            </button>
+          </div>
+        </aside>
+      </>
     )
   }
 
@@ -838,10 +950,15 @@ function Sidebar({ onOpenHelp, onOpenFeedback }) {
 
 function AppLayout() {
   const { user } = useAuth()
+  const isMobile = useIsMobile()
   const isAccountManager = user?.role === 'account_manager'
   const [showHelp, setShowHelp] = useState(false)
   const [showFeedback, setShowFeedback] = useState(false)
   const [showPalette, setShowPalette] = useState(false)
+  const [navOpen, setNavOpen] = useState(false)
+
+  // Close drawer when switching to desktop
+  useEffect(() => { if (!isMobile) setNavOpen(false) }, [isMobile])
 
   useEffect(() => {
     function handleKey(e) {
@@ -856,9 +973,43 @@ function AppLayout() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', background: 'var(--body-bg)' }}>
-      <Sidebar onOpenHelp={() => setShowHelp(true)} onOpenFeedback={() => setShowFeedback(true)} />
+      <Sidebar
+        onOpenHelp={() => setShowHelp(true)}
+        onOpenFeedback={() => setShowFeedback(true)}
+        isMobile={isMobile}
+        mobileOpen={navOpen}
+        onMobileClose={() => setNavOpen(false)}
+      />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'auto' }}>
-        <main style={{ flex: 1, padding: '32px 40px', width: '100%', boxSizing: 'border-box' }}>
+        {/* Mobile top bar */}
+        {isMobile && (
+          <div style={{
+            position: 'sticky', top: 0, zIndex: 100,
+            background: 'var(--sidebar-bg)',
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '10px 14px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+          }}>
+            <button
+              onClick={() => setNavOpen(true)}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'rgba(255,255,255,0.8)', padding: 4,
+                display: 'flex', alignItems: 'center',
+              }}
+            >
+              {/* Hamburger */}
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                <path d="M3 6h16M3 11h16M3 16h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+              </svg>
+            </button>
+            <img src={logo} alt="Metcalfe" style={{
+              height: 36, width: 'auto', objectFit: 'contain',
+              filter: 'brightness(0) invert(1)',
+            }} />
+          </div>
+        )}
+        <main className={isMobile ? 'mobile-main' : ''} style={{ flex: 1, padding: isMobile ? undefined : '32px 40px', width: '100%', boxSizing: 'border-box' }}>
           <Routes>
             <Route path="/"            element={isAccountManager ? <Navigate to="/plans" replace /> : <Dashboard />} />
             <Route path="/plans"       element={<PlansList />} />

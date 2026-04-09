@@ -601,3 +601,34 @@ aside nav a:hover {
 .theme-indigo ::-webkit-scrollbar-track { background: #eef2ff; }
 .theme-indigo ::-webkit-scrollbar-thumb { background: #a5b4fc; border-radius: 3px; }
 .theme-indigo ::-webkit-scrollbar-thumb:hover { background: #818cf8; }
+
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE / RESPONSIVE  — ≤768px
+   Sidebar becomes a drawer. Tables scroll horizontally.
+   Form grids collapse to single column.
+═══════════════════════════════════════════════════════════ */
+
+/* Horizontal-scroll wrapper for wide tables on mobile */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+@media (max-width: 768px) {
+  /* Main content padding */
+  .mobile-main { padding: 16px 14px !important; }
+
+  /* Page header stacks vertically */
+  .page-header {
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  /* Form grids collapse to single column */
+  .form-row-2, .form-row-3 { grid-template-columns: 1fr !important; }
+
+  /* Cards get tighter padding */
+  .card { padding: 14px !important; }
+
+  /* Page title a bit smaller */
+  .page-title { font-size: 20px !important; }
+}
