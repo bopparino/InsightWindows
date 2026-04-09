@@ -240,7 +240,7 @@ def build_quote_html(plan, db=None) -> str:
       <strong>{plan.project.name}</strong>
       <p>
         Code: {plan.project.code}<br>
-        House type: {plan.house_type or '\u2014'}<br>
+        House type: {plan.house_type or '—'}<br>
         Estimator: {plan.estimator_name}
       </p>
     </div>
@@ -272,7 +272,7 @@ def build_quote_html(plan, db=None) -> str:
 
   <div class="footer">
     <span>{co["name"]} &middot; Plan # {plan.plan_number} &middot; {plan.estimator_name}</span>
-    <span>{co["footer"] if co["footer"] else f"This proposal is valid for 30 days from {now}"}</span>
+    <span>{co["footer"] or ("This proposal is valid for 30 days from " + now)}</span>
   </div>
 
 </body>

@@ -267,52 +267,42 @@ def get_performance(
     if current_user.role == "account_manager":
         user_q = user_q.filter(User.initials == current_user.initials)
     eligible_users = user_q.order_by(User.full_name).all()
-
-    # --- total_bid subquery ---
-    total_subq = (
-        select(
-            HouseType.plan_id,
-            func.coalesce(func.sum(LineItem.quantity * LineItem.unit_price), 0).label("total_bid"),
-        )
-        .join(System, System.house_type_id == HouseType.id)
-        .join(LineItem, LineItem.system_id == System.id)
-        .group_by(HouseType.plan_id)
-        .subquery()
-    )
-
-    # --- Plan rows filtered by date ---
     eligible_inits = [u.initials for u in eligible_users]
-    q = (
-        db.query(
-            Plan.estimator_initials,
-            Plan.status,
-            Plan.created_at,
-            Plan.contracted_at,
-            func.coalesce(total_subq.c.total_bid, 0).label("total_bid"),
+
+    # --- Load all relevant plans with relationships for real bid math ---
+    plan_q = (
+        db.query(Plan)
+        .options(
+            joinedload(Plan.project).joinedload(Project.builder),
+            joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.line_items),
+            joinedload(Plan.house_types).joinedload(HouseType.systems).joinedload(System.equipment_system),
         )
-        .outerjoin(total_subq, total_subq.c.plan_id == Plan.id)
         .filter(Plan.estimator_initials.in_(eligible_inits))
     )
     if date_from:
-        q = q.filter(Plan.created_at >= date_from)
+        plan_q = plan_q.filter(Plan.created_at >= date_from)
     if date_to:
-        q = q.filter(Plan.created_at <= date_to)
-    rows = q.all()
+        plan_q = plan_q.filter(Plan.created_at <= date_to)
+    all_plans = plan_q.all()
 
-    # --- Aggregate plan rows per initials ---
+    # Pre-compute real bid total for each plan
+    plan_totals = {p.id: _calc_plan_total(p) for p in all_plans}
+
+    # --- Aggregate per estimator ---
     STATUSES = ["draft", "proposed", "contracted", "complete", "lost"]
     agg = {}
-    for est_init, status, created_at, contracted_at, total_bid in rows:
-        if est_init not in agg:
-            agg[est_init] = {
-                "by_status":   {s: {"count": 0, "total": 0.0} for s in STATUSES},
+    for p in all_plans:
+        init = p.estimator_initials
+        if init not in agg:
+            agg[init] = {
+                "by_status":     {s: {"count": 0, "total": 0.0} for s in STATUSES},
                 "last_activity": None,
             }
-        e = agg[est_init]
-        if status in e["by_status"]:
-            e["by_status"][status]["count"] += 1
-            e["by_status"][status]["total"] += float(total_bid)
-        activity = contracted_at or created_at
+        e = agg[init]
+        if p.status in e["by_status"]:
+            e["by_status"][p.status]["count"] += 1
+            e["by_status"][p.status]["total"] += plan_totals[p.id]
+        activity = p.contracted_at or p.created_at
         if activity and (e["last_activity"] is None or activity > e["last_activity"]):
             e["last_activity"] = activity
 
@@ -335,68 +325,41 @@ def get_performance(
             "win_rate":           round(won / denom, 4) if denom else None,
             "last_activity":      e["last_activity"].isoformat() if e["last_activity"] else None,
         })
-
     summary.sort(key=lambda x: x["contracted_revenue"], reverse=True)
 
     # --- Monthly contracted revenue series ---
-    monthly_q = (
-        db.query(
-            Plan.estimator_initials,
-            func.extract("year",  Plan.contracted_at).label("yr"),
-            func.extract("month", Plan.contracted_at).label("mo"),
-            func.coalesce(func.sum(total_subq.c.total_bid), 0).label("total_bid"),
-        )
-        .outerjoin(total_subq, total_subq.c.plan_id == Plan.id)
-        .filter(Plan.status.in_(["contracted", "complete"]))
-        .filter(Plan.contracted_at.isnot(None))
-        .filter(Plan.estimator_initials.in_(eligible_inits))
-        .group_by(Plan.estimator_initials,
-                  func.extract("year", Plan.contracted_at),
-                  func.extract("month", Plan.contracted_at))
-    )
-    if date_from:
-        monthly_q = monthly_q.filter(Plan.contracted_at >= date_from)
-    if date_to:
-        monthly_q = monthly_q.filter(Plan.contracted_at <= date_to)
-
-    # Map initials → full name for monthly series
     init_to_name = {u.initials: u.full_name for u in eligible_users}
+    monthly_agg = {}
+    for p in all_plans:
+        if p.status not in ("contracted", "complete") or not p.contracted_at:
+            continue
+        key = (p.estimator_initials, p.contracted_at.year, p.contracted_at.month)
+        if key not in monthly_agg:
+            monthly_agg[key] = 0.0
+        monthly_agg[key] += plan_totals[p.id]
+
     monthly = [
         {
             "estimator_initials": init,
             "estimator_name":     init_to_name.get(init, init),
-            "year":  int(yr),
-            "month": int(mo),
-            "total_bid": float(total),
+            "year":  yr,
+            "month": mo,
+            "total_bid": round(total, 2),
         }
-        for init, yr, mo, total in monthly_q.all()
+        for (init, yr, mo), total in monthly_agg.items()
     ]
 
     # --- Builder breakdown ---
-    builder_rows = (
-        db.query(
-            Builder.name.label("builder_name"),
-            Plan.status,
-            func.coalesce(total_subq.c.total_bid, 0).label("total_bid"),
-        )
-        .join(Plan.project)
-        .join(Project.builder)
-        .outerjoin(total_subq, total_subq.c.plan_id == Plan.id)
-        .filter(Plan.estimator_initials.in_(eligible_inits))
-        .filter(Plan.is_template == False)
-    )
-    if date_from:
-        builder_rows = builder_rows.filter(Plan.created_at >= date_from)
-    if date_to:
-        builder_rows = builder_rows.filter(Plan.created_at <= date_to)
-
     builder_agg = {}
-    for bname, status, total_bid in builder_rows.all():
+    for p in all_plans:
+        if p.is_template:
+            continue
+        bname = p.project.builder.name
         if bname not in builder_agg:
             builder_agg[bname] = {s: {"count": 0, "total": 0.0} for s in STATUSES}
-        if status in builder_agg[bname]:
-            builder_agg[bname][status]["count"] += 1
-            builder_agg[bname][status]["total"] += float(total_bid)
+        if p.status in builder_agg[bname]:
+            builder_agg[bname][p.status]["count"] += 1
+            builder_agg[bname][p.status]["total"] += plan_totals[p.id]
 
     by_builder = []
     for bname, bs in builder_agg.items():
@@ -404,54 +367,41 @@ def get_performance(
         lost  = bs["lost"]["count"]
         denom = won + lost
         by_builder.append({
-            "builder_name":      bname,
-            "total_plans":       sum(v["count"] for v in bs.values()),
+            "builder_name":       bname,
+            "total_plans":        sum(v["count"] for v in bs.values()),
             "contracted_revenue": bs["contracted"]["total"] + bs["complete"]["total"],
-            "pipeline":          bs["proposed"]["total"],
-            "win_rate":          round(won / denom, 4) if denom else None,
-            "by_status":         bs,
+            "pipeline":           bs["proposed"]["total"],
+            "win_rate":           round(won / denom, 4) if denom else None,
+            "by_status":          bs,
         })
     by_builder.sort(key=lambda x: x["contracted_revenue"], reverse=True)
 
     # --- House type breakdown ---
-    ht_rows = (
-        db.query(
-            Plan.house_type,
-            Plan.status,
-            func.coalesce(total_subq.c.total_bid, 0).label("total_bid"),
-        )
-        .outerjoin(total_subq, total_subq.c.plan_id == Plan.id)
-        .filter(Plan.estimator_initials.in_(eligible_inits))
-        .filter(Plan.house_type.isnot(None), Plan.house_type != "")
-        .filter(Plan.is_template == False)
-    )
-    if date_from:
-        ht_rows = ht_rows.filter(Plan.created_at >= date_from)
-    if date_to:
-        ht_rows = ht_rows.filter(Plan.created_at <= date_to)
-
     ht_agg = {}
-    for ht, status, total_bid in ht_rows.all():
+    for p in all_plans:
+        if p.is_template or not p.house_type:
+            continue
+        ht = p.house_type
         if ht not in ht_agg:
             ht_agg[ht] = {s: {"count": 0, "total": 0.0} for s in STATUSES}
-        if status in ht_agg[ht]:
-            ht_agg[ht][status]["count"] += 1
-            ht_agg[ht][status]["total"] += float(total_bid)
+        if p.status in ht_agg[ht]:
+            ht_agg[ht][p.status]["count"] += 1
+            ht_agg[ht][p.status]["total"] += plan_totals[p.id]
 
     by_house_type = []
     for ht, bs in ht_agg.items():
-        won        = bs["contracted"]["count"] + bs["complete"]["count"]
-        lost       = bs["lost"]["count"]
-        denom      = won + lost
-        total      = sum(v["count"] for v in bs.values())
-        total_val  = sum(v["total"] for v in bs.values())
+        won       = bs["contracted"]["count"] + bs["complete"]["count"]
+        lost      = bs["lost"]["count"]
+        denom     = won + lost
+        total     = sum(v["count"] for v in bs.values())
+        total_val = sum(v["total"] for v in bs.values())
         by_house_type.append({
-            "house_type":        ht,
-            "total_plans":       total,
+            "house_type":         ht,
+            "total_plans":        total,
             "contracted_revenue": bs["contracted"]["total"] + bs["complete"]["total"],
-            "pipeline":          bs["proposed"]["total"],
-            "avg_bid":           round(total_val / total, 2) if total else 0,
-            "win_rate":          round(won / denom, 4) if denom else None,
+            "pipeline":           bs["proposed"]["total"],
+            "avg_bid":            round(total_val / total, 2) if total else 0,
+            "win_rate":           round(won / denom, 4) if denom else None,
         })
     by_house_type.sort(key=lambda x: x["total_plans"], reverse=True)
 
