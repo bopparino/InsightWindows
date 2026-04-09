@@ -85,7 +85,9 @@ function AddRow({ cat, onAdd, adding }) {
       <td style={{ padding: '5px 8px' }}><input placeholder="Variant name" value={d.variant_name} onChange={e => set('variant_name', e.target.value)} style={{ fontSize: 13, width: '100%' }} /></td>
       <td style={{ padding: '5px 8px' }}><input type="number" step="0.01" placeholder="0.00" value={d.per_kit} onChange={e => set('per_kit', e.target.value)} style={{ fontSize: 13, width: 84, textAlign: 'right' }} /></td>
       <td style={{ padding: '5px 8px' }}><input type="number" step="0.01" placeholder="1.0" value={d.markup_divisor} onChange={e => set('markup_divisor', e.target.value)} style={{ fontSize: 13, width: 60, textAlign: 'center' }} /></td>
-      <td style={{ padding: '5px 8px', color: 'var(--gray-400)', fontSize: 12, textAlign: 'right' }}>auto</td>
+      <td style={{ padding: '5px 8px', color: 'var(--gray-400)', fontSize: 12, textAlign: 'right' }}>
+        {(() => { const c = (parseFloat(d.per_kit) || 0) * (parseFloat(d.markup_divisor) || 1); return c > 0 ? `$${c.toFixed(2)}` : '—' })()}
+      </td>
       <td style={{ padding: '5px 8px' }}><input type="number" step="0.01" placeholder="0.00" value={d.per_foot} onChange={e => set('per_foot', e.target.value)} style={{ fontSize: 13, width: 84, textAlign: 'right' }} /></td>
       <td style={{ padding: '5px 8px' }}><input type="number" placeholder="10" value={d.sort_order} onChange={e => set('sort_order', e.target.value)} style={{ fontSize: 13, width: 50, textAlign: 'center' }} /></td>
       <td style={{ padding: '5px 8px' }}>
@@ -140,7 +142,7 @@ function CategorySection({ cat, editingId, savingId, addingCat, deletingId, onEd
               <TH w={90}>Code</TH>
               <TH>Variant Name</TH>
               <TH right w={100}>Bid Price</TH>
-              <TH center w={70}>Divisor</TH>
+              <TH center w={70}>Margin</TH>
               <TH right w={100}>Your Cost</TH>
               <TH right w={110}>Per Foot</TH>
               <TH center w={60}>Sort</TH>
@@ -165,7 +167,7 @@ function CategorySection({ cat, editingId, savingId, addingCat, deletingId, onEd
                   </td>
                   <td style={{ padding: '8px 8px', textAlign: 'center', fontSize: 12,
                     color: v.markup_divisor < 1.0 ? '#166534' : 'var(--gray-300)' }}>
-                    {v.markup_divisor < 1.0 ? v.markup_divisor.toFixed(2) : '—'}
+                    {v.markup_divisor < 1.0 ? `${v.margin_pct}%` : '—'}
                   </td>
                   <td style={{ padding: '8px 8px', textAlign: 'right', fontSize: 12,
                     color: v.markup_divisor < 1.0 ? 'var(--gray-600)' : 'var(--gray-300)' }}>

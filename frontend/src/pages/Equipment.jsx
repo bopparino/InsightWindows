@@ -516,7 +516,7 @@ export default function Equipment() {
                   border: 'none', borderRadius: 8, padding: '7px 16px',
                   fontSize: 13, fontWeight: 600, cursor: 'pointer',
                 }}>
-                Manage
+                Manage Systems
               </button>
             )}
           </div>

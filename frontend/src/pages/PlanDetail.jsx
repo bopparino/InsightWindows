@@ -425,73 +425,81 @@ function AddItemForm({ planId, systemId, onDone }) {
 }
 
 // ── Quote version history ─────────────────────────────────────
-function QuoteHistory({ planId }) {
+function QuoteHistory({ planId, inline }) {
   const { data: history = [] } = useQuery({
     queryKey: ['quote-history', String(planId)],
     queryFn:  () => documents.history(planId),
   })
-  if (history.length === 0) return null
+  if (history.length === 0) return (
+    <div style={{ fontSize: 13, color: 'var(--gray-400)' }}>No quotes generated yet.</div>
+  )
+  const content = history.map(d => (
+    <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between',
+      alignItems: 'center', padding: '7px 0', borderBottom: '1px solid var(--gray-100)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span style={{ fontSize: 12, fontWeight: 700, padding: '2px 8px',
+          borderRadius: 99, background: 'var(--blue-light)', color: 'var(--blue)' }}>
+          v{d.version}
+        </span>
+        <span style={{ fontSize: 13, color: 'var(--gray-600)' }}>{d.filename}</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <span style={{ fontSize: 12, color: 'var(--gray-400)' }}>
+          {new Date(d.generated_at).toLocaleDateString()} {new Date(d.generated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </span>
+        <button onClick={() => documents.downloadVersion(planId, d.id, d.filename)}
+          style={{ fontSize: 12, background: 'none', border: '1px solid var(--gray-200)',
+            borderRadius: 6, padding: '3px 10px', cursor: 'pointer', color: 'var(--gray-600)' }}>
+          ⬇ Download
+        </button>
+      </div>
+    </div>
+  ))
+  if (inline) return <div>{content}</div>
   return (
     <div className="card" style={{ marginTop: 16 }}>
       <div style={{ fontWeight: 600, fontSize: 11, color: 'var(--gray-600)',
         textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>
         Quote Versions
       </div>
-      {history.map(d => (
-        <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between',
-          alignItems: 'center', padding: '7px 0', borderBottom: '1px solid var(--gray-100)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, padding: '2px 8px',
-              borderRadius: 99, background: 'var(--blue-light)', color: 'var(--blue)' }}>
-              v{d.version}
-            </span>
-            <span style={{ fontSize: 13, color: 'var(--gray-600)' }}>{d.filename}</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontSize: 12, color: 'var(--gray-400)' }}>
-              {new Date(d.generated_at).toLocaleDateString()} {new Date(d.generated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
-            <button onClick={() => documents.downloadVersion(planId, d.id, d.filename)}
-              style={{ fontSize: 12, background: 'none', border: '1px solid var(--gray-200)',
-                borderRadius: 6, padding: '3px 10px', cursor: 'pointer', color: 'var(--gray-600)' }}>
-              ⬇ Download
-            </button>
-          </div>
-        </div>
-      ))}
+      {content}
     </div>
   )
 }
 
 // ── Email history ─────────────────────────────────────────────
-function EmailHistory({ planId }) {
+function EmailHistory({ planId, inline }) {
   const { data: emails = [] } = useQuery({
     queryKey: ['plan-emails', String(planId)],
     queryFn:  () => plans.emails(planId),
   })
-  if (emails.length === 0) return null
+  if (emails.length === 0) return (
+    <div style={{ fontSize: 13, color: 'var(--gray-400)' }}>No emails sent yet.</div>
+  )
+  const content = emails.map(e => (
+    <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between',
+      alignItems: 'flex-start', padding: '8px 0',
+      borderBottom: '1px solid var(--gray-100)' }}>
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 500 }}>{e.to}</div>
+        <div style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 2 }}>{e.subject}</div>
+      </div>
+      <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 16 }}>
+        <div style={{ fontSize: 12, color: 'var(--gray-500)' }}>
+          {new Date(e.sent_at).toLocaleDateString()} {new Date(e.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 1 }}>by {e.sent_by}</div>
+      </div>
+    </div>
+  ))
+  if (inline) return <div>{content}</div>
   return (
     <div className="card" style={{ marginTop: 16 }}>
-      <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 12,
-        color: 'var(--gray-600)', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: 11 }}>
+      <div style={{ fontWeight: 600, fontSize: 11, color: 'var(--gray-600)',
+        textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>
         Emails Sent
       </div>
-      {emails.map(e => (
-        <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between',
-          alignItems: 'flex-start', padding: '8px 0',
-          borderBottom: '1px solid var(--gray-100)' }}>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 500 }}>{e.to}</div>
-            <div style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 2 }}>{e.subject}</div>
-          </div>
-          <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 16 }}>
-            <div style={{ fontSize: 12, color: 'var(--gray-500)' }}>
-              {new Date(e.sent_at).toLocaleDateString()} {new Date(e.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 1 }}>by {e.sent_by}</div>
-          </div>
-        </div>
-      ))}
+      {content}
     </div>
   )
 }
@@ -801,6 +809,7 @@ export default function PlanDetail() {
   const [editingFactor, setEditingFactor] = useState(false)
   const [factorInput, setFactorInput] = useState('')
   const [copied, setCopied] = useState(false)
+  const [historyTab, setHistoryTab] = useState('activity')
 
   const { data: plan, isLoading } = useQuery({
     queryKey: ['plan', id],
@@ -1427,7 +1436,7 @@ export default function PlanDetail() {
       )}
 
       {/* Scope + Notes */}
-      <div className="card" style={{ marginTop: 8 }}>
+      <div key={plan.id} className="card" style={{ marginTop: 8 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
           <div>
             <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-600)', marginBottom: 6 }}>INCLUDES</div>
@@ -1465,14 +1474,32 @@ export default function PlanDetail() {
         </div>
       </div>
 
-      {/* Activity */}
-      <ActivityLog planId={parseInt(id)} />
-
-      {/* Quote version history */}
-      <QuoteHistory planId={parseInt(id)} />
-
-      {/* Email history */}
-      <EmailHistory planId={parseInt(id)} />
+      {/* History panel */}
+      <div className="card" style={{ marginTop: 16, padding: 0, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--gray-200)', padding: '0 4px' }}>
+          {[
+            { id: 'activity', label: 'Activity' },
+            { id: 'quotes',   label: 'Quote Versions' },
+            { id: 'emails',   label: 'Emails Sent' },
+          ].map(tab => (
+            <button key={tab.id} onClick={() => setHistoryTab(tab.id)}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                padding: '10px 16px', fontSize: 13, fontWeight: historyTab === tab.id ? 600 : 400,
+                color: historyTab === tab.id ? 'var(--blue)' : 'var(--gray-400)',
+                borderBottom: historyTab === tab.id ? '2px solid var(--blue)' : '2px solid transparent',
+                marginBottom: -1, transition: 'color 0.15s',
+              }}>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <div style={{ padding: 16 }}>
+          {historyTab === 'activity' && <ActivityLog planId={parseInt(id)} inline />}
+          {historyTab === 'quotes'   && <QuoteHistory planId={parseInt(id)} inline />}
+          {historyTab === 'emails'   && <EmailHistory planId={parseInt(id)} inline />}
+        </div>
+      </div>
 
       {/* Comments + Tasks */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 24 }}>
@@ -1779,7 +1806,7 @@ function DrawSchedule({ planId, houseTypeId, draws }) {
   )
 }
 
-function ActivityLog({ planId }) {
+function ActivityLog({ planId, inline }) {
   const { data: events = [], isLoading } = useQuery({
     queryKey: ['plan-activity', String(planId)],
     queryFn: () => plans.activity(planId),
@@ -1795,44 +1822,47 @@ function ActivityLog({ planId }) {
     quote_emailed:         '✉',
   }
 
+  const content = isLoading ? (
+    <div style={{ textAlign: 'center', padding: 16 }}><span className="spinner" /></div>
+  ) : events.length === 0 ? (
+    <div style={{ fontSize: 13, color: 'var(--gray-400)' }}>No activity recorded.</div>
+  ) : (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+      {events.map((e, i) => (
+        <div key={e.id} style={{
+          display: 'flex', gap: 12, alignItems: 'flex-start',
+          paddingBottom: i < events.length - 1 ? 12 : 0,
+          marginBottom: i < events.length - 1 ? 12 : 0,
+          borderBottom: i < events.length - 1 ? '1px solid var(--gray-100)' : 'none',
+        }}>
+          <div style={{
+            width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+            background: 'var(--blue-light)', border: '1px solid var(--blue-mid)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 11, color: 'var(--blue)', fontWeight: 700,
+          }}>
+            {EVENT_ICONS[e.event_type] || '·'}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, color: 'var(--gray-700)' }}>{e.description}</div>
+            <div style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 2 }}>
+              {e.username && e.username !== 'system' ? `${e.username} · ` : ''}
+              {e.event_at ? new Date(e.event_at).toLocaleString() : ''}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+
+  if (inline) return content
   return (
     <div className="card" style={{ marginTop: 16 }}>
       <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-600)',
         marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
         Activity
       </div>
-      {isLoading ? (
-        <div style={{ textAlign: 'center', padding: 16 }}><span className="spinner" /></div>
-      ) : events.length === 0 ? (
-        <div style={{ fontSize: 13, color: 'var(--gray-400)' }}>No activity recorded.</div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-          {events.map((e, i) => (
-            <div key={e.id} style={{
-              display: 'flex', gap: 12, alignItems: 'flex-start',
-              paddingBottom: i < events.length - 1 ? 12 : 0,
-              marginBottom: i < events.length - 1 ? 12 : 0,
-              borderBottom: i < events.length - 1 ? '1px solid var(--gray-100)' : 'none',
-            }}>
-              <div style={{
-                width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
-                background: 'var(--blue-light)', border: '1px solid var(--blue-mid)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 11, color: 'var(--blue)', fontWeight: 700,
-              }}>
-                {EVENT_ICONS[e.event_type] || '·'}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, color: 'var(--gray-700)' }}>{e.description}</div>
-                <div style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 2 }}>
-                  {e.username && e.username !== 'system' ? `${e.username} · ` : ''}
-                  {e.event_at ? new Date(e.event_at).toLocaleString() : ''}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      {content}
     </div>
   )
 }
