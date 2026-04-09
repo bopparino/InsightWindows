@@ -371,6 +371,354 @@ def _fix_kit_variants():
 _fix_kit_variants()
 
 
+def _seed_kit_components():
+    """
+    Idempotent: inserts KitComponent rows parsed from KIT PRICES new 2019.XLS.
+    Skips any variant that already has components — run once per fresh deploy.
+    341 components across 30 kits (sheet metal, ductboard, PVC flues,
+    condensate pump, humidifiers, air cleaners, mastic, zone dampers).
+    """
+    from core.database import SessionLocal
+    from models.models import KitComponent, KitVariant
+    db = SessionLocal()
+    try:
+        # fmt: (sort_order, description, part_number, quantity, unit_cost)
+        COMPONENT_SEED = {
+            # 4" SMR
+            '4" SMR': [
+                (10, 'ROUND PIPE 4"X10\'', '4" RD', 10.0, 0.9397),
+                (20, 'ROUND ELL 4" GALV  30 GA', '4" RD ELL', 1.0, 1.3755),
+                (30, 'ELL REGISTER BOOT 10X4X4', '10X4X4 ELRB', 1.0, 2.6775),
+                (40, 'AIR TITE 4"', '4" AT', 1.0, 2.856),
+                (50, 'FLOOR REGISTER', '4X10 FLR', 1.0, 2.5029),
+                (60, 'SCREWS (8X3/4 1/4"HEX HEAD)', '8X3/4" HHS', 15.0, 0.0168),
+                (70, 'TAPE ALUM FOIL 3"X60 YDS', '3" AFT', 4.0, 0.0703),
+            ],
+            '5" SMR': [
+                (10, 'ROUND PIPE 5"X10\'', '5" RD', 10.0, 0.966),
+                (20, 'ROUND ELL 5" GALV  30 GA', '5" RD ELL', 1.0, 1.5645),
+                (30, 'ELL REGISTER BOOT 10X4X5', '10X4X5 ELRB', 1.0, 2.6775),
+                (40, 'AIR TITE 5"', '5" AT', 1.0, 2.856),
+                (50, 'FLOOR REGISTER', '4X10 FLR', 1.0, 2.5029),
+                (60, 'SCREWS (8X3/4 1/4"HEX HEAD)', '8X3/4" HHS', 15.0, 0.0168),
+                (70, 'TAPE ALUM FOIL 3"X60 YDS', '3" AFT', 5.0, 0.0703),
+            ],
+            '6" SMR': [
+                (10, 'ROUND PIPE 6"X10\'', '6" RD', 10.0, 0.966),
+                (20, 'ROUND ELL 6" GALV  30 GA', '6" RD ELL', 2.0, 1.5645),
+                (30, 'ELL REGISTER BOOT 10X4X6', '10X4X6 ELRB', 1.0, 2.6775),
+                (40, 'FLOOR REGISTER', '4X10 FLR', 1.0, 2.5029),
+                (50, 'SCREWS (8X3/4 1/4"HEX HEAD)', '8X3/4" HHS', 15.0, 0.0168),
+                (60, 'TAPE ALUM FOIL 3"X60 YDS', '3" AFT', 6.0, 0.0703),
+            ],
+            '7" SMR': [
+                (10, 'ROUND PIPE 7"X10\'', '7" RD', 10.0, 1.2653),
+                (20, 'ROUND ELL 7" GALV  30 GA', '7" RD ELL', 2.0, 2.1945),
+                (30, 'ELL REGISTER BOOT 12X4X7', '12X4X7 ELRB', 1.0, 2.961),
+                (40, 'FLOOR REGISTER', '4X12 FLR', 1.0, 3.1415),
+                (50, 'SCREWS (8X3/4 1/4"HEX HEAD)', '8X3/4" HHS', 15.0, 0.0168),
+                (60, 'TAPE ALUM FOIL 3"X60 YDS', '3" AFT', 6.5, 0.0703),
+            ],
+            '8" SMR': [
+                (10, 'ROUND PIPE 8"X10\'', '8" RD', 10.0, 1.449),
+                (20, 'ROUND ELL 8" GALV  30 GA', '8" RD ELL', 2.0, 2.4255),
+                (30, 'ELL REGISTER BOOT 14X4X8', '14X4X8 ELRB', 1.0, 3.864),
+                (40, 'AIR TITE 8"', '8" AT', 1.0, 3.528),
+                (50, 'FLOOR REGISTER', '4X14 FLR', 1.0, 4.12),
+                (60, 'SCREWS (8X3/4 1/4"HEX HEAD)', '8X3/4" HHS', 15.0, 0.0168),
+                (70, 'TAPE ALUM FOIL 3"X60 YDS', '3" AFT', 6.75, 0.0703),
+            ],
+            '4" DBR': [
+                (10, 'FLEX DUCT R8 INSULATED 4"X18\'', '4"X18\' Q46518', 1.0, 28.4025),
+                (20, 'DUCTBOARD COLLAR 4" (1.5")', '4" DBC', 1.0, 1.1235),
+                (30, 'STRAIGHT REGISTER BOOT 10X4X4', '10X4X4 SRB', 1.0, 2.6775),
+                (40, 'WALL REGISTER 10X4', '10X4 WR', 1.0, 3.193),
+                (50, 'PLASTIC TIES 36"', '36" PT', 2.0, 0.264),
+                (60, 'SCREWS (8X3/4 1/4"HEX HEAD)', '8X3/4" HHS', 2.0, 0.0168),
+                (70, 'TAPE SEALING UL181B-FX 2"X120 YDS', '2" FXST', 3.0, 0.0599),
+                (80, 'SLIP (S) PER FOOT', 'S SLIP', 4.4, 0.4795),
+            ],
+            '5" DBR': [
+                (10, 'FLEX DUCT R8 INSULATED 5"X18\'', '5"X18\' Q56518', 1.0, 30.87),
+                (20, 'DUCTBOARD COLLAR 5" (1.5")', '5" DBC', 1.0, 1.302),
+                (30, 'STRAIGHT REGISTER BOOT 8X6X5', '8X6X5 SRB', 1.0, 3.423),
+                (40, 'WALL REGISTER 8X6', '8X6 WR', 1.0, 3.4917),
+                (50, 'PLASTIC TIES 36"', '36" PT', 2.0, 0.264),
+                (60, 'SCREWS (8X3/4 1/4"HEX HEAD)', '8X3/4" HHS', 2.0, 0.0168),
+                (70, 'TAPE SEALING UL181B-FX 2"X120 YDS', '2" FXST', 3.0, 0.0599),
+                (80, 'SLIP (S) PER FOOT', 'S SLIP', 4.4, 0.4795),
+            ],
+            '6" DBR': [
+                (10, 'FLEX DUCT R8 INSULATED 6"X18\'', '6"X18\' Q66518', 1.0, 32.97),
+                (20, 'DUCTBOARD COLLAR 6" (1.5")', '6" DBC', 1.0, 1.323),
+                (30, 'STRAIGHT REGISTER BOOT 10X6X6', '10X6X6 SRB', 1.0, 3.36),
+                (40, 'WALL REGISTER 10X6', '10X6 WR', 1.0, 3.4917),
+                (50, 'PLASTIC TIES 36"', '36" PT', 2.0, 0.264),
+                (60, 'SCREWS (8X3/4 1/4"HEX HEAD)', '8X3/4" HHS', 2.0, 0.0168),
+                (70, 'TAPE SEALING UL181B-FX 2"X120 YDS', '2" FXST', 4.0, 0.0599),
+                (80, 'SLIP (S) PER FOOT', 'S SLIP', 4.4, 0.4795),
+            ],
+            '7" DBR': [
+                (10, 'FLEX DUCT R8 INSULATED 7"X18\'', '7"X18\' Q76518', 1.0, 36.2775),
+                (20, 'DUCTBOARD COLLAR 7" (1.5")', '7" DBC', 1.0, 1.5645),
+                (30, 'STRAIGHT REGISTER BOOT 12X6X7', '12X6X7 SRB', 1.0, 3.6645),
+                (40, 'WALL REGISTER 12X6', '12X6 WR', 1.0, 4.0788),
+                (50, 'PLASTIC TIES 36"', '36" PT', 2.0, 0.264),
+                (60, 'SCREWS (8X3/4 1/4"HEX HEAD)', '8X3/4" HHS', 2.0, 0.0168),
+                (70, 'TAPE SEALING UL181B-FX 2"X120 YDS', '2" FXST', 4.0, 0.0599),
+                (80, 'SLIP (S) PER FOOT', 'S SLIP', 4.4, 0.4795),
+            ],
+            '8" DBR': [
+                (10, 'FLEX DUCT R8 INSULATED 8"X18\'', '8"X18\' Q86518', 1.0, 40.425),
+                (20, 'DUCTBOARD COLLAR 8" (1.5")', '8" DBC', 1.0, 1.7955),
+                (30, 'STRAIGHT REGISTER BOOT 12X8X8', '12X8X8 SRB', 1.0, 4.158),
+                (40, 'WALL REGISTER 12X8', '12X8 WR', 1.0, 5.0161),
+                (50, 'PLASTIC TIES 36"', '36" PT', 2.0, 0.264),
+                (60, 'SCREWS (8X3/4 1/4"HEX HEAD)', '8X3/4" HHS', 2.0, 0.0168),
+                (70, 'TAPE SEALING UL181B-FX 2"X120 YDS', '2" FXST', 4.0, 0.0599),
+                (80, 'SLIP (S) PER FOOT', 'S SLIP', 4.4, 0.4795),
+            ],
+            'PVC2X21DP': [
+                (10, 'PVC 2"X20\' Schedule 40 Solid Core', '2"X20\' PVCFC', 45.0, 0.1728),
+                (20, 'PVC 2" Long Coupling', '2" COUP', 4.0, 1.2544),
+                (30, 'PVC 2" 90 Deg Long Sweep Ell', '2" 90 LS PVC', 7.0, 2.6992),
+                (40, 'Plumber Strap 3/4" Plastic', '3/4" PS', 17.25, 0.0965),
+                (50, 'PVC Roof Flashing 3"', '3" F PVC', 2.0, 2.53),
+                (60, 'Armaflex 2"X6\'', '2"X6\' AFLEX', 8.0, 2.0808),
+                (70, 'Installation Labor', 'INSTLC', 1.27, 66.32),
+            ],
+            'PVC2X31DP': [
+                (10, 'PVC 2"X20\' Schedule 40 Solid Core', '2"X20\' PVCFC', 65.0, 0.1728),
+                (20, 'PVC 2" Long Coupling', '2" COUP', 6.0, 1.2544),
+                (30, 'PVC 2" 90 Deg Long Sweep Ell', '2" 90 LS PVC', 9.0, 2.6992),
+                (40, 'Plumber Strap 3/4" Plastic', '3/4" PS', 23.0, 0.0965),
+                (50, 'PVC Roof Flashing 3"', '3" F PVC', 2.0, 2.53),
+                (60, 'Armaflex 2"X6\'', '2"X6\' AFLEX', 8.0, 2.0808),
+                (70, 'Installation Labor', 'INSTLC', 1.27, 66.32),
+            ],
+            'PVC2X41DP': [
+                (10, 'PVC 2"X20\' Schedule 40 Solid Core', '2"X20\' PVCFC', 85.0, 0.1728),
+                (20, 'PVC 2" Long Coupling', '2" COUP', 9.0, 1.2544),
+                (30, 'PVC 2" 90 Deg Long Sweep Ell', '2" 90 LS PVC', 11.0, 2.6992),
+                (40, 'Plumber Strap 3/4" Plastic', '3/4" PS', 34.25, 0.0965),
+                (50, 'PVC Roof Flashing 3"', '3" F PVC', 2.0, 2.53),
+                (60, 'Armaflex 2"X6\'', '2"X6\' AFLEX', 8.0, 2.0808),
+                (70, 'Installation Labor', 'INSTLC', 1.27, 66.32),
+            ],
+            'PVC3X21DP': [
+                (10, 'PVC 3"X20\' Schedule 40 Solid Core', '3"X20\' PVCFC', 45.0, 0.3413),
+                (20, 'PVC 3" Long Coupling', '3" COUP', 4.0, 4.1796),
+                (30, 'PVC 3" 90 Deg Long Sweep Ell', '3" 90 LS PVC', 7.0, 6.0048),
+                (40, 'Plumber Strap 3/4" Plastic', '3/4" PS', 20.75, 0.0965),
+                (50, 'PVC Roof Flashing 4"', '4" F PVC', 2.0, 3.5616),
+                (60, 'Armaflex 3"X6\'', '3"X6\' AFLEX', 8.0, 3.2083),
+                (70, 'Installation Labor', 'INSTLC', 1.27, 66.32),
+            ],
+            'PVC3X31DP': [
+                (10, 'PVC 3"X20\' Schedule 40 Solid Core', '3"X20\' PVCFC', 65.0, 0.3413),
+                (20, 'PVC 3" Long Coupling', '3" COUP', 6.0, 4.1796),
+                (30, 'PVC 3" 90 Deg Long Sweep Ell', '3" 90 LS PVC', 9.0, 6.0048),
+                (40, 'Plumber Strap 3/4" Plastic', '3/4" PS', 27.7, 0.0965),
+                (50, 'PVC Roof Flashing 4"', '4" F PVC', 2.0, 3.5616),
+                (60, 'Armaflex 3"X6\'', '3"X6\' AFLEX', 8.0, 3.2083),
+                (70, 'Installation Labor', 'INSTLC', 1.27, 66.32),
+            ],
+            'PVC3X41DP': [
+                (10, 'PVC 3"X20\' Schedule 40 Solid Core', '3"X20\' PVCFC', 85.0, 0.3413),
+                (20, 'PVC 3" Long Coupling', '3" COUP', 9.0, 4.1796),
+                (30, 'PVC 3" 90 Deg Long Sweep Ell', '3" 90 LS PVC', 11.0, 6.0048),
+                (40, 'Plumber Strap 3/4" Plastic', '3/4" PS', 41.5, 0.0965),
+                (50, 'PVC Roof Flashing 4"', '4" F PVC', 2.0, 3.5616),
+                (60, 'Armaflex 3"X6\'', '3"X6\' AFLEX', 8.0, 3.2083),
+                (70, 'Installation Labor', 'INSTLC', 1.27, 66.32),
+                (80, 'PVC 3/4"X10\' Schedule 40', '3/4"X10\' PVC', 10.0, 0.3119),
+                (90, 'PVC 3/4" Coupling', '3/4" COUP PVC', 2.0, 0.319),
+                (100, 'PVC 3/4" Male Adapter', '3/4" MA PVC', 1.0, 0.363),
+                (110, 'PVC 3/4" Plug', '3/4" PLUG PVC', 1.0, 1.012),
+                (120, 'PVC 3/4" 45 Ell', '3/4" 45 PVC', 2.0, 0.913),
+                (130, 'PVC 3/4" 90 Ell', '3/4" 90 PVC', 4.0, 0.396),
+                (140, 'PVC 3/4" Trap', '3/4" TRAP PVC', 2.0, 1.419),
+                (150, 'EMT Strap 1"', '1" EMTS', 5.0, 0.2916),
+                (160, 'Screws (8X3/4 1/4"HEX HEAD)', '8X3/4" HHS', 5.0, 0.0168),
+            ],
+            'COND-PUMP': [
+                (10, 'Condensate Pump Little Giant #VCM15ULS', 'LITTLE GIANT CP', 1.0, 63.58),
+                (20, 'Vinyl Tubing 1/2"X100\'', '1/2"X100\' VT', 50.0, 0.0863),
+                (30, 'Thermostat Wire 20X5 20 GA 250\'', '20X5TW', 10.0, 0.2913),
+                (40, 'Wire Nuts 72B', '72B BLUE', 4.0, 0.341),
+                (50, 'Plastic Ties 8"', '8" PT', 12.0, 0.0452),
+                (60, 'Installation Labor', 'INSTLC', 1.0, 66.32),
+            ],
+            'HUM-BYPASS': [
+                (10, 'Humidifier Aprilaire #600M', 'AA600M', 1.0, 159.033),
+                (20, 'Flex Alum Foil Connector 6"X7\'', '6"X7\' FC', 1.0, 4.116),
+                (30, 'Round Ell 6" Galv 30 GA', '6" RD ELL', 1.0, 1.5645),
+                (40, 'Plastic Ties 36"', '36" PT', 2.0, 0.264),
+                (50, 'Copper Tubing Soft 1/4"X50\'', '1/4"X50\' SCT', 10.0, 0.8574),
+                (60, 'Vinyl Tubing 1/2"X100\'', '1/2"X100\' VT', 1.0, 0.0863),
+                (70, 'Thermostat Wire 20X5 20 GA 250\'', '20X5TW', 5.0, 0.2913),
+                (80, 'Wire Nuts 72B', '72B BLUE', 2.0, 0.341),
+                (90, 'PVC 3/4"X10\' Schedule 40', '3/4"X10\' PVC', 5.0, 0.3119),
+                (100, 'PVC 3/4" Tee', '3/4" TEE PVC', 1.0, 0.517),
+                (110, 'PVC 3/4" 90 Ell', '3/4" 90 PVC', 2.0, 0.396),
+                (120, 'EMT Strap 1"', '1" EMTS', 2.0, 0.2916),
+                (130, 'Screws (8X3/4 1/4"HEX HEAD)', '8X3/4" HHS', 12.0, 0.0168),
+                (140, 'Service Labor', 'SLC', 2.0, 66.32),
+            ],
+            'HUM-POWER': [
+                (10, 'Humidifier Aprilaire #700M', 'AA700M', 1.0, 277.1265),
+                (20, 'Copper Tubing Soft 1/4"X50\'', '1/4"X50\' SCT', 10.0, 0.8574),
+                (30, 'Vinyl Tubing 1/2"X100\'', '1/2"X100\' VT', 1.0, 0.0863),
+                (40, 'Thermostat Wire 20X5 20 GA 250\'', '20X5TW', 5.0, 0.2913),
+                (50, 'Wire Nuts 72B', '72B BLUE', 2.0, 0.341),
+                (60, 'PVC 3/4"X10\' Schedule 40', '3/4"X10\' PVC', 5.0, 0.3119),
+                (70, 'PVC 3/4" Tee', '3/4" TEE PVC', 1.0, 0.517),
+                (80, 'PVC 3/4" 90 Ell', '3/4" 90 PVC', 2.0, 0.396),
+                (90, 'EMT Strap 1"', '1" EMTS', 2.0, 0.2916),
+                (100, 'Screws (8X3/4 1/4"HEX HEAD)', '8X3/4" HHS', 12.0, 0.0168),
+                (110, 'Service Labor', 'SLC', 2.0, 66.32),
+            ],
+            'AC-HE2000': [
+                (10, 'Air Cleaner Trion HE2000 20X25', '20X25 HE2000', 1.0, 714.395),
+                (20, 'Service Labor', 'SLC', 4.0, 66.32),
+            ],
+            'AC-HF300-16': [
+                (10, 'Air Cleaner Honeywell HF300E1019 16X25', '16X25 HF300', 1.0, 762.267),
+                (20, 'Service Labor', 'SLC', 4.0, 66.32),
+            ],
+            'AC-HF300-20': [
+                (10, 'Air Cleaner Honeywell HF300E1035 20X25', '20X25 HF300', 1.0, 857.681),
+                (20, 'Service Labor', 'SLC', 4.0, 66.32),
+            ],
+            'MASTIC-PKG': [
+                (10, 'Duct Seal Mastic (Carlisle Versa-Grip 181)', '181 DSM', 1.0, 12.312),
+                (20, 'Duct Seal Mastic Brush (Throw-Away)', 'DSMB', 2.0, 0.81),
+                (30, 'Foil Mastic Tape 3"X100\'', 'HAR304094', 200.0, 0.3261),
+                (40, 'Shop Labor', 'SHLC', 1.0, 28.49),
+                (50, 'Sheet Metal Labor', 'SMLC', 1.0, 18.0),
+            ],
+            'APR-2Z': [
+                (10, 'Aprilaire Damper Control Panel AA6202 (2-Zone)', 'AA6202', 1.0, 73.059),
+                (20, 'Thermostat Braeburn #1020NC', 'O-8444', 1.0, 46.44),
+                (30, 'Damper Side Mount 12X10 AA6733', '12X10SMDAA6733', 2.0, 73.1955),
+                (40, 'Damper Bypass Round 12" AA6112', '12BPDAA6112', 1.0, 74.1405),
+                (50, 'Thermostat Wire 18X8 18 GA 250\'', '18X8TW', 75.0, 0.4499),
+                (60, '12" Bypass Flex & Fittings', '12X10D', 1.0, 71.37),
+                (70, '40 VA Transformer', '40VAT', 1.0, 14.616),
+                (80, 'Sheet Metal Labor', 'SMLC', 1.0, 66.32),
+                (90, 'Installation Labor', 'INSTLC', 1.0, 66.32),
+                (100, 'Service Labor', 'SLC', 3.0, 66.32),
+                (110, 'One Year Service', 'OYSC', 1.5, 66.32),
+            ],
+            'APR-3Z': [
+                (10, 'Aprilaire Damper Control Panel AA6203 (3-Zone)', 'AA6203', 1.0, 79.758),
+                (20, 'Thermostat Braeburn #1020NC', 'O-8444', 2.0, 46.44),
+                (30, 'Damper Side Mount 12X10 AA6733', '12X10SMDAA6733', 3.0, 73.1955),
+                (40, 'Damper Bypass Round 12" AA6112', '12BPDAA6112', 1.0, 74.1405),
+                (50, 'Thermostat Wire 18X8 18 GA 250\'', '18X8TW', 125.0, 0.4499),
+                (60, '12" Bypass Flex & Fittings', '12X10D', 1.0, 71.37),
+                (70, '40 VA Transformer', '40VAT', 1.0, 14.616),
+                (80, 'Sheet Metal Labor', 'SMLC', 1.5, 66.32),
+                (90, 'Installation Labor', 'INSTLC', 1.5, 66.32),
+                (100, 'Service Labor', 'SLC', 5.0, 66.32),
+                (110, 'One Year Service', 'OYSC', 2.5, 66.32),
+            ],
+            'APR-3Z-HP': [
+                (10, 'Aprilaire Damper Control Panel AA6303 (3-Zone HP)', 'AA6303', 1.0, 93.2295),
+                (20, 'Thermostat Braeburn #1020NC', 'O-8444', 3.0, 46.44),
+                (30, 'Damper Side Mount 12X10 AA6733', '12X10SMDAA6733', 3.0, 73.1955),
+                (40, 'Damper Bypass Round 12" AA6112', '12BPDAA6112', 1.0, 74.1405),
+                (50, 'Thermostat Wire 18X8 18 GA 250\'', '18X8TW', 125.0, 0.4499),
+                (60, '12" Bypass Flex & Fittings', '12X10D', 1.0, 71.37),
+                (70, '40 VA Transformer', '40VAT', 1.0, 14.616),
+                (80, 'Sheet Metal Labor', 'SMLC', 1.5, 66.32),
+                (90, 'Installation Labor', 'INSTLC', 1.5, 66.32),
+                (100, 'Service Labor', 'SLC', 5.0, 66.32),
+                (110, 'One Year Service', 'OYSC', 2.5, 66.32),
+            ],
+            'APR-4Z': [
+                (10, 'Aprilaire Damper Control Panel AA6404 (4-Zone)', 'AA6404', 1.0, 165.228),
+                (20, 'Thermostat Braeburn #1020NC', 'O-8444', 3.0, 46.44),
+                (30, 'Damper Side Mount 12X10 AA6733', '12X10SMDAA6733', 4.0, 73.1955),
+                (40, 'Damper Bypass Round 12" AA6112', '12BPDAA6112', 1.0, 74.1405),
+                (50, 'Thermostat Wire 18X8 18 GA 250\'', '18X8TW', 200.0, 0.4499),
+                (60, '12" Bypass Flex & Fittings', '12X10D', 1.0, 71.37),
+                (70, '40 VA Transformer', '40VAT', 1.0, 14.616),
+                (80, 'Sheet Metal Labor', 'SMLC', 2.0, 66.32),
+                (90, 'Installation Labor', 'INSTLC', 2.0, 66.32),
+                (100, 'Service Labor', 'SLC', 6.0, 66.32),
+                (110, 'One Year Service', 'OYSC', 3.5, 66.32),
+            ],
+            'EWC-2Z': [
+                (10, 'EWC Damper Control Panel BMPLUS 3000', 'BMPLUS 3000 EWC', 1.0, 199.9188),
+                (20, 'Thermostat Braeburn #1020NC', 'O-8444', 1.0, 46.44),
+                (30, 'EWC Damper Side Mount 10X12 MA15S', 'EWC-10X12-MA15S', 2.0, 239.76),
+                (40, 'Damper Bypass Round 12"', 'DAMPBAR12INC', 1.0, 226.8),
+                (50, 'Thermostat Wire 18X8 18 GA 250\'', '18X8TW', 75.0, 0.4499),
+                (60, '12" Bypass Flex & Fittings', '12X10D', 1.0, 71.37),
+                (70, '40 VA Transformer', '40VAT', 1.0, 14.616),
+                (80, 'Sheet Metal Labor', 'SMLC', 1.0, 66.32),
+                (90, 'Installation Labor', 'INSTLC', 1.0, 66.32),
+                (100, 'Service Labor', 'SLC', 3.0, 66.32),
+                (110, 'One Year Service', 'OYSC', 1.5, 66.32),
+            ],
+            'EWC-3Z': [
+                (10, 'EWC Damper Control Panel BMPLUS 3000', 'BMPLUS 3000 EWC', 1.0, 199.9188),
+                (20, 'Thermostat Braeburn #1020NC', 'O-8444', 2.0, 46.44),
+                (30, 'EWC Damper Side Mount 10X12 MA15S', 'EWC-10X12-MA15S', 3.0, 239.76),
+                (40, 'Damper Bypass Round 12"', 'DAMPBAR12INC', 1.0, 226.8),
+                (50, 'Thermostat Wire 18X8 18 GA 250\'', '18X8TW', 125.0, 0.4499),
+                (60, '12" Bypass Flex & Fittings', '12X10D', 1.0, 71.37),
+                (70, '40 VA Transformer', '40VAT', 1.0, 14.616),
+                (80, 'Sheet Metal Labor', 'SMLC', 1.5, 66.32),
+                (90, 'Installation Labor', 'INSTLC', 1.5, 66.32),
+                (100, 'Service Labor', 'SLC', 5.0, 66.32),
+                (110, 'One Year Service', 'OYSC', 2.5, 66.32),
+            ],
+            'EWC-4Z': [
+                (10, 'EWC Damper Control Panel BMPLUS 5000', 'BMPLUS 5000 EWC', 1.0, 267.7212),
+                (20, 'Thermostat Braeburn #1020NC', 'O-8444', 3.0, 46.44),
+                (30, 'EWC Damper Side Mount 10X12 MA15S', 'EWC-10X12-MA15S', 4.0, 239.76),
+                (40, 'Damper Bypass Round 12"', 'DAMPBAR12INC', 1.0, 226.8),
+                (50, 'Thermostat Wire 18X8 18 GA 250\'', '18X8TW', 200.0, 0.4499),
+                (60, '12" Bypass Flex & Fittings', '12X10D', 1.0, 71.37),
+                (70, '40 VA Transformer', '40VAT', 1.0, 14.616),
+                (80, 'Sheet Metal Labor', 'SMLC', 2.0, 66.32),
+                (90, 'Installation Labor', 'INSTLC', 2.0, 66.32),
+                (100, 'Service Labor', 'SLC', 6.0, 66.32),
+                (110, 'One Year Service', 'OYSC', 3.5, 66.32),
+            ],
+        }
+
+        variant_map = {v.variant_code: v for v in db.query(KitVariant).all()}
+        added = 0
+        for v_code, comps in COMPONENT_SEED.items():
+            variant = variant_map.get(v_code)
+            if not variant:
+                continue
+            # Skip if this variant already has components
+            existing = db.query(KitComponent).filter_by(kit_variant_id=variant.id).count()
+            if existing:
+                continue
+            for sort_order, description, part_number, quantity, unit_cost in comps:
+                db.add(KitComponent(
+                    kit_variant_id=variant.id,
+                    sort_order=sort_order,
+                    description=description,
+                    part_number=part_number,
+                    quantity=quantity,
+                    unit_cost=unit_cost,
+                ))
+                added += 1
+        db.commit()
+        if added:
+            print(f"Kit components: {added} inserted from 2019 XLS data.")
+    finally:
+        db.close()
+
+_seed_kit_components()
+
+
 def _seed_company_logo():
     """
     Ensure the CompanySettings row exists with the bundled logo.
