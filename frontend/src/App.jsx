@@ -15,6 +15,7 @@ import Settings       from './pages/Settings'
 import UserManagement from './pages/UserManagement'
 import Files          from './pages/Files'
 import KitAdmin       from './pages/KitAdmin'
+import PriceBook      from './pages/PriceBook'
 import Performance    from './pages/Performance'
 import Login          from './pages/Login'
 import FeedbackInbox  from './pages/FeedbackInbox'
@@ -28,6 +29,7 @@ const ICONS = {
   files:       <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="1" width="12" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><path d="M5 4h6M5 7h6M5 10h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
   users:       <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="5" cy="5" r="2" stroke="currentColor" strokeWidth="1.5"/><path d="M1 13c0-2.5 1.8-4 4-4s4 1.5 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><circle cx="12" cy="5" r="2" stroke="currentColor" strokeWidth="1.5"/><path d="M10 13c0-1.5.8-3 2-3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
   kitadmin:    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><line x1="1" y1="6" x2="15" y2="6" stroke="currentColor" strokeWidth="1.5"/><line x1="5" y1="6" x2="5" y2="13" stroke="currentColor" strokeWidth="1.5"/></svg>,
+  pricebook:   <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="1" width="12" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><path d="M5 5h6M5 8h6M5 11h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><path d="M10 10.5l1.5 1.5L14 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   settings:    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.5"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.2 3.2l1.1 1.1M11.7 11.7l1.1 1.1M3.2 12.8l1.1-1.1M11.7 4.3l1.1-1.1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
   performance: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 13l3.5-4.5 3 2.5 3.5-5.5L14 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M14 5v4h-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   help:        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.5"/><path d="M6 6.5c0-1.1.9-2 2-2s2 .9 2 2c0 .8-.5 1.5-1.2 1.8L8 9v1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><circle cx="8" cy="11.5" r="0.75" fill="currentColor"/></svg>,
@@ -51,6 +53,7 @@ const NAV = [
   { to: '/',            label: 'Dashboard',   icon: 'dashboard',   section: 'admin', roles: ['admin', 'account_executive'] },
   { to: '/performance', label: 'Performance', icon: 'performance', section: 'admin', roles: ['admin', 'account_executive'] },
   { to: '/kit-admin',   label: 'Kit Pricing', icon: 'kitadmin',    section: 'admin', roles: ['admin', 'account_executive'] },
+  { to: '/price-book',  label: 'Price Book',  icon: 'pricebook',   section: 'admin', roles: ['admin', 'account_executive', 'account_manager'] },
   { to: '/users',       label: 'Users',       icon: 'users',       section: 'admin', roles: ['admin', 'account_executive'] },
   { to: '/feedback',    label: 'Feedback',    icon: 'feedback',    section: 'admin', roles: ['admin'] },
   { to: '/plans',       label: 'Plans',       icon: 'plans',       section: 'ops',   roles: ['admin', 'account_manager'] },
@@ -867,6 +870,7 @@ function AppLayout() {
             <Route path="/settings"    element={<Settings />} />
             <Route path="/users"       element={<UserManagement />} />
             <Route path="/kit-admin"   element={<KitAdmin />} />
+            <Route path="/price-book"  element={<PriceBook />} />
             <Route path="/files"       element={<Files />} />
             <Route path="/performance" element={<Performance />} />
             <Route path="/feedback"    element={<FeedbackInbox />} />

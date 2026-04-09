@@ -1,9 +1,8 @@
 /**
  * InlineKitSelector
  *
- * Displays kit categories as a row of chips. Click a chip to expand it
- * in-place — shows variants + optional footage input + Add button.
- * No modal needed. Much faster than KitPicker for routine bidding.
+ * Displays kit categories grouped by type as chip rows. Click a chip to
+ * expand it in-place — shows variants + optional footage input + Add button.
  */
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -12,6 +11,16 @@ import { kit, lineItems } from '../api/client'
 function currency(n) {
   return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
+
+// Category groups — codes map to A-W
+const CATEGORY_GROUPS = [
+  { label: 'Ductwork',     codes: ['A','B'] },
+  { label: 'Venting',      codes: ['C','D','E','F','G'] },
+  { label: 'Mechanical',   codes: ['H','I','J','K','L'] },
+  { label: 'IAQ',          codes: ['M','N','O','V','W'] },
+  { label: 'Fresh Air',    codes: ['R'] },
+  { label: 'Accessories',  codes: ['P','Q','S','T','U'] },
+]
 
 export default function InlineKitSelector({ planId, systemId }) {
   const qc = useQueryClient()
@@ -64,8 +73,8 @@ export default function InlineKitSelector({ planId, systemId }) {
       description:   desc,
       quantity:      q,
       unit_price:    parseFloat(price.toFixed(4)),
-      pricing_flag:  activeCode,   // category code as pricing_flag for grouping
-      sort_order:    '50',
+      category_code: activeCode,
+      sort_order:    50,
       part_number:   selectedVariant.variant_code,
       kit_variant_id: selectedVariant.id,
     })
@@ -97,37 +106,41 @@ export default function InlineKitSelector({ planId, systemId }) {
         Kit Pricing
       </div>
 
-      {/* Category chips */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: activeCode ? 10 : 0 }}>
-        {categories.map(cat => {
-          const isActive = activeCode === cat.code
+      {/* Category chips — grouped by type */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: activeCode ? 10 : 0 }}>
+        {CATEGORY_GROUPS.map(group => {
+          const groupCats = categories.filter(c => group.codes.includes(c.code))
+          if (groupCats.length === 0) return null
           return (
-            <button
-              key={cat.code}
-              onClick={() => toggleCategory(cat.code)}
-              style={{
-                padding: '5px 10px',
-                borderRadius: 4,
-                border: `1px solid ${isActive ? 'var(--blue)' : 'var(--gray-200)'}`,
-                background: isActive ? 'var(--blue)' : 'var(--gray-50)',
-                color: isActive ? 'white' : 'var(--gray-700)',
-                fontSize: 12,
-                fontWeight: isActive ? 700 : 500,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-                transition: 'all 0.1s',
-              }}
-            >
+            <div key={group.label} style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <span style={{
-                fontWeight: 800,
-                fontFamily: 'monospace',
-                fontSize: 11,
-                opacity: isActive ? 1 : 0.6,
-              }}>{cat.code}</span>
-              {cat.name}
-            </button>
+                fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+                letterSpacing: '0.07em', color: 'var(--gray-400)',
+                minWidth: 72, flexShrink: 0,
+              }}>{group.label}</span>
+              {groupCats.map(cat => {
+                const isActive = activeCode === cat.code
+                return (
+                  <button
+                    key={cat.code}
+                    onClick={() => toggleCategory(cat.code)}
+                    style={{
+                      padding: '4px 9px',
+                      borderRadius: 4,
+                      border: `1px solid ${isActive ? 'var(--blue)' : 'var(--gray-200)'}`,
+                      background: isActive ? 'var(--blue)' : 'var(--gray-50)',
+                      color: isActive ? 'white' : 'var(--gray-700)',
+                      fontSize: 12,
+                      fontWeight: isActive ? 700 : 400,
+                      cursor: 'pointer',
+                      transition: 'all 0.1s',
+                    }}
+                  >
+                    {cat.name}
+                  </button>
+                )
+              })}
+            </div>
           )
         })}
       </div>

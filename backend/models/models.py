@@ -141,8 +141,8 @@ class LineItem(Base):
     __tablename__ = "line_items"
     id              = Column(Integer, primary_key=True)
     system_id       = Column(Integer, ForeignKey("systems.id"), nullable=False)
-    sort_order      = Column(String(10), nullable=False)
-    pricing_flag    = Column(String(10), default="standard")
+    sort_order      = Column(Integer, nullable=False, default=50)
+    category_code   = Column(String(10), nullable=True)
     description     = Column(Text, nullable=False)
     quantity        = Column(Numeric(8, 2), default=1)
     unit_price      = Column(Numeric(10, 2), default=0)

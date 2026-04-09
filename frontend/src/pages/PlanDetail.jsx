@@ -462,7 +462,7 @@ function AddItemForm({ planId, systemId, onDone }) {
 
   const add = useMutation({
     mutationFn: () => lineItems.add(planId, systemId, {
-      ...form, pricing_flag: 'standard', sort_order: '20',
+      ...form, category_code: null, sort_order: 20,
     }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['plan', String(planId)] }); onDone() },
   })

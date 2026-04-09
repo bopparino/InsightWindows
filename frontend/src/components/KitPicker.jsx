@@ -91,8 +91,8 @@ export default function KitPicker({ zoneName, onAddItems, onClose }) {
         description:  desc,
         quantity:     1,
         unit_price:   parseFloat(price.toFixed(4)),
-        pricing_flag: 'standard',
-        sort_order:   '50',
+        category_code: null,
+        sort_order:   50,
         draw_stage:   null,
         part_number:  v.variant_code,
       }
@@ -102,8 +102,8 @@ export default function KitPicker({ zoneName, onAddItems, onClose }) {
     description:  r.description,
     quantity:     parseFloat(r.quantity) || 1,
     unit_price:   parseFloat(r.unit_price) || 0,
-    pricing_flag: 'standard',
-    sort_order:   '60',
+    category_code: null,
+    sort_order:   60,
     draw_stage:   null,
     part_number:  null,
   }))

@@ -19,8 +19,8 @@ router = APIRouter()
 # ── Pydantic schemas ──────────────────────────────────────────
 
 class LineItemIn(BaseModel):
-    sort_order: str
-    pricing_flag: str = "standard"
+    sort_order: int = 50
+    category_code: Optional[str] = None
     description: str
     quantity: float = 1
     unit_price: float = 0
@@ -465,7 +465,7 @@ def create_plan(data: PlanCreate, db: Session = Depends(get_db),
                 db.add(LineItem(
                     system_id=system.id,
                     sort_order=li_data.sort_order,
-                    pricing_flag=li_data.pricing_flag,
+                    category_code=li_data.category_code,
                     description=li_data.description,
                     quantity=li_data.quantity,
                     unit_price=li_data.unit_price,
@@ -614,7 +614,7 @@ def get_plan(plan_id: int, db: Session = Depends(get_db),
                             {
                                 "id": li.id,
                                 "sort_order": li.sort_order,
-                                "pricing_flag": li.pricing_flag,
+                                "category_code": li.category_code,
                                 "description": li.description,
                                 "quantity": float(li.quantity),
                                 "unit_price": float(li.unit_price),
@@ -823,7 +823,7 @@ def duplicate_house_type(plan_id: int, house_type_id: int, db: Session = Depends
             new_li = LineItem(
                 system_id=new_sys.id,
                 sort_order=li.sort_order,
-                pricing_flag=li.pricing_flag,
+                category_code=li.category_code,
                 description=li.description,
                 quantity=li.quantity,
                 unit_price=li.unit_price,
@@ -879,9 +879,9 @@ class SystemCreate(BaseModel):
     equipment_system_id: Optional[int] = None
 
 class LineItemCreate(BaseModel):
-    sort_order: str
+    sort_order: int = 50
     description: str
-    pricing_flag: str = "standard"
+    category_code: Optional[str] = None
     quantity: float = 1
     unit_price: float = 0
     pwk_price: Optional[float] = None
@@ -895,7 +895,7 @@ class LineItemUpdate(BaseModel):
     quantity: Optional[float] = None
     unit_price: Optional[float] = None
     pwk_price: Optional[float] = None
-    pricing_flag: Optional[str] = None
+    category_code: Optional[str] = None
     draw_stage: Optional[str] = None
     part_number: Optional[str] = None
     notes: Optional[str] = None
@@ -1066,7 +1066,7 @@ def copy_from_plan(plan_id: int, source_plan_id: int, db: Session = Depends(get_
                 new_li = LineItem(
                     system_id=new_sys.id,
                     sort_order=li.sort_order,
-                    pricing_flag=li.pricing_flag,
+                    category_code=li.category_code,
                     description=li.description,
                     quantity=li.quantity,
                     unit_price=li.unit_price,
