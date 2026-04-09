@@ -25,7 +25,7 @@ STEPS = [
     ("line_items",            "DELETE FROM line_items"),
     ("draws",                 "DELETE FROM draws"),
     ("documents",             "DELETE FROM documents"),
-    ("event_logs",            "DELETE FROM event_logs"),
+    ("event_log",             "DELETE FROM event_log"),
     ("plan_comments",         "DELETE FROM plan_comments"),
     ("plan_tasks",            "DELETE FROM plan_tasks"),
     ("systems",               "DELETE FROM systems"),
@@ -38,7 +38,7 @@ STEPS = [
 
 
 def main():
-    print("\n⚠  WIPE DEMO DATA")
+    print("\nWIPE DEMO DATA")
     print("=" * 50)
     print("This will permanently delete ALL plans, projects,")
     print("builders, and house types from the database.")
