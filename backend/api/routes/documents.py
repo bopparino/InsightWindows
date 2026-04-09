@@ -147,11 +147,17 @@ def build_quote_html(plan, db=None) -> str:
                 )
             draws_html += '</div>'
 
-    logo_html = (
-        f'<img src="{logo_src}" alt="{co["name"]}" class="logo">'
-        if logo_src else
-        f'<div class="co-name">{co["name"]}</div>'
-    )
+    co_contact_lines = [x for x in [co.get("phone"), co.get("email")] if x]
+    co_contact_html  = "<br>".join(co_contact_lines)
+
+    if logo_src:
+        logo_html = f'<img src="{logo_src}" alt="{co["name"]}" class="logo">'
+        if co_contact_html:
+            logo_html += f'<div style="font-size:8pt;color:#555;margin-top:4px">{co_contact_html}</div>'
+    else:
+        logo_html = f'<div class="co-name">{co["name"]}</div>'
+        if co_contact_html:
+            logo_html += f'<div style="font-size:8pt;color:#555;margin-top:4px">{co_contact_html}</div>'
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -517,11 +523,17 @@ def build_field_sheet_html(plan, db=None) -> str:
     co       = _get_company(db)
     logo_src = co["logo"]
 
-    logo_html = (
-        f'<img src="{logo_src}" alt="{co["name"]}" class="logo">'
-        if logo_src else
-        f'<div class="co-name">{co["name"]}</div>'
-    )
+    co_contact_lines2 = [x for x in [co.get("phone"), co.get("email")] if x]
+    co_contact_html2  = "<br>".join(co_contact_lines2)
+
+    if logo_src:
+        logo_html = f'<img src="{logo_src}" alt="{co["name"]}" class="logo">'
+        if co_contact_html2:
+            logo_html += f'<div style="font-size:8pt;color:#555;margin-top:4px">{co_contact_html2}</div>'
+    else:
+        logo_html = f'<div class="co-name">{co["name"]}</div>'
+        if co_contact_html2:
+            logo_html += f'<div style="font-size:8pt;color:#555;margin-top:4px">{co_contact_html2}</div>'
 
     house_sections = ""
     for ht in plan.house_types:
@@ -771,9 +783,10 @@ def download_field_sheet(plan_id: int, db: Session = Depends(get_db),
 # ── Top Sheet (internal job cost) ─────────────────────────────
 
 def build_top_sheet_html(plan, db=None) -> str:
-    co     = _get_company(db)
-    now    = datetime.datetime.now().strftime("%B %d, %Y")
-    factor = float(plan.factor) if plan.factor else 0.69
+    co      = _get_company(db)
+    now     = datetime.datetime.now().strftime("%B %d, %Y")
+    factor  = float(plan.factor) if plan.factor else 0.69
+    logo_src3 = co["logo"]
 
     # Per-zone cost breakdown
     zone_rows_html = ""
@@ -876,7 +889,7 @@ def build_top_sheet_html(plan, db=None) -> str:
 </head>
 <body>
 
-  <h1>{co["name"]}</h1>
+  {'<div style="text-align:center;margin-bottom:6px"><img src="' + logo_src3 + '" alt="' + co["name"] + '" style="max-height:50px;max-width:200px;object-fit:contain"></div>' if logo_src3 else f'<h1>{co["name"]}</h1>'}
   <div class="sub">Job Cost Top Sheet &mdash; Internal Use Only</div>
 
   <div class="meta">

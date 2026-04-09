@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     STORAGE_PATH:       str = "../data/quotes"
     ESTIMATOR_NAME:     str = "Your Name"
     ESTIMATOR_INITIALS: str = "YN"
-    COMPANY_LOGO_PATH:  str = ""
+    COMPANY_LOGO_PATH:  str = "static/logo.png"
     SECRET_KEY:          str = "change-me-to-something-long-and-random"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
     ADMIN_PASSWORD:      str = ""

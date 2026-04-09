@@ -345,6 +345,32 @@ def _fix_kit_variants():
 _fix_kit_variants()
 
 
+def _seed_company_logo():
+    """
+    If the DB company_settings row has no logo, embed the static logo as base64.
+    Runs on every startup — no-op if logo is already set or file doesn't exist.
+    """
+    logo_path = settings.COMPANY_LOGO_PATH
+    if not logo_path or not os.path.exists(logo_path):
+        return
+    from core.database import SessionLocal
+    import base64
+    db = SessionLocal()
+    try:
+        row = db.query(CompanySettings).first()
+        if row and not row.logo_b64:
+            ext  = os.path.splitext(logo_path)[1].lower().replace(".", "")
+            mime = "jpeg" if ext in ("jpg", "jpeg") else ext
+            with open(logo_path, "rb") as f:
+                row.logo_b64 = f"data:image/{mime};base64,{base64.b64encode(f.read()).decode()}"
+            db.commit()
+            print("Company logo seeded from static file.")
+    finally:
+        db.close()
+
+_seed_company_logo()
+
+
 app = FastAPI(
     title="HVAC Bid System — POC",
     version="0.1.0",
