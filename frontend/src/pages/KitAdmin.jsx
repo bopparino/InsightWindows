@@ -38,19 +38,17 @@ function EditRow({ v, cat, onSave, onCancel, saving }) {
     })
   }
 
-  const inp = (w) => ({ style: { fontSize: 13, padding: '3px 6px', width: w } })
-
   return (
-    <tr style={{ background: '#f0f4ff' }}>
-      <td style={{ padding: '5px 8px' }}><input {...inp(80)}  value={d.variant_code}   onChange={e => set('variant_code',   e.target.value)} /></td>
-      <td style={{ padding: '5px 8px' }}><input {...inp('100%')} value={d.variant_name} onChange={e => set('variant_name',   e.target.value)} /></td>
-      <td style={{ padding: '5px 8px' }}><input {...inp(84)} type="number" step="0.01" value={d.per_kit}        onChange={e => set('per_kit',        e.target.value)} style={{ fontSize:13, width:84, textAlign:'right' }} /></td>
-      <td style={{ padding: '5px 8px' }}><input {...inp(60)} type="number" step="0.01" min="0.01" max="1" value={d.markup_divisor} onChange={e => set('markup_divisor', e.target.value)} style={{ fontSize:13, width:60, textAlign:'center' }} /></td>
+    <tr style={{ background: 'var(--blue-light)' }}>
+      <td style={{ padding: '5px 8px' }}><input value={d.variant_code} onChange={e => set('variant_code', e.target.value)} style={{ fontSize: 13, width: 80 }} /></td>
+      <td style={{ padding: '5px 8px' }}><input value={d.variant_name} onChange={e => set('variant_name', e.target.value)} style={{ fontSize: 13, width: '100%' }} /></td>
+      <td style={{ padding: '5px 8px' }}><input type="number" step="0.01" value={d.per_kit} onChange={e => set('per_kit', e.target.value)} style={{ fontSize: 13, width: 84, textAlign: 'right' }} /></td>
+      <td style={{ padding: '5px 8px' }}><input type="number" step="0.01" min="0.01" max="1" value={d.markup_divisor} onChange={e => set('markup_divisor', e.target.value)} style={{ fontSize: 13, width: 60, textAlign: 'center' }} /></td>
       <td style={{ padding: '5px 8px', color: 'var(--gray-500)', fontSize: 12, textAlign: 'right' }}>
-        {(() => { const c = (parseFloat(d.per_kit)||0) * (parseFloat(d.markup_divisor)||1); return c > 0 ? `$${c.toFixed(2)}` : '—' })()}
+        {(() => { const c = (parseFloat(d.per_kit) || 0) * (parseFloat(d.markup_divisor) || 1); return c > 0 ? `$${c.toFixed(2)}` : '—' })()}
       </td>
-      <td style={{ padding: '5px 8px' }}><input {...inp(84)} type="number" step="0.01" value={d.per_foot}   onChange={e => set('per_foot',   e.target.value)} style={{ fontSize:13, width:84, textAlign:'right' }} /></td>
-      <td style={{ padding: '5px 8px' }}><input {...inp(50)} type="number"             value={d.sort_order} onChange={e => set('sort_order', e.target.value)} style={{ fontSize:13, width:50, textAlign:'center' }} /></td>
+      <td style={{ padding: '5px 8px' }}><input type="number" step="0.01" value={d.per_foot} onChange={e => set('per_foot', e.target.value)} style={{ fontSize: 13, width: 84, textAlign: 'right' }} /></td>
+      <td style={{ padding: '5px 8px' }}><input type="number" value={d.sort_order} onChange={e => set('sort_order', e.target.value)} style={{ fontSize: 13, width: 50, textAlign: 'center' }} /></td>
       <td style={{ padding: '5px 8px', whiteSpace: 'nowrap' }}>
         <button className="btn-primary btn-sm" onClick={save} disabled={saving} style={{ marginRight: 6 }}>{saving ? '…' : 'Save'}</button>
         <button className="btn-secondary btn-sm" onClick={onCancel}>Cancel</button>
@@ -82,14 +80,14 @@ function AddRow({ cat, onAdd, adding }) {
   }
 
   return (
-    <tr style={{ background: '#f8fdf8', borderTop: '1px dashed var(--gray-200)' }}>
-      <td style={{ padding: '5px 8px' }}><input placeholder="Code"  value={d.variant_code} onChange={e => set('variant_code', e.target.value)} style={{ fontSize:13, width:80 }} /></td>
-      <td style={{ padding: '5px 8px' }}><input placeholder="Variant name" value={d.variant_name} onChange={e => set('variant_name', e.target.value)} style={{ fontSize:13, width:'100%' }} /></td>
-      <td style={{ padding: '5px 8px' }}><input type="number" step="0.01" placeholder="0.00" value={d.per_kit} onChange={e => set('per_kit', e.target.value)} style={{ fontSize:13, width:84, textAlign:'right' }} /></td>
-      <td style={{ padding: '5px 8px' }}><input type="number" step="0.01" placeholder="1.0"  value={d.markup_divisor} onChange={e => set('markup_divisor', e.target.value)} style={{ fontSize:13, width:60, textAlign:'center' }} /></td>
+    <tr style={{ background: 'var(--gray-50)', borderTop: '1px dashed var(--gray-200)' }}>
+      <td style={{ padding: '5px 8px' }}><input placeholder="Code" value={d.variant_code} onChange={e => set('variant_code', e.target.value)} style={{ fontSize: 13, width: 80 }} /></td>
+      <td style={{ padding: '5px 8px' }}><input placeholder="Variant name" value={d.variant_name} onChange={e => set('variant_name', e.target.value)} style={{ fontSize: 13, width: '100%' }} /></td>
+      <td style={{ padding: '5px 8px' }}><input type="number" step="0.01" placeholder="0.00" value={d.per_kit} onChange={e => set('per_kit', e.target.value)} style={{ fontSize: 13, width: 84, textAlign: 'right' }} /></td>
+      <td style={{ padding: '5px 8px' }}><input type="number" step="0.01" placeholder="1.0" value={d.markup_divisor} onChange={e => set('markup_divisor', e.target.value)} style={{ fontSize: 13, width: 60, textAlign: 'center' }} /></td>
       <td style={{ padding: '5px 8px', color: 'var(--gray-400)', fontSize: 12, textAlign: 'right' }}>auto</td>
-      <td style={{ padding: '5px 8px' }}><input type="number" step="0.01" placeholder="0.00" value={d.per_foot} onChange={e => set('per_foot', e.target.value)} style={{ fontSize:13, width:84, textAlign:'right' }} /></td>
-      <td style={{ padding: '5px 8px' }}><input type="number" placeholder="10" value={d.sort_order} onChange={e => set('sort_order', e.target.value)} style={{ fontSize:13, width:50, textAlign:'center' }} /></td>
+      <td style={{ padding: '5px 8px' }}><input type="number" step="0.01" placeholder="0.00" value={d.per_foot} onChange={e => set('per_foot', e.target.value)} style={{ fontSize: 13, width: 84, textAlign: 'right' }} /></td>
+      <td style={{ padding: '5px 8px' }}><input type="number" placeholder="10" value={d.sort_order} onChange={e => set('sort_order', e.target.value)} style={{ fontSize: 13, width: 50, textAlign: 'center' }} /></td>
       <td style={{ padding: '5px 8px' }}>
         <button className="btn-primary btn-sm" onClick={submit} disabled={adding || !d.variant_code.trim() || !d.variant_name.trim()}>
           {adding ? '…' : '+ Add'}
@@ -101,7 +99,7 @@ function AddRow({ cat, onAdd, adding }) {
 
 // ── Single category accordion ─────────────────────────────────
 function CategorySection({ cat, editingId, savingId, addingCat, deletingId, onEdit, onAdd, onDelete }) {
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(false)
 
   const TH = ({ children, right, center, w }) => (
     <th style={{
@@ -113,11 +111,8 @@ function CategorySection({ cat, editingId, savingId, addingCat, deletingId, onEd
     }}>{children}</th>
   )
 
-  // badge colour by category type
-  const hasMargin = cat.variants.some(v => v.markup_divisor < 1.0)
-
   return (
-    <div className="card" style={{ marginBottom: 12, padding: 0, overflow: 'hidden' }}>
+    <div className="card" style={{ marginBottom: 10, padding: 0, overflow: 'hidden' }}>
       <div onClick={() => setOpen(o => !o)} style={{
         padding: '10px 16px', background: 'var(--gray-50)',
         borderBottom: open ? '1px solid var(--gray-200)' : 'none',
@@ -134,12 +129,6 @@ function CategorySection({ cat, editingId, savingId, addingCat, deletingId, onEd
           <span style={{ fontSize: 12, color: 'var(--gray-400)' }}>
             {cat.variants.length} variant{cat.variants.length !== 1 ? 's' : ''}
           </span>
-          {hasMargin && (
-            <span style={{
-              fontSize: 11, fontWeight: 600, background: '#dcfce7', color: '#166534',
-              borderRadius: 4, padding: '1px 6px',
-            }}>embedded margin</span>
-          )}
         </div>
         <span style={{ color: 'var(--gray-400)', fontSize: 14 }}>{open ? '▾' : '▸'}</span>
       </div>
@@ -198,8 +187,7 @@ function CategorySection({ cat, editingId, savingId, addingCat, deletingId, onEd
                   </td>
                   <td style={{ padding: '8px 8px', whiteSpace: 'nowrap' }}>
                     <button className="btn-secondary btn-sm" onClick={() => onEdit(v.id, null)} style={{ marginRight: 6 }}>Edit</button>
-                    <button className="btn-secondary btn-sm" onClick={() => onDelete(v)}
-                      disabled={deletingId === v.id} style={{ color: 'var(--red, #dc2626)' }}>
+                    <button className="btn-danger btn-sm" onClick={() => onDelete(v)} disabled={deletingId === v.id}>
                       {deletingId === v.id ? '…' : 'Remove'}
                     </button>
                   </td>
@@ -264,19 +252,9 @@ export default function KitAdmin() {
         <div>
           <h1 className="page-title">Kit Pricing</h1>
           <div style={{ fontSize: 13, color: 'var(--gray-400)', marginTop: 2 }}>
-            {isLoading ? 'Loading…' : `${categories.length} categories · ${totalVariants} variants — 2019 pricing`}
+            {isLoading ? 'Loading…' : `${categories.length} categories · ${totalVariants} variants`}
           </div>
         </div>
-      </div>
-
-      <div style={{
-        background: 'var(--blue-light, #eff6ff)', border: '1px solid var(--blue-mid, #93c5fd)',
-        borderRadius: 8, padding: '10px 16px', fontSize: 13, color: 'var(--blue-mid, #1d4ed8)', marginBottom: 20,
-      }}>
-        <strong>Bid Price</strong> = what appears on the builder's quote.{' '}
-        <strong>Divisor</strong> = markup divisor (blank = cost equals bid price; 0.65 = 35% margin, etc.).{' '}
-        <strong>Your Cost</strong> = Bid Price × Divisor — shown only for items with embedded margin.{' '}
-        Categories with a <span style={{ background:'#dcfce7', color:'#166534', borderRadius:3, padding:'1px 5px', fontWeight:600 }}>green badge</span> include built-in margin on top of labor.
       </div>
 
       {isLoading && <div style={{ textAlign: 'center', padding: 60 }}><span className="spinner" /></div>}
