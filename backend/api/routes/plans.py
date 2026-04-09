@@ -958,7 +958,18 @@ def delete_system(plan_id: int, system_id: int, db: Session = Depends(get_db),
     sys = db.query(System).filter_by(id=system_id).first()
     if not sys:
         raise HTTPException(404, "System not found")
+    house_type_id = sys.house_type_id
     db.delete(sys)
+    db.flush()
+    # Renumber remaining systems in this house type to close the gap
+    remaining = (
+        db.query(System)
+        .filter(System.house_type_id == house_type_id)
+        .order_by(System.system_number)
+        .all()
+    )
+    for i, s in enumerate(remaining, start=1):
+        s.system_number = str(i).zfill(2)
     db.commit()
     return {"ok": True}
 

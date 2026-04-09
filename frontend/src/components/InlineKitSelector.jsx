@@ -105,8 +105,8 @@ export default function InlineKitSelector({ planId, systemId }) {
               key={cat.code}
               onClick={() => toggleCategory(cat.code)}
               style={{
-                padding: '5px 12px',
-                borderRadius: 99,
+                padding: '5px 10px',
+                borderRadius: 4,
                 border: `1px solid ${isActive ? 'var(--blue)' : 'var(--gray-200)'}`,
                 background: isActive ? 'var(--blue)' : 'var(--gray-50)',
                 color: isActive ? 'white' : 'var(--gray-700)',
