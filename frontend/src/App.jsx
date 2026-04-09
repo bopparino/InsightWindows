@@ -698,7 +698,7 @@ function Sidebar({ onOpenHelp, onOpenFeedback }) {
             <img
               src={logo}
               alt="Metcalfe Heating & Air Conditioning"
-              style={{ height: 62, width: 'auto', maxWidth: 200, objectFit: 'contain',
+              style={{ height: 74, width: 'auto', maxWidth: 220, objectFit: 'contain',
                 filter: 'brightness(0) invert(1)', display: 'block' }}
             />
           </div>
