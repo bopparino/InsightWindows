@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     SMTP_PORT:      int = 587
     SMTP_USER:      str = ""
     SMTP_PASSWORD:  str = ""
-    SMTP_FROM_NAME: str = "WHMetcalfe HVAC Estimating"
+    SMTP_FROM_NAME: str = "Metcalfe Heating & Air Conditioning"
 
     class Config:
         env_file = "../.env"

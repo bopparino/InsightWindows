@@ -53,7 +53,8 @@ def _run_migrations():
         )""",
         "CREATE INDEX IF NOT EXISTS ix_plan_tasks_plan_id ON plan_tasks(plan_id)",
         # Fix default company name if it was seeded with the placeholder
-        "UPDATE company_settings SET company_name = 'Metcalfe HVAC' WHERE company_name = 'Insight HVAC'",
+        "UPDATE company_settings SET company_name = 'Metcalfe Heating & Air Conditioning' WHERE company_name = 'Insight HVAC'",
+        "UPDATE company_settings SET company_name = 'Metcalfe Heating & Air Conditioning' WHERE company_name = 'Metcalfe HVAC'",
         # v1.5 — kit variants
         """CREATE TABLE IF NOT EXISTS kit_variants (
             id            SERIAL PRIMARY KEY,

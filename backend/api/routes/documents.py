@@ -43,13 +43,13 @@ def _get_company(db: Session = None) -> dict:
         row = db.query(CompanySettings).first()
         if row:
             return {
-                "name":   row.company_name or "Metcalfe HVAC",
+                "name":   row.company_name or "Metcalfe Heating & Air Conditioning",
                 "phone":  row.phone or "",
                 "email":  row.email or "",
                 "footer": row.quote_footer or "",
                 "logo":   row.logo_b64 or get_logo_b64() or "",
             }
-    return {"name": "Metcalfe HVAC", "phone": "", "email": "", "footer": "", "logo": get_logo_b64() or ""}
+    return {"name": "Metcalfe Heating & Air Conditioning", "phone": "", "email": "", "footer": "", "logo": get_logo_b64() or ""}
 
 
 def _zone_bid(sys, factor: float) -> dict:

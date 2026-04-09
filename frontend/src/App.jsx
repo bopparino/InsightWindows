@@ -3,6 +3,7 @@ import { Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom'
 import { search as searchApi } from './api/client'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider, useTheme, THEMES } from './context/ThemeContext'
+import logo from './assets/logo.png'
 import Dashboard      from './pages/Dashboard'
 import PlansList      from './pages/PlansList'
 import PlanDetail     from './pages/PlanDetail'
@@ -619,7 +620,6 @@ function Sidebar({ onOpenHelp, onOpenFeedback }) {
     localStorage.getItem('sidebarCollapsed') === 'true'
   )
 
-  const tagline = THEMES.find(t => t.id === theme)?.tagline || 'HVAC Bid System'
   const visibleNav = NAV.filter(n => n.roles.includes(user?.role))
   const adminItems = visibleNav.filter(n => n.section === 'admin')
   const opsItems   = visibleNav.filter(n => n.section === 'ops')
@@ -694,11 +694,13 @@ function Sidebar({ onOpenHelp, onOpenFeedback }) {
         minHeight: 68, boxSizing: 'border-box',
       }}>
         {!collapsed && (
-          <div style={{ overflow: 'hidden' }}>
-            <div style={{ fontWeight: 500, fontSize: 17, color: 'white',
-              letterSpacing: '-0.01em', lineHeight: 1.1, whiteSpace: 'nowrap' }}>Insight</div>
-            <div style={{ fontWeight: 400, fontSize: 12,
-              color: 'rgba(255,255,255,0.55)', marginTop: 2, whiteSpace: 'nowrap' }}>{tagline}</div>
+          <div style={{ overflow: 'hidden', display: 'flex', alignItems: 'center' }}>
+            <img
+              src={logo}
+              alt="Metcalfe Heating & Air Conditioning"
+              style={{ height: 32, width: 'auto', maxWidth: 160, objectFit: 'contain',
+                filter: 'brightness(0) invert(1)', display: 'block' }}
+            />
           </div>
         )}
         <button onClick={toggleCollapse}
