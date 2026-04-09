@@ -162,7 +162,7 @@ def build_quote_html(plan, db=None) -> str:
 
   .header {{ display:flex; justify-content:space-between; align-items:flex-start;
              margin-bottom:20px; padding-bottom:14px; border-bottom:2.5px solid #111; }}
-  .logo {{ max-height:60px; max-width:210px; object-fit:contain; }}
+  .logo {{ max-height:120px; max-width:420px; object-fit:contain; }}
   .co-name {{ font-size:18pt; font-weight:700; color:#111; }}
   .doc-title {{ font-size:16pt; font-weight:700; color:#111;
                 letter-spacing:-0.02em; margin-bottom:4px; }}
@@ -616,7 +616,7 @@ def build_field_sheet_html(plan, db=None) -> str:
 
   .header {{ display:flex; justify-content:space-between; align-items:flex-start;
              margin-bottom:18px; padding-bottom:12px; border-bottom:2.5px solid #111; }}
-  .logo {{ max-height:56px; max-width:200px; object-fit:contain; }}
+  .logo {{ max-height:112px; max-width:400px; object-fit:contain; }}
   .co-name {{ font-size:17pt; font-weight:700; color:#111; }}
   .doc-title {{ font-size:15pt; font-weight:700; color:#111; margin-bottom:3px; }}
   .doc-meta {{ font-size:8pt; color:#555; line-height:1.7; text-align:right; }}
@@ -912,7 +912,7 @@ def build_top_sheet_html(plan, db=None) -> str:
 </head>
 <body>
 
-  {'<div style="text-align:center;margin-bottom:6px"><img src="' + logo_src3 + '" alt="' + co["name"] + '" style="max-height:50px;max-width:200px;object-fit:contain"></div>' if logo_src3 else f'<h1>{co["name"]}</h1>'}
+  {'<div style="text-align:center;margin-bottom:6px"><img src="' + logo_src3 + '" alt="' + co["name"] + '" style="max-height:100px;max-width:400px;object-fit:contain"></div>' if logo_src3 else f'<h1>{co["name"]}</h1>'}
   <div class="sub">Job Cost Top Sheet &mdash; Internal Use Only</div>
 
   <div class="meta">
