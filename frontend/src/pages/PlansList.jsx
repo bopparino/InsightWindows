@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { plans } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import Pagination from '../components/Pagination'
+import PageAlert from '../components/PageAlert'
 
 const PAGE_SIZE = 50
 
@@ -22,6 +23,7 @@ export default function PlansList() {
   const [estimatorFilter, setEstimatorFilter] = useState('')
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState(new Set())
+  const [pageAlert, setPageAlert] = useState(null)
 
   useEffect(() => { setPage(1) }, [search, builderFilter, estimatorFilter, statusFilter])
 
@@ -42,7 +44,7 @@ export default function PlansList() {
       qc.invalidateQueries({ queryKey: ['plans'] })
       setSelected(new Set())
       setPage(1)
-      if (res.errors?.length) alert(`Some plans skipped:\n${res.errors.join('\n')}`)
+      if (res.errors?.length) setPageAlert({ msg: `Some plans skipped: ${res.errors.join(', ')}`, type: 'info' })
     },
   })
   const bulkDelete = useMutation({
@@ -52,7 +54,7 @@ export default function PlansList() {
       setSelected(new Set())
       setPage(1)
       if (res.skipped_contracted?.length)
-        alert(`Skipped contracted plans: ${res.skipped_contracted.join(', ')}`)
+        setPageAlert({ msg: `Skipped contracted plans: ${res.skipped_contracted.join(', ')}`, type: 'info' })
     },
   })
 
@@ -97,6 +99,8 @@ export default function PlansList() {
 
   return (
     <div>
+      <PageAlert msg={pageAlert?.msg} type={pageAlert?.type} ttl={8000}
+        onClose={() => setPageAlert(null)} />
       <div className="page-header">
         <div>
           <h1 className="page-title">Plans</h1>

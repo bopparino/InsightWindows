@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { projects, builders } from '../api/client'
 import SearchSelect from '../components/SearchSelect'
 import Pagination from '../components/Pagination'
+import PageAlert from '../components/PageAlert'
 
 const PAGE_SIZE = 50
 
@@ -54,12 +55,13 @@ export default function Projects() {
   const [showNew, setShowNew] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [error, setError] = useState('')
+  const [pageAlert, setPageAlert] = useState(null)
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState(new Set())
 
   useEffect(() => { setPage(1) }, [search])
 
-  const { data: projectList = [], isLoading, refetch } = useQuery({
+  const { data: projectList = [], isLoading } = useQuery({
     queryKey: ['projects'], queryFn: projects.list,
   })
   const { data: builderList = [] } = useQuery({
@@ -84,8 +86,7 @@ export default function Projects() {
 
   const createProject = useMutation({
     mutationFn: (data) => projects.create(data),
-    onSuccess: async () => {
-      await refetch()
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['projects'] })
       setShowNew(false)
       setError('')
@@ -99,13 +100,13 @@ export default function Projects() {
       qc.invalidateQueries({ queryKey: ['projects'] })
       setEditingId(null)
     },
-    onError: (e) => alert(e.response?.data?.detail || 'Failed to update project'),
+    onError: (e) => setPageAlert({ msg: e.response?.data?.detail || 'Failed to update project', type: 'error' }),
   })
 
   const deleteProject = useMutation({
     mutationFn: (id) => projects.delete(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['projects'] }) },
-    onError: (e) => alert(e.response?.data?.detail || 'Could not delete project'),
+    onError: (e) => setPageAlert({ msg: e.response?.data?.detail || 'Could not delete project', type: 'error' }),
   })
 
   const bulkDelete = useMutation({
@@ -113,13 +114,15 @@ export default function Projects() {
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['projects'] }); setSelected(new Set())
       if (res.skipped_with_plans?.length)
-        alert(`Skipped (have plans): ${res.skipped_with_plans.join(', ')}`)
+        setPageAlert({ msg: `Skipped (have plans): ${res.skipped_with_plans.join(', ')}`, type: 'info' })
     },
-    onError: (e) => alert(e.response?.data?.detail || 'Bulk delete failed'),
+    onError: (e) => setPageAlert({ msg: e.response?.data?.detail || 'Bulk delete failed', type: 'error' }),
   })
 
   return (
     <div>
+      <PageAlert msg={pageAlert?.msg} type={pageAlert?.type} ttl={6000}
+        onClose={() => setPageAlert(null)} />
       <div className="page-header">
         <div>
           <h1 className="page-title">Projects</h1>

@@ -1070,7 +1070,7 @@ export default function PlanDetail() {
                     {
                       label: 'Preview Quote',
                       icon: '👁',
-                      action: async () => { const url = await documents.preview(id); window.open(url, '_blank') },
+                      action: async () => { const url = await documents.preview(id); window.open(url, '_blank'); setTimeout(() => URL.revokeObjectURL(url), 10000) },
                     },
                     {
                       label: generateQuote.isPending ? 'Generating...' : 'Generate & Download Quote',
@@ -1305,6 +1305,7 @@ export default function PlanDetail() {
               onClick={async () => {
                 const url = await documents.preview(id)
                 window.open(url, '_blank')
+                setTimeout(() => URL.revokeObjectURL(url), 10000)
               }}>
               Preview blank quote
             </button>

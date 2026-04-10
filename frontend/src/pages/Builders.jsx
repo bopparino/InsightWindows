@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { builders } from '../api/client'
 import Pagination from '../components/Pagination'
+import PageAlert from '../components/PageAlert'
 import { useAuth } from '../context/AuthContext'
 
 const PAGE_SIZE = 50
@@ -114,6 +115,7 @@ export default function Builders() {
   const [showNew, setShowNew] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [error, setError] = useState('')
+  const [pageAlert, setPageAlert] = useState(null) // {msg, type}
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState(new Set())
 
@@ -151,13 +153,13 @@ export default function Builders() {
       qc.invalidateQueries({ queryKey: ['builders'] })
       setEditingId(null)
     },
-    onError: (e) => alert(e.response?.data?.detail || 'Failed to update builder'),
+    onError: (e) => setPageAlert({ msg: e.response?.data?.detail || 'Failed to update builder', type: 'error' }),
   })
 
   const deleteBuilder = useMutation({
     mutationFn: (id) => builders.delete(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['builders'] }) },
-    onError: (e) => alert(e.response?.data?.detail || 'Could not delete builder'),
+    onError: (e) => setPageAlert({ msg: e.response?.data?.detail || 'Could not delete builder', type: 'error' }),
   })
 
   const bulkDelete = useMutation({
@@ -165,13 +167,15 @@ export default function Builders() {
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['builders'] }); setSelected(new Set())
       if (res.skipped_with_projects?.length)
-        alert(`Skipped (have projects): ${res.skipped_with_projects.join(', ')}`)
+        setPageAlert({ msg: `Skipped (have projects): ${res.skipped_with_projects.join(', ')}`, type: 'info' })
     },
-    onError: (e) => alert(e.response?.data?.detail || 'Bulk delete failed'),
+    onError: (e) => setPageAlert({ msg: e.response?.data?.detail || 'Bulk delete failed', type: 'error' }),
   })
 
   return (
     <div>
+      <PageAlert msg={pageAlert?.msg} type={pageAlert?.type} ttl={6000}
+        onClose={() => setPageAlert(null)} />
       <div className="page-header">
         <div>
           <h1 className="page-title">Builders</h1>
