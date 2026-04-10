@@ -55,7 +55,7 @@ def get_company(db: Session = Depends(get_db), _: User = Depends(get_current_use
 @router.patch("/", dependencies=[Depends(require_admin)])
 def update_company(data: CompanyIn, db: Session = Depends(get_db)):
     row = _get_or_create(db)
-    for k, v in data.model_dump().items():
+    for k, v in data.model_dump(exclude_none=True).items():
         setattr(row, k, v)
     db.commit()
     return _serialize(row)

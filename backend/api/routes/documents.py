@@ -6,7 +6,7 @@ from core.database import get_db
 from core.config import settings
 from core.security import get_current_user
 from models.models import Plan, Document, HouseType, System, LineItem, Project, User, EventLog, CompanySettings, LineItemComponent
-import os, datetime, base64, smtplib, logging, json
+import os, datetime, smtplib, logging, json
 
 logger = logging.getLogger(__name__)
 from email.mime.multipart import MIMEMultipart
@@ -15,10 +15,7 @@ from email.mime.application import MIMEApplication
 
 router = APIRouter()
 
-# ── Bid math constants (must match plans.py) ──────────────────
-LABOR_RATE   = 86     # $/hr
-SERVICE_RATE = 32     # $ per service visit
-PERMIT_COST  = 170    # $ per permit
+from core.constants import LABOR_RATE, SERVICE_RATE, PERMIT_COST
 
 # Logo is pre-encoded at commit time — no runtime file I/O or DB seeding required.
 try:

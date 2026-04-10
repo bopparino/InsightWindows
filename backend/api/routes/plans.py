@@ -1,11 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func, select
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
-import re
 
 from core.database import get_db
 from core.config import settings
@@ -116,9 +115,7 @@ def log_event(db: Session, plan_id: int, event_type: str, description: str, user
 
 # ── Routes ────────────────────────────────────────────────────
 
-LABOR_RATE   = 86
-SERVICE_RATE = 32
-PERMIT_COST  = 170
+from core.constants import LABOR_RATE, SERVICE_RATE, PERMIT_COST
 
 def _calc_plan_total(plan: Plan) -> float:
     """Compute true final bid across all systems using the real bid math."""
@@ -916,7 +913,6 @@ def add_house_type(plan_id: int, data: HouseTypeCreate, db: Session = Depends(ge
                       zone_label=f"Zone {i}")
         db.add(zone)
         db.flush()
-    db.commit()
     log_event(db, plan_id, "house_type_added", f"House type '{data.name}' added to {plan.plan_number}")
     db.commit()
     return {"id": ht.id}
@@ -964,7 +960,11 @@ def add_line_item(plan_id: int, system_id: int, data: LineItemCreate, db: Sessio
 @router.patch("/{plan_id}/line-items/{line_item_id}")
 def update_line_item(plan_id: int, line_item_id: int, data: LineItemUpdate, db: Session = Depends(get_db),
                      current_user: User = Depends(get_current_user)):
-    li = db.query(LineItem).filter_by(id=line_item_id).first()
+    li = (db.query(LineItem)
+          .join(System, LineItem.system_id == System.id)
+          .join(HouseType, System.house_type_id == HouseType.id)
+          .filter(LineItem.id == line_item_id, HouseType.plan_id == plan_id)
+          .first())
     if not li:
         raise HTTPException(404, "Line item not found")
     for k, v in data.model_dump(exclude_none=True).items():
@@ -976,7 +976,11 @@ def update_line_item(plan_id: int, line_item_id: int, data: LineItemUpdate, db: 
 @router.delete("/{plan_id}/line-items/{line_item_id}")
 def delete_line_item(plan_id: int, line_item_id: int, db: Session = Depends(get_db),
                      current_user: User = Depends(get_current_user)):
-    li = db.query(LineItem).filter_by(id=line_item_id).first()
+    li = (db.query(LineItem)
+          .join(System, LineItem.system_id == System.id)
+          .join(HouseType, System.house_type_id == HouseType.id)
+          .filter(LineItem.id == line_item_id, HouseType.plan_id == plan_id)
+          .first())
     if not li:
         raise HTTPException(404, "Line item not found")
     db.delete(li)
@@ -987,7 +991,10 @@ def delete_line_item(plan_id: int, line_item_id: int, db: Session = Depends(get_
 @router.patch("/{plan_id}/systems/{system_id}")
 def update_system(plan_id: int, system_id: int, data: SystemUpdate, db: Session = Depends(get_db),
                   current_user: User = Depends(get_current_user)):
-    system = db.query(System).filter_by(id=system_id).first()
+    system = (db.query(System)
+              .join(HouseType, System.house_type_id == HouseType.id)
+              .filter(System.id == system_id, HouseType.plan_id == plan_id)
+              .first())
     if not system:
         raise HTTPException(404, "System not found")
     for k, v in data.model_dump(exclude_none=True).items():
@@ -1013,7 +1020,10 @@ def add_system(plan_id: int, house_type_id: int, db: Session = Depends(get_db),
 @router.delete("/{plan_id}/systems/{system_id}")
 def delete_system(plan_id: int, system_id: int, db: Session = Depends(get_db),
                   current_user: User = Depends(get_current_user)):
-    sys = db.query(System).filter_by(id=system_id).first()
+    sys = (db.query(System)
+           .join(HouseType, System.house_type_id == HouseType.id)
+           .filter(System.id == system_id, HouseType.plan_id == plan_id)
+           .first())
     if not sys:
         raise HTTPException(404, "System not found")
     house_type_id = sys.house_type_id
@@ -1095,7 +1105,6 @@ def copy_from_plan(plan_id: int, source_plan_id: int, db: Session = Depends(get_
                 amount=draw.amount,
                 draw_number=draw.draw_number,
             ))
-    db.commit()
     log_event(db, plan_id, "house_types_copied",
               f"House types copied from plan {source.plan_number}", current_user.username)
     db.commit()

@@ -40,8 +40,8 @@ class Project(Base):
     id         = Column(Integer, primary_key=True)
     code       = Column(String(10), unique=True, nullable=False)
     name       = Column(String(100), nullable=False)
-    builder_id = Column(Integer, ForeignKey("builders.id"), nullable=False)
-    county_id  = Column(Integer, ForeignKey("counties.id"))
+    builder_id = Column(Integer, ForeignKey("builders.id"), nullable=False, index=True)
+    county_id  = Column(Integer, ForeignKey("counties.id"), index=True)
     active     = Column(Boolean, default=True)
     builder    = relationship("Builder", back_populates="projects")
     county     = relationship("County")
@@ -108,7 +108,7 @@ class Plan(Base):
 class HouseType(Base):
     __tablename__ = "house_types"
     id              = Column(Integer, primary_key=True)
-    plan_id         = Column(Integer, ForeignKey("plans.id"), nullable=False)
+    plan_id         = Column(Integer, ForeignKey("plans.id"), nullable=False, index=True)
     house_number    = Column(String(2), default="01")
     name            = Column(String(100), nullable=False)
     bid_hours       = Column(Numeric(6, 2))
@@ -123,10 +123,10 @@ class HouseType(Base):
 class System(Base):
     __tablename__ = "systems"
     id                  = Column(Integer, primary_key=True)
-    house_type_id       = Column(Integer, ForeignKey("house_types.id"), nullable=False)
+    house_type_id       = Column(Integer, ForeignKey("house_types.id"), nullable=False, index=True)
     system_number       = Column(String(2), default="01")
     zone_label          = Column(String(50))
-    equipment_system_id = Column(Integer, ForeignKey("equipment_systems.id"))
+    equipment_system_id = Column(Integer, ForeignKey("equipment_systems.id"), index=True)
     notes               = Column(Text)
     labor_hrs           = Column(Numeric(6, 2), default=0, nullable=False)
     service_qty         = Column(Integer, default=0, nullable=False)
@@ -140,7 +140,7 @@ class System(Base):
 class LineItem(Base):
     __tablename__ = "line_items"
     id              = Column(Integer, primary_key=True)
-    system_id       = Column(Integer, ForeignKey("systems.id"), nullable=False)
+    system_id       = Column(Integer, ForeignKey("systems.id"), nullable=False, index=True)
     sort_order      = Column(Integer, nullable=False, default=50)
     category_code   = Column(String(10), nullable=True)
     description     = Column(Text, nullable=False)
@@ -150,7 +150,7 @@ class LineItem(Base):
     draw_stage      = Column(String(20))
     part_number     = Column(String(40))
     notes           = Column(Text)
-    kit_variant_id  = Column(Integer, ForeignKey("kit_variants.id"), nullable=True)
+    kit_variant_id  = Column(Integer, ForeignKey("kit_variants.id"), nullable=True, index=True)
     system          = relationship("System", back_populates="line_items")
     kit_variant     = relationship("KitVariant")
     components      = relationship("LineItemComponent", back_populates="line_item",
@@ -160,7 +160,7 @@ class LineItem(Base):
 class Draw(Base):
     __tablename__ = "draws"
     id            = Column(Integer, primary_key=True)
-    house_type_id = Column(Integer, ForeignKey("house_types.id"), nullable=False)
+    house_type_id = Column(Integer, ForeignKey("house_types.id"), nullable=False, index=True)
     stage         = Column(String(20), nullable=False)
     amount        = Column(Numeric(10, 2), nullable=False)
     draw_number   = Column(SmallInteger, nullable=False)
@@ -184,21 +184,9 @@ class EventLog(Base):
     id          = Column(Integer, primary_key=True)
     event_at    = Column(DateTime, server_default=func.now())
     username    = Column(String(50))
-    plan_id     = Column(Integer, ForeignKey("plans.id"))
+    plan_id     = Column(Integer, ForeignKey("plans.id"), index=True)
     event_type  = Column(String(50))
     description = Column(Text, nullable=False)
-
-
-class KitItem(Base):
-    __tablename__ = "kit_items"
-    id            = Column(Integer, primary_key=True)
-    category      = Column(String(50), nullable=False)
-    description   = Column(String(200), nullable=False)
-    base_price    = Column(Numeric(10, 2), nullable=False, default=0)
-    price_per_ton = Column(Numeric(10, 2), nullable=False, default=0)
-    unit          = Column(String(20), default="each")
-    sort_order    = Column(Integer, default=10)
-    active        = Column(Boolean, default=True)
 
 
 class KitVariant(Base):
@@ -248,7 +236,7 @@ class LineItemComponent(Base):
     __tablename__ = "line_item_components"
     id                = Column(Integer, primary_key=True)
     line_item_id      = Column(Integer, ForeignKey("line_items.id"), nullable=False, index=True)
-    kit_component_id  = Column(Integer, ForeignKey("kit_components.id"), nullable=True)  # back-ref to template
+    kit_component_id  = Column(Integer, ForeignKey("kit_components.id"), nullable=True, index=True)  # back-ref to template
     sort_order        = Column(Integer, nullable=False, default=10)
     description       = Column(String(200), nullable=False)
     part_number       = Column(String(60))
@@ -263,7 +251,7 @@ class Suggestion(Base):
     __tablename__ = "suggestions"
     id           = Column(Integer, primary_key=True)
     submitted_at = Column(DateTime, server_default=func.now())
-    user_id      = Column(Integer, ForeignKey("users.id"), nullable=True)
+    user_id      = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     user_name    = Column(String(100), nullable=False)
     type         = Column(String(20), nullable=False, default="feedback")
     subject      = Column(String(200), nullable=False)

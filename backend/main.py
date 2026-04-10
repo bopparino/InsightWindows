@@ -121,6 +121,18 @@ def _run_migrations():
         END $$""",
         # v2.4 — price audit trail on kit variants
         "ALTER TABLE kit_variants ADD COLUMN IF NOT EXISTS price_updated_at TIMESTAMP",
+        # v2.5 — FK indexes on high-traffic join columns
+        "CREATE INDEX IF NOT EXISTS ix_projects_builder_id       ON projects(builder_id)",
+        "CREATE INDEX IF NOT EXISTS ix_projects_county_id        ON projects(county_id)",
+        "CREATE INDEX IF NOT EXISTS ix_house_types_plan_id       ON house_types(plan_id)",
+        "CREATE INDEX IF NOT EXISTS ix_systems_house_type_id     ON systems(house_type_id)",
+        "CREATE INDEX IF NOT EXISTS ix_systems_equip_system_id   ON systems(equipment_system_id)",
+        "CREATE INDEX IF NOT EXISTS ix_line_items_system_id      ON line_items(system_id)",
+        "CREATE INDEX IF NOT EXISTS ix_line_items_kit_variant_id ON line_items(kit_variant_id)",
+        "CREATE INDEX IF NOT EXISTS ix_draws_house_type_id       ON draws(house_type_id)",
+        "CREATE INDEX IF NOT EXISTS ix_event_log_plan_id         ON event_log(plan_id)",
+        "CREATE INDEX IF NOT EXISTS ix_lic_kit_component_id      ON line_item_components(kit_component_id)",
+        "CREATE INDEX IF NOT EXISTS ix_suggestions_user_id       ON suggestions(user_id)",
     ]
     with engine.connect() as conn:
         for sql in migrations:
