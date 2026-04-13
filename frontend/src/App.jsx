@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
-import { Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { Routes, Route, NavLink, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { search as searchApi } from './api/client'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider, useTheme, THEMES } from './context/ThemeContext'
@@ -837,6 +837,35 @@ function Sidebar({ onOpenHelp, onOpenFeedback }) {
   )
 }
 
+// ─── Page Transition Wrapper ──────────────────────────────────────────────────
+
+function PageTransition({ children }) {
+  const location = useLocation()
+  const [displayChildren, setDisplayChildren] = useState(children)
+  const [stage, setStage] = useState('enter') // 'enter' | 'exit'
+  const prevPath = useRef(location.pathname)
+
+  useEffect(() => {
+    if (location.pathname !== prevPath.current) {
+      prevPath.current = location.pathname
+      setStage('exit')
+      const t = setTimeout(() => {
+        setDisplayChildren(children)
+        setStage('enter')
+      }, 140)
+      return () => clearTimeout(t)
+    } else {
+      setDisplayChildren(children)
+    }
+  }, [location.pathname, children])
+
+  const style = stage === 'exit'
+    ? { opacity: 0, transform: 'translateY(6px)', transition: 'opacity 0.12s ease, transform 0.12s ease' }
+    : { opacity: 1, transform: 'translateY(0)',   transition: 'opacity 0.18s ease, transform 0.18s ease' }
+
+  return <div style={style}>{displayChildren}</div>
+}
+
 // ─── App Layout ────────────────────────────────────────────────────────────────
 
 function AppLayout() {
@@ -865,22 +894,24 @@ function AppLayout() {
       />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'auto' }}>
         <main style={{ flex: 1, padding: '32px 40px', width: '100%', boxSizing: 'border-box' }}>
-          <Routes>
-            <Route path="/"            element={isAccountManager ? <Navigate to="/plans" replace /> : <Dashboard />} />
-            <Route path="/plans"       element={<PlansList />} />
-            <Route path="/plans/new"   element={<NewPlan />} />
-            <Route path="/plans/:id"   element={<PlanDetail />} />
-            <Route path="/projects"    element={<Projects />} />
-            <Route path="/builders"    element={<Builders />} />
-            <Route path="/equipment"   element={<Equipment />} />
-            <Route path="/settings"    element={<Settings />} />
-            <Route path="/users"       element={<UserManagement />} />
-            <Route path="/kit-admin"   element={<KitAdmin />} />
-            <Route path="/price-book"  element={<PriceBook />} />
-            <Route path="/files"       element={<Files />} />
-            <Route path="/performance" element={<Performance />} />
-            <Route path="/feedback"    element={<FeedbackInbox />} />
-          </Routes>
+          <PageTransition>
+            <Routes>
+              <Route path="/"            element={isAccountManager ? <Navigate to="/plans" replace /> : <Dashboard />} />
+              <Route path="/plans"       element={<PlansList />} />
+              <Route path="/plans/new"   element={<NewPlan />} />
+              <Route path="/plans/:id"   element={<PlanDetail />} />
+              <Route path="/projects"    element={<Projects />} />
+              <Route path="/builders"    element={<Builders />} />
+              <Route path="/equipment"   element={<Equipment />} />
+              <Route path="/settings"    element={<Settings />} />
+              <Route path="/users"       element={<UserManagement />} />
+              <Route path="/kit-admin"   element={<KitAdmin />} />
+              <Route path="/price-book"  element={<PriceBook />} />
+              <Route path="/files"       element={<Files />} />
+              <Route path="/performance" element={<Performance />} />
+              <Route path="/feedback"    element={<FeedbackInbox />} />
+            </Routes>
+          </PageTransition>
         </main>
       </div>
 
