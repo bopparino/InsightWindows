@@ -30,7 +30,7 @@ function EmailQuoteModal({ plan, currentUser, onClose, onSent }) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
       zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       onClick={onClose}>
       <div style={{ background: 'var(--card-bg)', borderRadius: 'var(--radius)', width: 520,
@@ -133,7 +133,7 @@ function EquipmentPicker({ planId, systemId, onSelect, onClose }) {
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
       zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center',
     }} onClick={onClose}>
       <div style={{
@@ -1452,7 +1452,11 @@ export default function PlanDetail() {
                 </div>
 
                 {/* 2. Kit pricing chips */}
-                <InlineKitSelector planId={parseInt(id)} systemId={sys.id} />
+                <InlineKitSelector
+                  planId={parseInt(id)}
+                  systemId={sys.id}
+                  existingCategoryCodes={sys.line_items.filter(li => li.category_code).map(li => li.category_code)}
+                />
 
                 {/* 3. Items added */}
                 {sys.line_items.length > 0 && (

@@ -503,7 +503,8 @@ function CommandPalette({ onClose, onOpenHelp }) {
 
   return (
     <div onClick={onClose} style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+      backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
       zIndex: 2000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
       paddingTop: '15vh',
     }}>

@@ -247,15 +247,9 @@ function AddRow({ cat, onAdd, adding }) {
   )
 }
 
-// ── Category icon lookup ──────────────────────────────────────
-const CATEGORY_ICONS = {
-  A: '🔧', B: '🌀', C: '📦', D: '🔩', E: '⚡', F: '🔥', G: '💨',
-  H: '🏠', I: '❄️', J: '🔌', K: '🧰', L: '📐', M: '🛠️', N: '🔗',
-  O: '🪛', P: '📏', Q: '🧱', R: '🪠', S: '🌡️', T: '🔨', U: '📋',
-}
-
-// ── Variant table (shared by tile expand) ─────────────────────
-function VariantTable({ cat, editingId, savingId, addingCat, deletingId, onEdit, onAdd, onDelete }) {
+// ── Single category accordion ─────────────────────────────────
+function CategorySection({ cat, editingId, savingId, addingCat, deletingId, onEdit, onAdd, onDelete }) {
+  const [open, setOpen] = useState(false)
   const [expandedComponents, setExpandedComponents] = useState(new Set())
 
   function toggleComponents(variantId) {
@@ -277,154 +271,111 @@ function VariantTable({ cat, editingId, savingId, addingCat, deletingId, onEdit,
   )
 
   return (
-    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-      <thead>
-        <tr>
-          <TH w={90}>Code</TH>
-          <TH>Variant Name</TH>
-          <TH right w={100}>Bid Price</TH>
-          <TH center w={70}>Margin</TH>
-          <TH right w={100}>Your Cost</TH>
-          <TH right w={110}>Per Foot</TH>
-          <TH center w={60}>Sort</TH>
-          <TH w={100}>Price Set</TH>
-          <TH w={190}>Actions</TH>
-        </tr>
-      </thead>
-      <tbody>
-        {cat.variants.map(v =>
-          editingId === v.id ? (
-            <EditRow key={v.id} v={v} cat={cat}
-              onSave={data => onEdit(v.id, data)}
-              onCancel={() => onEdit(null, null)}
-              saving={savingId === v.id} />
-          ) : (
-            <>
-              <tr key={v.id} style={{ borderBottom: expandedComponents.has(v.id) ? 'none' : '1px solid var(--gray-100)' }}>
-                <td style={{ padding: '8px 8px', color: 'var(--gray-500)', fontFamily: 'monospace', fontSize: 11 }}>
-                  {v.variant_code}
-                </td>
-                <td style={{ padding: '8px 8px' }}>{v.variant_name}</td>
-                <td style={{ padding: '8px 8px', textAlign: 'right', fontWeight: 600 }}>
-                  {fmt(v.per_kit)}
-                </td>
-                <td style={{ padding: '8px 8px', textAlign: 'center', fontSize: 12,
-                  color: v.markup_divisor < 1.0 ? '#166534' : 'var(--gray-300)' }}>
-                  {v.markup_divisor < 1.0 ? `${v.margin_pct}%` : '—'}
-                </td>
-                <td style={{ padding: '8px 8px', textAlign: 'right', fontSize: 12,
-                  color: v.markup_divisor < 1.0 ? 'var(--gray-600)' : 'var(--gray-300)' }}>
-                  {v.markup_divisor < 1.0
-                    ? <span>
-                        {fmt(v.internal_cost)}
-                        <span style={{ marginLeft: 4, fontSize: 10, color: 'var(--success)', fontWeight: 600 }}>
-                          {v.margin_pct}%
-                        </span>
-                      </span>
-                    : '—'}
-                </td>
-                <td style={{ padding: '8px 8px', textAlign: 'right',
-                  color: v.per_foot > 0 ? 'var(--gray-700)' : 'var(--gray-300)' }}>
-                  {v.per_foot > 0 ? `$${v.per_foot.toFixed(2)}/ft` : '—'}
-                </td>
-                <td style={{ padding: '8px 8px', textAlign: 'center', color: 'var(--gray-400)', fontSize: 12 }}>
-                  {v.sort_order}
-                </td>
-                <td style={{ padding: '8px 8px', fontSize: 11, color: 'var(--gray-400)', whiteSpace: 'nowrap' }}>
-                  {v.price_updated_at
-                    ? new Date(v.price_updated_at).toLocaleDateString()
-                    : '—'}
-                </td>
-                <td style={{ padding: '8px 8px', whiteSpace: 'nowrap' }}>
-                  <button className="btn-secondary btn-sm" onClick={() => toggleComponents(v.id)} style={{ marginRight: 6 }}>
-                    {expandedComponents.has(v.id) ? 'Hide Parts' : 'Parts'}
-                  </button>
-                  <button className="btn-secondary btn-sm" onClick={() => onEdit(v.id, null)} style={{ marginRight: 6 }}>Edit</button>
-                  <button className="btn-danger btn-sm" onClick={() => onDelete(v)} disabled={deletingId === v.id}>
-                    {deletingId === v.id ? '…' : 'Remove'}
-                  </button>
-                </td>
-              </tr>
-              {expandedComponents.has(v.id) && (
-                <tr key={`${v.id}-components`} style={{ borderBottom: '1px solid var(--gray-100)' }}>
-                  <td colSpan={9} style={{ padding: 0 }}>
-                    <ComponentEditor variant={v} />
-                  </td>
-                </tr>
-              )}
-            </>
-          )
-        )}
-        <AddRow cat={cat} onAdd={onAdd} adding={addingCat === cat.code} />
-      </tbody>
-    </table>
-  )
-}
-
-// ── Single category tile ─────────────────────────────────────
-function CategoryTile({ cat, isOpen, onToggle }) {
-  const icon = CATEGORY_ICONS[cat.code] || '📦'
-
-  return (
-    <button
-      onClick={onToggle}
-      style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        width: '100%', aspectRatio: '1', minHeight: 120,
-        padding: 12, gap: 6,
-        background: isOpen ? 'var(--accent)' : 'var(--card-bg)',
-        border: isOpen ? '2px solid var(--accent)' : '1.5px solid var(--gray-200)',
-        borderRadius: 'var(--radius)',
+    <div className="card" style={{ marginBottom: 10, padding: 0, overflow: 'hidden' }}>
+      <div onClick={() => setOpen(o => !o)} style={{
+        padding: '10px 16px', background: 'var(--gray-50)',
+        borderBottom: open ? '1px solid var(--gray-200)' : 'none',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         cursor: 'pointer', userSelect: 'none',
-        transition: 'all 0.15s ease',
-        position: 'relative', overflow: 'hidden',
-        boxShadow: isOpen
-          ? '0 4px 16px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.15)'
-          : '0 1px 3px rgba(0,0,0,0.04)',
-      }}
-    >
-      {/* Category icon */}
-      <span style={{ fontSize: 28, lineHeight: 1 }}>{icon}</span>
-
-      {/* Category code badge */}
-      <span style={{
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        width: 28, height: 28, borderRadius: 8,
-        background: isOpen ? 'rgba(255,255,255,0.2)' : 'var(--accent)',
-        color: isOpen ? '#fff' : 'white',
-        fontSize: 12, fontWeight: 800, letterSpacing: '0.02em',
-        flexShrink: 0,
-      }}>{cat.code}</span>
-
-      {/* Category name */}
-      <span style={{
-        fontSize: 11, fontWeight: 700, textAlign: 'center',
-        color: isOpen ? '#fff' : 'var(--gray-800)',
-        lineHeight: 1.2, maxWidth: '100%',
-        overflow: 'hidden', textOverflow: 'ellipsis',
-        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-      }}>{cat.name}</span>
-
-      {/* Variant count pill */}
-      <span style={{
-        fontSize: 10, fontWeight: 600,
-        color: isOpen ? 'rgba(255,255,255,0.85)' : 'var(--gray-400)',
-        letterSpacing: '0.02em',
       }}>
-        {cat.variants.length} variant{cat.variants.length !== 1 ? 's' : ''}
-      </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: 26, height: 26, borderRadius: 6,
+            background: 'var(--blue)', color: 'white', fontSize: 12, fontWeight: 700, flexShrink: 0,
+          }}>{cat.code}</span>
+          <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--gray-800)' }}>{cat.name}</span>
+          <span style={{ fontSize: 12, color: 'var(--gray-400)' }}>
+            {cat.variants.length} variant{cat.variants.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+        <span style={{ color: 'var(--gray-400)', fontSize: 14 }}>{open ? '▾' : '▸'}</span>
+      </div>
 
-      {/* Active / expanded indicator */}
-      {isOpen && (
-        <span style={{
-          position: 'absolute', top: 6, right: 6,
-          width: 18, height: 18, borderRadius: '50%',
-          background: 'rgba(255,255,255,0.25)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 11, color: '#fff', fontWeight: 700,
-        }}>✓</span>
+      {open && (
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead>
+            <tr>
+              <TH w={90}>Code</TH>
+              <TH>Variant Name</TH>
+              <TH right w={100}>Bid Price</TH>
+              <TH center w={70}>Margin</TH>
+              <TH right w={100}>Your Cost</TH>
+              <TH right w={110}>Per Foot</TH>
+              <TH center w={60}>Sort</TH>
+              <TH w={100}>Price Set</TH>
+              <TH w={190}>Actions</TH>
+            </tr>
+          </thead>
+          <tbody>
+            {cat.variants.map(v =>
+              editingId === v.id ? (
+                <EditRow key={v.id} v={v} cat={cat}
+                  onSave={data => onEdit(v.id, data)}
+                  onCancel={() => onEdit(null, null)}
+                  saving={savingId === v.id} />
+              ) : (
+                <>
+                  <tr key={v.id} style={{ borderBottom: expandedComponents.has(v.id) ? 'none' : '1px solid var(--gray-100)' }}>
+                    <td style={{ padding: '8px 8px', color: 'var(--gray-500)', fontFamily: 'monospace', fontSize: 11 }}>
+                      {v.variant_code}
+                    </td>
+                    <td style={{ padding: '8px 8px' }}>{v.variant_name}</td>
+                    <td style={{ padding: '8px 8px', textAlign: 'right', fontWeight: 600 }}>
+                      {fmt(v.per_kit)}
+                    </td>
+                    <td style={{ padding: '8px 8px', textAlign: 'center', fontSize: 12,
+                      color: v.markup_divisor < 1.0 ? '#166534' : 'var(--gray-300)' }}>
+                      {v.markup_divisor < 1.0 ? `${v.margin_pct}%` : '—'}
+                    </td>
+                    <td style={{ padding: '8px 8px', textAlign: 'right', fontSize: 12,
+                      color: v.markup_divisor < 1.0 ? 'var(--gray-600)' : 'var(--gray-300)' }}>
+                      {v.markup_divisor < 1.0
+                        ? <span>
+                            {fmt(v.internal_cost)}
+                            <span style={{ marginLeft: 4, fontSize: 10, color: 'var(--success)', fontWeight: 600 }}>
+                              {v.margin_pct}%
+                            </span>
+                          </span>
+                        : '—'}
+                    </td>
+                    <td style={{ padding: '8px 8px', textAlign: 'right',
+                      color: v.per_foot > 0 ? 'var(--gray-700)' : 'var(--gray-300)' }}>
+                      {v.per_foot > 0 ? `$${v.per_foot.toFixed(2)}/ft` : '—'}
+                    </td>
+                    <td style={{ padding: '8px 8px', textAlign: 'center', color: 'var(--gray-400)', fontSize: 12 }}>
+                      {v.sort_order}
+                    </td>
+                    <td style={{ padding: '8px 8px', fontSize: 11, color: 'var(--gray-400)', whiteSpace: 'nowrap' }}>
+                      {v.price_updated_at
+                        ? new Date(v.price_updated_at).toLocaleDateString()
+                        : '—'}
+                    </td>
+                    <td style={{ padding: '8px 8px', whiteSpace: 'nowrap' }}>
+                      <button className="btn-secondary btn-sm" onClick={() => toggleComponents(v.id)} style={{ marginRight: 6 }}>
+                        {expandedComponents.has(v.id) ? 'Hide Parts' : 'Parts'}
+                      </button>
+                      <button className="btn-secondary btn-sm" onClick={() => onEdit(v.id, null)} style={{ marginRight: 6 }}>Edit</button>
+                      <button className="btn-danger btn-sm" onClick={() => onDelete(v)} disabled={deletingId === v.id}>
+                        {deletingId === v.id ? '…' : 'Remove'}
+                      </button>
+                    </td>
+                  </tr>
+                  {expandedComponents.has(v.id) && (
+                    <tr key={`${v.id}-components`} style={{ borderBottom: '1px solid var(--gray-100)' }}>
+                      <td colSpan={9} style={{ padding: 0 }}>
+                        <ComponentEditor variant={v} />
+                      </td>
+                    </tr>
+                  )}
+                </>
+              )
+            )}
+            <AddRow cat={cat} onAdd={onAdd} adding={addingCat === cat.code} />
+          </tbody>
+        </table>
       )}
-    </button>
+    </div>
   )
 }
 
@@ -437,7 +388,6 @@ export default function KitAdmin() {
   const [addingCat,  setAddingCat]  = useState(null)
   const [deletingId, setDeletingId] = useState(null)
   const [confirm,    setConfirm]    = useState(null)
-  const [openCat,    setOpenCat]    = useState(null)
 
   const { data: categories = [], isLoading, isError } = useQuery({
     queryKey: ['kit-variants'],
@@ -492,84 +442,15 @@ export default function KitAdmin() {
       {isLoading && <div style={{ textAlign: 'center', padding: 60 }}><span className="spinner" /></div>}
       {isError   && <div className="empty-state"><p>Failed to load kit pricing. Check API connection.</p></div>}
 
-      {/* Bento tile grid */}
-      {!isLoading && !isError && (() => {
-        // Group categories into rows so expanded detail spans the full grid width
-        const cols = 6 // tiles per row
-        const rows = []
-        for (let i = 0; i < categories.length; i += cols) {
-          rows.push(categories.slice(i, i + cols))
-        }
-        return rows.map((row, ri) => (
-          <div key={ri}>
-            {/* Tile row */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
-              gap: 10,
-              marginBottom: row.some(c => c.code === openCat) ? 0 : 10,
-            }}>
-              {row.map(cat => (
-                <CategoryTile
-                  key={cat.code}
-                  cat={cat}
-                  isOpen={openCat === cat.code}
-                  onToggle={() => setOpenCat(o => o === cat.code ? null : cat.code)}
-                />
-              ))}
-            </div>
-
-            {/* Expanded detail panel (below the tile row) */}
-            {row.some(c => c.code === openCat) && (() => {
-              const cat = row.find(c => c.code === openCat)
-              return (
-                <div className="card" style={{
-                  marginBottom: 10, padding: 0, overflow: 'hidden',
-                  borderTop: `3px solid var(--accent)`,
-                  animation: 'slideUp 0.15s ease',
-                }}>
-                  {/* Detail header */}
-                  <div style={{
-                    padding: '12px 16px', background: 'var(--gray-50)',
-                    borderBottom: '1px solid var(--gray-200)',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 20 }}>{CATEGORY_ICONS[cat.code] || '📦'}</span>
-                      <span style={{
-                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                        width: 28, height: 28, borderRadius: 8,
-                        background: 'var(--accent)', color: 'white',
-                        fontSize: 13, fontWeight: 800,
-                      }}>{cat.code}</span>
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--gray-800)' }}>{cat.name}</div>
-                        <div style={{ fontSize: 12, color: 'var(--gray-400)' }}>
-                          {cat.variants.length} variant{cat.variants.length !== 1 ? 's' : ''}
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      className="btn-secondary btn-sm"
-                      onClick={() => setOpenCat(null)}
-                    >✕ Close</button>
-                  </div>
-
-                  {/* Full variant table */}
-                  <VariantTable
-                    cat={cat}
-                    editingId={editingId} savingId={savingId}
-                    addingCat={addingCat} deletingId={deletingId}
-                    onEdit={handleEdit}
-                    onAdd={(data) => handleAdd(cat.code, data)}
-                    onDelete={handleDelete}
-                  />
-                </div>
-              )
-            })()}
-          </div>
-        ))
-      })()}
+      {!isLoading && !isError && categories.map(cat => (
+        <CategorySection
+          key={cat.code} cat={cat}
+          editingId={editingId} savingId={savingId} addingCat={addingCat} deletingId={deletingId}
+          onEdit={handleEdit}
+          onAdd={(data) => handleAdd(cat.code, data)}
+          onDelete={handleDelete}
+        />
+      ))}
       {confirm && <ConfirmModal {...confirm} onCancel={() => setConfirm(null)} />}
     </div>
   )

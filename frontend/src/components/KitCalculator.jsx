@@ -165,7 +165,8 @@ export default function KitCalculator({ planId, systemId, zoneName, onAddItems, 
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+      backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
       zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: 20,
     }} onClick={onClose}>

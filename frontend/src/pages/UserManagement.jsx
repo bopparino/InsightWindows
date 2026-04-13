@@ -70,7 +70,7 @@ function EditUserModal({ user, onClose, onSave }) {
   })
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
       zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       onClick={onClose}>
       <div style={{ background: 'var(--card-bg)', borderRadius: 12, width: 480,

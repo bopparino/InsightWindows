@@ -45,7 +45,8 @@ export default function ConfirmModal({
       onClick={onCancel}
       style={{
         position: 'fixed', inset: 0, zIndex: 9000,
-        background: 'rgba(0,0,0,0.45)',
+        background: 'rgba(0,0,0,0.4)',
+        backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: 24,
         animation: 'fadeIn 0.12s ease',
