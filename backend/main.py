@@ -228,11 +228,15 @@ def _fix_kit_variants():
         e.g. 0.65 means internal cost = bid_price * 0.65, margin = 35%.
         1.0 means cost ≈ bid price (margin comes from labor efficiency, not per-item markup).
     """
+    from sqlalchemy import text as _text
+
     def ins(cat_code, cat_name, v_code, v_name, per_kit, per_foot, sort, divisor=1.0):
-        return f"""INSERT INTO kit_variants
+        return _text("""INSERT INTO kit_variants
             (category_code,category_name,variant_code,variant_name,per_kit,per_foot,markup_divisor,sort_order,active)
-            SELECT '{cat_code}','{cat_name}','{v_code}','{v_name}',{per_kit},{per_foot},{divisor},{sort},TRUE
-            WHERE NOT EXISTS (SELECT 1 FROM kit_variants WHERE variant_code='{v_code}')"""
+            SELECT :cat_code,:cat_name,:v_code,:v_name,:per_kit,:per_foot,:divisor,:sort,TRUE
+            WHERE NOT EXISTS (SELECT 1 FROM kit_variants WHERE variant_code=:v_code)""").bindparams(
+            cat_code=cat_code, cat_name=cat_name, v_code=v_code, v_name=v_name,
+            per_kit=per_kit, per_foot=per_foot, divisor=divisor, sort=sort)
 
     fixes = [
         # ── Category C: correct labels ────────────────────────────────────────
@@ -303,7 +307,8 @@ def _fix_kit_variants():
     ]
     with engine.connect() as conn:
         for sql in fixes:
-            conn.execute(__import__("sqlalchemy").text(sql))
+            stmt = sql if hasattr(sql, 'bindparams') else __import__("sqlalchemy").text(sql)
+            conn.execute(stmt)
         conn.commit()
 
 _fix_kit_variants()
@@ -385,10 +390,24 @@ def _seed_company_logo():
 _seed_company_logo()
 
 
+import logging as _logging
+_logger = _logging.getLogger(__name__)
+
 app = FastAPI(
-    title="HVAC Bid System — POC",
-    version="0.1.0",
+    title="HVAC Bid System",
+    version="1.0.0",
 )
+
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(Exception)
+async def _global_exception_handler(request: Request, exc: Exception):
+    _logger.exception("Unhandled exception on %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
 
 _FRONTEND_ORIGINS = [o.strip() for o in os.getenv(
     "ALLOWED_ORIGINS",

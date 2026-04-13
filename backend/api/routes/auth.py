@@ -123,10 +123,12 @@ def microsoft_sso(data: MicrosoftTokenIn, db: Session = Depends(get_db)):
             audience=settings.AZURE_CLIENT_ID,
             issuer=f"https://login.microsoftonline.com/{settings.AZURE_TENANT_ID}/v2.0",
         )
-    except JWTError as e:
-        raise HTTPException(401, f"Invalid Microsoft token: {e}")
-    except Exception as e:
-        raise HTTPException(502, f"Could not verify Microsoft token: {e}")
+    except JWTError:
+        raise HTTPException(401, "Invalid Microsoft token")
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception("Microsoft token verification failed")
+        raise HTTPException(502, "Could not verify Microsoft token")
 
     # Extract email — Microsoft uses preferred_username (UPN) or email claim
     ms_email = (payload.get("preferred_username") or payload.get("email") or "").lower().strip()

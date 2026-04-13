@@ -1,4 +1,9 @@
+import os, secrets, logging
 from pydantic_settings import BaseSettings
+
+_logger = logging.getLogger(__name__)
+
+_INSECURE_DEFAULTS = {"change-me-to-something-long-and-random", ""}
 
 class Settings(BaseSettings):
     DATABASE_URL:       str
@@ -27,3 +32,13 @@ class Settings(BaseSettings):
         env_file = "../.env"
 
 settings = Settings()
+
+# Warn loudly if SECRET_KEY is still the insecure default
+if settings.SECRET_KEY in _INSECURE_DEFAULTS:
+    _generated = secrets.token_urlsafe(48)
+    _logger.warning(
+        "SECRET_KEY is using an insecure default! "
+        "Set SECRET_KEY env var in production. "
+        "Using auto-generated ephemeral key for this process."
+    )
+    settings.SECRET_KEY = _generated
