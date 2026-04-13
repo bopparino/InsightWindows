@@ -6,6 +6,7 @@ import Pagination from '../components/Pagination'
 import PageAlert from '../components/PageAlert'
 import ConfirmModal from '../components/ConfirmModal'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 
 const PAGE_SIZE = 50
 
@@ -110,6 +111,7 @@ function BuilderForm({ initial = EMPTY_FORM, onSave, onCancel, saving, title }) 
 export default function Builders() {
   const qc = useQueryClient()
   const { user } = useAuth()
+  const toast = useToast()
   const isAdmin = user?.role === 'admin'
   const [searchParams] = useSearchParams()
   const [search, setSearch] = useState(() => searchParams.get('q') || '')
@@ -145,6 +147,7 @@ export default function Builders() {
       qc.invalidateQueries({ queryKey: ['builders'] })
       setShowNew(false)
       setError('')
+      toast.success('Builder created')
     },
     onError: (e) => setError(e.response?.data?.detail || 'Failed to create builder'),
   })
@@ -154,13 +157,14 @@ export default function Builders() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['builders'] })
       setEditingId(null)
+      toast.success('Builder updated')
     },
     onError: (e) => setPageAlert({ msg: e.response?.data?.detail || 'Failed to update builder', type: 'error' }),
   })
 
   const deleteBuilder = useMutation({
     mutationFn: (id) => builders.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['builders'] }) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['builders'] }); toast.success('Builder deleted') },
     onError: (e) => setPageAlert({ msg: e.response?.data?.detail || 'Could not delete builder', type: 'error' }),
   })
 
@@ -170,6 +174,8 @@ export default function Builders() {
       qc.invalidateQueries({ queryKey: ['builders'] }); setSelected(new Set())
       if (res.skipped_with_projects?.length)
         setPageAlert({ msg: `Skipped (have projects): ${res.skipped_with_projects.join(', ')}`, type: 'info' })
+      else
+        toast.success('Builders deleted')
     },
     onError: (e) => setPageAlert({ msg: e.response?.data?.detail || 'Bulk delete failed', type: 'error' }),
   })

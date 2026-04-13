@@ -33,7 +33,7 @@ function EmailQuoteModal({ plan, currentUser, onClose, onSent }) {
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
       zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       onClick={onClose}>
-      <div style={{ background: 'white', borderRadius: 'var(--radius)', width: 520,
+      <div style={{ background: 'var(--card-bg)', borderRadius: 'var(--radius)', width: 520,
         boxShadow: '0 20px 60px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column' }}
         onClick={e => e.stopPropagation()}>
 
@@ -109,6 +109,7 @@ function EmailQuoteModal({ plan, currentUser, onClose, onSent }) {
   )
 }
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 
 const STATUS_FLOW = ['draft', 'proposed', 'contracted', 'complete']
 
@@ -136,7 +137,7 @@ function EquipmentPicker({ planId, systemId, onSelect, onClose }) {
       zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center',
     }} onClick={onClose}>
       <div style={{
-        background: 'white', borderRadius: 'var(--radius)', width: '90%', maxWidth: 740,
+        background: 'var(--card-bg)', borderRadius: 'var(--radius)', width: '90%', maxWidth: 740,
         maxHeight: '80vh', display: 'flex', flexDirection: 'column',
         boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
       }} onClick={e => e.stopPropagation()}>
@@ -757,7 +758,7 @@ function BidSummary({ planId, system, factor }) {
 
   const inputStyle = {
     width: 58, fontSize: 14, textAlign: 'center', padding: '2px 6px',
-    background: 'white', border: '1px solid var(--gray-300)',
+    background: 'var(--input-bg)', border: '1px solid var(--gray-300)',
     borderRadius: 6, fontWeight: 600,
   }
   const rowStyle = {
@@ -906,6 +907,7 @@ export default function PlanDetail() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const { user } = useAuth()
+  const toast = useToast()
   const isAdmin = user?.role === 'admin'
   const [showEmailModal, setShowEmailModal] = useState(false)
   const [showDocMenu, setShowDocMenu] = useState(false)
@@ -930,12 +932,13 @@ export default function PlanDetail() {
 
   const updateStatus = useMutation({
     mutationFn: (status) => plans.update(id, { status }),
-    onSuccess: invalidatePlan,
+    onSuccess: (_, status) => { invalidatePlan(); toast.success(`Status set to ${status}`) },
   })
 
   const generateQuote = useMutation({
     mutationFn: () => documents.generate(id),
-    onSuccess: invalidatePlan,
+    onSuccess: () => { invalidatePlan(); toast.success('Quote generated') },
+    onError: (e) => toast.error(e.response?.data?.detail || 'Failed to generate quote'),
   })
 
   const generateFieldSheet = useMutation({
@@ -943,16 +946,20 @@ export default function PlanDetail() {
       await documents.generateFieldSheet(id)
       await documents.fieldSheetDownload(id, `${plan?.plan_number}_field_sheet.pdf`)
     },
+    onSuccess: () => toast.success('Field sheet downloaded'),
+    onError: (e) => toast.error(e.response?.data?.detail || 'Failed to generate field sheet'),
   })
 
   const generateTopSheet = useMutation({
     mutationFn: () => documents.generateTopSheet(id),
+    onSuccess: () => toast.success('Top sheet generated'),
+    onError: (e) => toast.error(e.response?.data?.detail || 'Failed to generate top sheet'),
   })
 
   const duplicateHouseType = useMutation({
     mutationFn: ({ houseTypeId }) => houseTypeApi.duplicate(parseInt(id), houseTypeId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['plan', id] }),
-    onError: (e) => alert(e.response?.data?.detail || 'Could not duplicate house type'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['plan', id] }); toast.success('House type duplicated') },
+    onError: (e) => toast.error(e.response?.data?.detail || 'Could not duplicate house type'),
   })
 
   const linkEquipment = useMutation({
@@ -964,37 +971,43 @@ export default function PlanDetail() {
   const addZone = useMutation({
     mutationFn: (houseTypeId) => systems.add(parseInt(id), houseTypeId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['plan', id] }),
+    onError: (e) => toast.error(e.response?.data?.detail || 'Failed to add zone'),
   })
 
   const deleteZone = useMutation({
     mutationFn: (systemId) => systems.delete(parseInt(id), systemId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['plan', id] }),
+    onError: (e) => toast.error(e.response?.data?.detail || 'Failed to delete zone'),
   })
 
   const updateZoneLabel = useMutation({
     mutationFn: ({ systemId, zone_label }) => systems.update(parseInt(id), systemId, { zone_label }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['plan', id] }),
+    onError: () => toast.error('Failed to save zone label'),
   })
 
   const updateFactor = useMutation({
     mutationFn: (f) => plans.update(id, { factor: f }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['plan', id] }),
+    onError: () => toast.error('Failed to update factor'),
   })
 
   const updateScope = useMutation({
     mutationFn: (data) => plans.update(id, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['plan', id] }),
+    onError: () => toast.error('Failed to save changes'),
   })
 
   const deleteLineItem = useMutation({
     mutationFn: (liId) => lineItems.delete(id, liId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['plan', id] }),
+    onError: (e) => toast.error(e.response?.data?.detail || 'Failed to remove item'),
   })
 
   const deletePlan = useMutation({
     mutationFn: () => plans.delete(parseInt(id)),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['plans'] }); navigate('/plans') },
-    onError: (e) => alert(e.response?.data?.detail || 'Could not delete plan'),
+    onError: (e) => toast.error(e.response?.data?.detail || 'Could not delete plan'),
   })
 
   if (isLoading) return (
@@ -1250,7 +1263,7 @@ export default function PlanDetail() {
               }}
               onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }}
               style={{ width: 52, fontSize: 15, fontWeight: 700, textAlign: 'center',
-                background: 'white', border: '1px solid var(--blue-mid)', borderRadius: 6,
+                background: 'var(--input-bg)', border: '1px solid var(--blue-mid)', borderRadius: 6,
                 padding: '3px 4px', color: 'var(--blue)' }}
             />
             <span style={{ fontSize: 12, color: 'var(--blue)', opacity: 0.8 }}>%</span>

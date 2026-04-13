@@ -170,7 +170,7 @@ export default function KitCalculator({ planId, systemId, zoneName, onAddItems, 
       padding: 20,
     }} onClick={onClose}>
       <div style={{
-        background: 'white', borderRadius: 12, width: '100%', maxWidth: 860,
+        background: 'var(--card-bg)', borderRadius: 12, width: '100%', maxWidth: 860,
         maxHeight: '92vh', display: 'flex', flexDirection: 'column',
         boxShadow: '0 25px 80px rgba(0,0,0,0.25)',
       }} onClick={e => e.stopPropagation()}>

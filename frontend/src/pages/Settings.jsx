@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { authApi, companyApi } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import { useTheme, THEMES } from '../context/ThemeContext'
+import { useToast } from '../context/ToastContext'
 
 const ROLE_LABELS = {
   admin:             'Administrator',
@@ -107,9 +108,9 @@ function ThemePreviewCard({ t, active, onSelect }) {
 
 function BrandingCard() {
   const qc = useQueryClient()
+  const toast = useToast()
   const { data: co, isLoading } = useQuery({ queryKey: ['company'], queryFn: companyApi.get })
   const [form, setForm] = useState(null)
-  const [msg,  setMsg]  = useState('')
 
   // Initialise local form once data loads
   if (co && !form) setForm({
@@ -129,8 +130,7 @@ function BrandingCard() {
     mutationFn: () => companyApi.update(form),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['company'] })
-      setMsg('Saved.')
-      setTimeout(() => setMsg(''), 3000)
+      toast.success('Company settings saved')
     },
   })
 
@@ -227,7 +227,6 @@ function BrandingCard() {
         <button className="btn-primary" onClick={() => save.mutate()} disabled={save.isPending}>
           {save.isPending ? 'Saving...' : 'Save branding'}
         </button>
-        {msg && <span style={{ fontSize: 13, color: 'var(--success)' }}>{msg}</span>}
       </div>
     </div>
   )
@@ -236,15 +235,14 @@ function BrandingCard() {
 export default function Settings() {
   const { user, refreshUser } = useAuth()
   const { theme, applyTheme } = useTheme()
+  const toast = useToast()
   const [profile, setProfile] = useState({
     full_name: user?.full_name || '',
     initials:  user?.initials  || '',
     email:     user?.email     || '',
   })
   const [pw, setPw] = useState({ current_password: '', new_password: '', confirm: '' })
-  const [profileMsg, setProfileMsg] = useState('')
-  const [pwMsg, setPwMsg]           = useState('')
-  const [pwError, setPwError]       = useState('')
+  const [pwError, setPwError] = useState('')
 
   const updateProfile = useMutation({
     mutationFn: () => authApi.updateMe({
@@ -254,8 +252,7 @@ export default function Settings() {
     }),
     onSuccess: () => {
       refreshUser(profile)
-      setProfileMsg('Profile updated.')
-      setTimeout(() => setProfileMsg(''), 3000)
+      toast.success('Profile updated')
     },
   })
 
@@ -266,9 +263,8 @@ export default function Settings() {
     }),
     onSuccess: () => {
       setPw({ current_password: '', new_password: '', confirm: '' })
-      setPwMsg('Password changed.')
       setPwError('')
-      setTimeout(() => setPwMsg(''), 3000)
+      toast.success('Password changed')
     },
     onError: (e) => setPwError(e.response?.data?.detail || 'Failed to change password'),
   })
@@ -351,9 +347,6 @@ export default function Settings() {
             onClick={() => updateProfile.mutate()}>
             {updateProfile.isPending ? 'Saving...' : 'Save profile'}
           </button>
-          {profileMsg && (
-            <span style={{ fontSize: 13, color: 'var(--success)' }}>{profileMsg}</span>
-          )}
         </div>
       </div>
 
@@ -387,7 +380,6 @@ export default function Settings() {
             onClick={submitPassword}>
             {changePassword.isPending ? 'Changing...' : 'Change password'}
           </button>
-          {pwMsg && <span style={{ fontSize: 13, color: 'var(--success)' }}>{pwMsg}</span>}
         </div>
       </div>
     </div>

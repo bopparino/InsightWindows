@@ -3,6 +3,7 @@ import { Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom'
 import { search as searchApi } from './api/client'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider, useTheme, THEMES } from './context/ThemeContext'
+import { ToastProvider } from './context/ToastContext'
 import logo from './assets/logo.png'
 import Dashboard      from './pages/Dashboard'
 import PlansList      from './pages/PlansList'
@@ -894,6 +895,7 @@ export default function App() {
   return (
     <ThemeProvider>
     <AuthProvider>
+    <ToastProvider>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/*" element={
@@ -902,6 +904,7 @@ export default function App() {
           </RequireAuth>
         } />
       </Routes>
+    </ToastProvider>
     </AuthProvider>
     </ThemeProvider>
   )

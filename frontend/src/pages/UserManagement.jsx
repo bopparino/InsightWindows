@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { authApi } from '../api/client'
 import ConfirmModal from '../components/ConfirmModal'
+import { useToast } from '../context/ToastContext'
 
 const ROLES       = ['admin', 'account_executive', 'account_manager']
 const ROLE_LABELS = {
@@ -27,16 +28,16 @@ function RoleBadge({ role }) {
 
 function EditUserModal({ user, onClose, onSave }) {
   const qc = useQueryClient()
+  const toast = useToast()
   const [form, setForm] = useState({
     full_name: user.full_name || '',
     initials:  user.initials  || '',
     email:     user.email     || '',
     role:      user.role      || 'account_manager',
   })
-  const [pwForm, setPwForm]   = useState({ password: '' })
-  const [msg, setMsg]         = useState('')
-  const [error, setError]     = useState('')
-  const [tab, setTab]         = useState('profile')
+  const [pwForm, setPwForm] = useState({ password: '' })
+  const [error, setError]   = useState('')
+  const [tab, setTab]       = useState('profile')
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
@@ -44,9 +45,8 @@ function EditUserModal({ user, onClose, onSave }) {
     mutationFn: () => authApi.updateUser(user.id, form),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['users'] })
-      setMsg('Saved.')
       setError('')
-      setTimeout(() => setMsg(''), 2500)
+      toast.success('User profile updated')
     },
     onError: (e) => setError(e.response?.data?.detail || 'Failed to save'),
   })
@@ -54,9 +54,8 @@ function EditUserModal({ user, onClose, onSave }) {
   const resetPw = useMutation({
     mutationFn: () => authApi.resetPassword(user.id, pwForm.password),
     onSuccess: () => {
-      setMsg('Password reset.')
       setPwForm({ password: '' })
-      setTimeout(() => setMsg(''), 2500)
+      toast.success('Password reset')
     },
     onError: (e) => setError(e.response?.data?.detail || 'Failed'),
   })
@@ -74,7 +73,7 @@ function EditUserModal({ user, onClose, onSave }) {
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
       zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       onClick={onClose}>
-      <div style={{ background: 'white', borderRadius: 12, width: 480,
+      <div style={{ background: 'var(--card-bg)', borderRadius: 12, width: 480,
         boxShadow: '0 20px 60px rgba(0,0,0,0.2)', overflow: 'hidden' }}
         onClick={e => e.stopPropagation()}>
 
@@ -106,9 +105,6 @@ function EditUserModal({ user, onClose, onSave }) {
         </div>
 
         <div style={{ padding: 24 }}>
-          {msg   && <div style={{ background: 'var(--status-contracted-bg)', border: '1px solid var(--status-contracted-border)',
-            color: 'var(--success)', padding: '8px 14px', borderRadius: 8,
-            fontSize: 13, marginBottom: 14 }}>{msg}</div>}
           {error && <div className="error-msg">{error}</div>}
 
           {tab === 'profile' && (
@@ -180,6 +176,7 @@ function EditUserModal({ user, onClose, onSave }) {
 
 export default function UserManagement() {
   const qc = useQueryClient()
+  const toast = useToast()
   const [showForm, setShowForm]   = useState(false)
   const [editingUser, setEditing] = useState(null)
   const [form, setForm]           = useState({
@@ -202,19 +199,20 @@ export default function UserManagement() {
       setForm({ username:'', full_name:'', initials:'', email:'', password:'', role:'account_manager' })
       setShowForm(false)
       setError('')
+      toast.success('User created')
     },
     onError: (e) => setError(e.response?.data?.detail || 'Failed to create user'),
   })
 
   const deactivate = useMutation({
     mutationFn: (id) => authApi.deactivateUser(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
-    onError: (e) => alert(e.response?.data?.detail || 'Could not deactivate'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); toast.success('User deactivated') },
+    onError: (e) => toast.error(e.response?.data?.detail || 'Could not deactivate'),
   })
 
   const reactivate = useMutation({
     mutationFn: (id) => authApi.updateUser(id, { active: true }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); toast.success('User reactivated') },
   })
 
   const active   = users.filter(u => u.active)

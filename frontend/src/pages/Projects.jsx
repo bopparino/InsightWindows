@@ -6,6 +6,7 @@ import SearchSelect from '../components/SearchSelect'
 import Pagination from '../components/Pagination'
 import PageAlert from '../components/PageAlert'
 import ConfirmModal from '../components/ConfirmModal'
+import { useToast } from '../context/ToastContext'
 
 const PAGE_SIZE = 50
 
@@ -51,6 +52,7 @@ function ProjectForm({ initial = { code: '', name: '', builder_id: '' }, onSave,
 
 export default function Projects() {
   const qc = useQueryClient()
+  const toast = useToast()
   const [searchParams] = useSearchParams()
   const [search, setSearch] = useState(() => searchParams.get('q') || '')
   const [showNew, setShowNew] = useState(false)
@@ -92,6 +94,7 @@ export default function Projects() {
       qc.invalidateQueries({ queryKey: ['projects'] })
       setShowNew(false)
       setError('')
+      toast.success('Project created')
     },
     onError: (e) => setError(e.response?.data?.detail || 'Failed to create project'),
   })
@@ -101,13 +104,14 @@ export default function Projects() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['projects'] })
       setEditingId(null)
+      toast.success('Project updated')
     },
     onError: (e) => setPageAlert({ msg: e.response?.data?.detail || 'Failed to update project', type: 'error' }),
   })
 
   const deleteProject = useMutation({
     mutationFn: (id) => projects.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['projects'] }) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['projects'] }); toast.success('Project deleted') },
     onError: (e) => setPageAlert({ msg: e.response?.data?.detail || 'Could not delete project', type: 'error' }),
   })
 
@@ -117,6 +121,8 @@ export default function Projects() {
       qc.invalidateQueries({ queryKey: ['projects'] }); setSelected(new Set())
       if (res.skipped_with_plans?.length)
         setPageAlert({ msg: `Skipped (have plans): ${res.skipped_with_plans.join(', ')}`, type: 'info' })
+      else
+        toast.success('Projects deleted')
     },
     onError: (e) => setPageAlert({ msg: e.response?.data?.detail || 'Bulk delete failed', type: 'error' }),
   })

@@ -13,6 +13,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { kit } from '../api/client'
 import ConfirmModal from '../components/ConfirmModal'
+import { useToast } from '../context/ToastContext'
 
 function fmt(n) { return n > 0 ? `$${Number(n).toFixed(2)}` : '—' }
 function fmtCost(n) { return n > 0 ? `$${Number(n).toFixed(4)}` : '$0.0000' }
@@ -381,6 +382,7 @@ function CategorySection({ cat, editingId, savingId, addingCat, deletingId, onEd
 // ── Main page ─────────────────────────────────────────────────
 export default function KitAdmin() {
   const queryClient = useQueryClient()
+  const toast = useToast()
   const [editingId,  setEditingId]  = useState(null)
   const [savingId,   setSavingId]   = useState(null)
   const [addingCat,  setAddingCat]  = useState(null)
@@ -394,17 +396,17 @@ export default function KitAdmin() {
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }) => kit.updateVariant(id, data),
-    onSuccess:  () => { queryClient.invalidateQueries({ queryKey: ['kit-variants'] }); setEditingId(null); setSavingId(null) },
+    onSuccess:  () => { queryClient.invalidateQueries({ queryKey: ['kit-variants'] }); setEditingId(null); setSavingId(null); toast.success('Kit variant saved') },
     onError:    () => setSavingId(null),
   })
   const createMut = useMutation({
     mutationFn: (data) => kit.createVariant(data),
-    onSuccess:  () => { queryClient.invalidateQueries({ queryKey: ['kit-variants'] }); setAddingCat(null) },
+    onSuccess:  () => { queryClient.invalidateQueries({ queryKey: ['kit-variants'] }); setAddingCat(null); toast.success('Kit variant added') },
     onError:    () => setAddingCat(null),
   })
   const deleteMut = useMutation({
     mutationFn: (id) => kit.removeVariant(id),
-    onSuccess:  () => { queryClient.invalidateQueries({ queryKey: ['kit-variants'] }); setDeletingId(null) },
+    onSuccess:  () => { queryClient.invalidateQueries({ queryKey: ['kit-variants'] }); setDeletingId(null); toast.success('Kit variant removed') },
     onError:    () => setDeletingId(null),
   })
 

@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import Pagination from '../components/Pagination'
 import PageAlert from '../components/PageAlert'
 import ConfirmModal from '../components/ConfirmModal'
+import { useToast } from '../context/ToastContext'
 
 const PAGE_SIZE = 50
 
@@ -15,6 +16,7 @@ export default function PlansList() {
   const { user } = useAuth()
   const isAdmin    = user?.role === 'admin'
   const qc = useQueryClient()
+  const toast = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
   const [statusFilter, setStatusFilter] = useState(
     searchParams.get('status') || 'all'
@@ -47,7 +49,10 @@ export default function PlansList() {
       qc.invalidateQueries({ queryKey: ['plans'] })
       setSelected(new Set())
       setPage(1)
-      if (res.errors?.length) setPageAlert({ msg: `Some plans skipped: ${res.errors.join(', ')}`, type: 'info' })
+      if (res.errors?.length)
+        setPageAlert({ msg: `Some plans skipped: ${res.errors.join(', ')}`, type: 'info' })
+      else
+        toast.success('Status updated')
     },
   })
   const bulkDelete = useMutation({
@@ -58,6 +63,8 @@ export default function PlansList() {
       setPage(1)
       if (res.skipped_contracted?.length)
         setPageAlert({ msg: `Skipped contracted plans: ${res.skipped_contracted.join(', ')}`, type: 'info' })
+      else
+        toast.success('Plans deleted')
     },
   })
 
@@ -189,7 +196,7 @@ export default function PlansList() {
             <button key={s} onClick={() => bulkStatus.mutate(s)}
               disabled={bulkStatus.isPending}
               style={{ fontSize: 12, padding: '3px 10px', borderRadius: 6,
-                background: 'white', border: '1px solid var(--blue-mid)',
+                background: 'var(--card-bg)', border: '1px solid var(--blue-mid)',
                 color: 'var(--blue)', cursor: 'pointer' }}>
               {s}
             </button>

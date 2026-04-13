@@ -95,7 +95,7 @@ export default function SearchSelect({
       {open && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
-          background: 'white', border: '1px solid var(--gray-200)',
+          background: 'var(--card-bg)', border: '1px solid var(--gray-200)',
           borderRadius: 8, boxShadow: '0 6px 20px rgba(0,0,0,0.12)',
           zIndex: 100, maxHeight: 240, overflowY: 'auto',
         }}>
@@ -113,7 +113,7 @@ export default function SearchSelect({
                   onMouseDown={() => select(opt)}
                   style={{
                     padding: '9px 14px', fontSize: 13, cursor: 'pointer',
-                    background: isSelected ? 'var(--blue-light)' : 'white',
+                    background: isSelected ? 'var(--blue-light)' : 'var(--card-bg)',
                     borderBottom: '1px solid var(--gray-100)',
                     display: 'flex', justifyContent: 'space-between',
                     alignItems: 'center',
@@ -123,7 +123,7 @@ export default function SearchSelect({
                   }}
                   onMouseLeave={e => {
                     e.currentTarget.style.background = isSelected
-                      ? 'var(--blue-light)' : 'white'
+                      ? 'var(--blue-light)' : 'var(--card-bg)'
                   }}
                 >
                   <span style={{

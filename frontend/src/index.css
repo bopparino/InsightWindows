@@ -604,4 +604,231 @@ aside nav a:hover {
 .theme-indigo ::-webkit-scrollbar-thumb { background: #a5b4fc; border-radius: 3px; }
 .theme-indigo ::-webkit-scrollbar-thumb:hover { background: #818cf8; }
 
+/* ── Nordic Frost ─────────────────────────────────────────────── */
+.theme-nordic {
+  --body-bg:   #0f172a;
+  --card-bg:   #1e293b;
+  --input-bg:  #1e293b;
+  --sidebar-bg:#020617;
+
+  --gray-50:   #1e293b;
+  --gray-100:  #334155;
+  --gray-200:  #475569;
+  --gray-300:  #64748b;
+  --gray-400:  #94a3b8;
+  --gray-600:  #cbd5e1;
+  --gray-800:  #f1f5f9;
+
+  --blue:      #38bdf8;
+  --blue-mid:  #7dd3fc;
+  --blue-light:rgba(56,189,248,0.12);
+  --accent:    #38bdf8;
+  --success:   #2dd4bf;
+  --danger:    #f43f5e;
+
+  --shadow:    0 1px 4px rgba(0,0,0,0.6), 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.7);
+
+  --status-draft-bg:          rgba(51,65,85,0.8);
+  --status-draft-border:      rgba(100,116,139,0.5);
+  --status-draft-text:        #94a3b8;
+  --status-draft-accent:      #64748b;
+
+  --status-proposed-bg:       rgba(251,191,36,0.1);
+  --status-proposed-border:   rgba(251,191,36,0.35);
+  --status-proposed-text:     #fbbf24;
+  --status-proposed-accent:   #f59e0b;
+
+  --status-contracted-bg:     rgba(45,212,191,0.1);
+  --status-contracted-border: rgba(45,212,191,0.35);
+  --status-contracted-text:   #2dd4bf;
+  --status-contracted-accent: #14b8a6;
+
+  --status-complete-bg:       rgba(56,189,248,0.12);
+  --status-complete-border:   rgba(56,189,248,0.35);
+  --status-complete-text:     #7dd3fc;
+  --status-complete-accent:   #38bdf8;
+
+  --status-lost-bg:           rgba(244,63,94,0.1);
+  --status-lost-border:       rgba(244,63,94,0.35);
+  --status-lost-text:         #f43f5e;
+  --status-lost-accent:       #e11d48;
+}
+
+.theme-nordic body { color: #f1f5f9; }
+.theme-nordic .card {
+  border-color: rgba(255,255,255,0.08);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+  backdrop-filter: blur(2px);
+}
+.theme-nordic input, .theme-nordic select, .theme-nordic textarea {
+  border-color: rgba(255,255,255,0.1); color: #f1f5f9; background: rgba(30,41,59,0.8);
+}
+.theme-nordic input::placeholder, .theme-nordic textarea::placeholder { color: #64748b; }
+.theme-nordic input:focus, .theme-nordic select:focus, .theme-nordic textarea:focus {
+  border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56,189,248,0.15);
+}
+.theme-nordic select { color-scheme: dark; }
+.theme-nordic select option { background: #1e293b; color: #f1f5f9; }
+.theme-nordic label { color: #94a3b8; }
+.theme-nordic .btn-primary { background: #38bdf8; color: #0f172a; font-weight: 700; }
+.theme-nordic .btn-primary:hover { background: #7dd3fc; }
+.theme-nordic .btn-secondary { border-color: rgba(255,255,255,0.12); color: #f1f5f9; background: rgba(51,65,85,0.6); }
+.theme-nordic .table th { background: #1e293b; border-color: rgba(255,255,255,0.08); color: #64748b; }
+.theme-nordic .table td { border-color: rgba(255,255,255,0.06); color: #f1f5f9; }
+.theme-nordic .table tbody tr:hover { background: rgba(56,189,248,0.06); }
+.theme-nordic .spinner { border-color: #334155; border-top-color: #38bdf8; }
+.theme-nordic a { color: #38bdf8; }
+.theme-nordic ::-webkit-scrollbar { width: 6px; height: 6px; }
+.theme-nordic ::-webkit-scrollbar-track { background: #0f172a; }
+.theme-nordic ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+.theme-nordic ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+/* ── Slate & Sulfur ───────────────────────────────────────────── */
+.theme-fintech {
+  --body-bg:   #f4f4f5;
+  --card-bg:   #ffffff;
+  --input-bg:  #ffffff;
+  --sidebar-bg:#18181b;
+
+  --gray-50:   #f4f4f5;
+  --gray-100:  #e4e4e7;
+  --gray-200:  #d4d4d8;
+  --gray-300:  #a1a1aa;
+  --gray-400:  #71717a;
+  --gray-600:  #3f3f46;
+  --gray-800:  #18181b;
+
+  --blue:      #18181b;
+  --blue-mid:  #3f3f46;
+  --blue-light:rgba(24,24,27,0.06);
+  --accent:    #18181b;
+  --success:   #10b981;
+  --danger:    #ef4444;
+
+  --shadow:    0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+
+  --status-draft-bg:          #f4f4f5;
+  --status-draft-border:      #e4e4e7;
+  --status-draft-text:        #71717a;
+  --status-draft-accent:      #a1a1aa;
+
+  --status-proposed-bg:       rgba(250,204,21,0.15);
+  --status-proposed-border:   rgba(250,204,21,0.5);
+  --status-proposed-text:     #92400e;
+  --status-proposed-accent:   #d97706;
+
+  --status-contracted-bg:     rgba(16,185,129,0.1);
+  --status-contracted-border: rgba(16,185,129,0.35);
+  --status-contracted-text:   #065f46;
+  --status-contracted-accent: #10b981;
+
+  --status-complete-bg:       rgba(24,24,27,0.06);
+  --status-complete-border:   rgba(24,24,27,0.2);
+  --status-complete-text:     #18181b;
+  --status-complete-accent:   #3f3f46;
+
+  --status-lost-bg:           rgba(239,68,68,0.08);
+  --status-lost-border:       rgba(239,68,68,0.3);
+  --status-lost-text:         #dc2626;
+  --status-lost-accent:       #ef4444;
+}
+
+.theme-fintech body { color: #18181b; }
+.theme-fintech .card { border-color: #e4e4e7; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+.theme-fintech input, .theme-fintech select, .theme-fintech textarea {
+  border-color: #e4e4e7; color: #18181b; background: #ffffff;
+}
+.theme-fintech input::placeholder, .theme-fintech textarea::placeholder { color: #a1a1aa; }
+.theme-fintech input:focus, .theme-fintech select:focus, .theme-fintech textarea:focus {
+  border-color: #18181b; box-shadow: 0 0 0 2px rgba(24,24,27,0.1);
+}
+.theme-fintech label { color: #3f3f46; }
+.theme-fintech .btn-primary { background: #18181b; color: #ffffff; font-weight: 700; }
+.theme-fintech .btn-primary:hover { background: #3f3f46; }
+.theme-fintech .btn-secondary { border-color: #e4e4e7; color: #18181b; background: #f4f4f5; }
+.theme-fintech .table th { background: #f4f4f5; border-color: #e4e4e7; color: #71717a; letter-spacing: 0.05em; }
+.theme-fintech .table td { border-color: #f4f4f5; color: #18181b; }
+.theme-fintech .table tbody tr:hover { background: #f4f4f5; }
+.theme-fintech .spinner { border-color: #e4e4e7; border-top-color: #18181b; }
+.theme-fintech a { color: #18181b; text-decoration: underline; }
+.theme-fintech ::-webkit-scrollbar { width: 6px; height: 6px; }
+.theme-fintech ::-webkit-scrollbar-track { background: #f4f4f5; }
+.theme-fintech ::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 3px; }
+.theme-fintech ::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
+
+/* ── Clay & Rose ──────────────────────────────────────────────── */
+.theme-clay {
+  --body-bg:   #fafaf9;
+  --card-bg:   #ffffff;
+  --input-bg:  #ffffff;
+  --sidebar-bg:#1c1917;
+
+  --gray-50:   #fafaf9;
+  --gray-100:  #f5f5f4;
+  --gray-200:  #e7e5e4;
+  --gray-300:  #d6d3d1;
+  --gray-400:  #a8a29e;
+  --gray-600:  #57534e;
+  --gray-800:  #1c1917;
+
+  --blue:      #e11d48;
+  --blue-mid:  #f43f5e;
+  --blue-light:rgba(225,29,72,0.07);
+  --accent:    #e11d48;
+  --success:   #166534;
+  --danger:    #e11d48;
+
+  --shadow:    0 1px 3px rgba(28,25,23,0.08), 0 1px 2px rgba(28,25,23,0.04);
+  --shadow-md: 0 4px 16px rgba(28,25,23,0.1);
+
+  --status-draft-bg:          #f5f5f4;
+  --status-draft-border:      #e7e5e4;
+  --status-draft-text:        #78716c;
+  --status-draft-accent:      #a8a29e;
+
+  --status-proposed-bg:       rgba(217,119,6,0.1);
+  --status-proposed-border:   rgba(217,119,6,0.35);
+  --status-proposed-text:     #92400e;
+  --status-proposed-accent:   #d97706;
+
+  --status-contracted-bg:     rgba(22,101,52,0.08);
+  --status-contracted-border: rgba(22,101,52,0.3);
+  --status-contracted-text:   #14532d;
+  --status-contracted-accent: #166534;
+
+  --status-complete-bg:       rgba(225,29,72,0.07);
+  --status-complete-border:   rgba(225,29,72,0.25);
+  --status-complete-text:     #9f1239;
+  --status-complete-accent:   #e11d48;
+
+  --status-lost-bg:           rgba(127,29,29,0.08);
+  --status-lost-border:       rgba(127,29,29,0.25);
+  --status-lost-text:         #7f1d1d;
+  --status-lost-accent:       #991b1b;
+}
+
+.theme-clay body { color: #1c1917; }
+.theme-clay .card { border-color: #e7e5e4; box-shadow: 0 1px 3px rgba(28,25,23,0.06); }
+.theme-clay input, .theme-clay select, .theme-clay textarea {
+  border-color: #e7e5e4; color: #1c1917; background: #ffffff;
+}
+.theme-clay input::placeholder, .theme-clay textarea::placeholder { color: #a8a29e; }
+.theme-clay input:focus, .theme-clay select:focus, .theme-clay textarea:focus {
+  border-color: #e11d48; box-shadow: 0 0 0 3px rgba(225,29,72,0.1);
+}
+.theme-clay label { color: #57534e; }
+.theme-clay .btn-primary { background: #e11d48; color: #ffffff; font-weight: 600; }
+.theme-clay .btn-primary:hover { background: #be123c; }
+.theme-clay .btn-secondary { border-color: #e7e5e4; color: #1c1917; background: #fafaf9; }
+.theme-clay .table th { background: #fafaf9; border-color: #e7e5e4; color: #78716c; }
+.theme-clay .table td { border-color: #f5f5f4; color: #1c1917; }
+.theme-clay .table tbody tr:hover { background: #fafaf9; }
+.theme-clay .spinner { border-color: #e7e5e4; border-top-color: #e11d48; }
+.theme-clay a { color: #e11d48; }
+.theme-clay ::-webkit-scrollbar { width: 6px; height: 6px; }
+.theme-clay ::-webkit-scrollbar-track { background: #fafaf9; }
+.theme-clay ::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 3px; }
+.theme-clay ::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
 

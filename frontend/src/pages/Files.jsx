@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { filesApi } from '../api/client'
+import { useToast } from '../context/ToastContext'
 
 /** Build the path relative to STORAGE_PATH from the breadcrumb + filename.
  *  The top-level 'Quotes' node is synthetic, so we strip it. */
@@ -126,6 +127,7 @@ function getFolder(tree, path) {
 
 export default function Files() {
   const { user } = useAuth()
+  const toast = useToast()
   const [path, setPath]     = useState([])
   const [view, setView]     = useState('grid') // grid | list
   const [search, setSearch] = useState('')
@@ -339,7 +341,7 @@ export default function Files() {
                 onClick={async () => {
                   setFileLoading('preview')
                   try { await openPreview(path, selected.name) }
-                  catch { alert('Could not load preview.') }
+                  catch { toast.error('Could not load preview.') }
                   finally { setFileLoading(null) }
                 }}>
                 {fileLoading === 'preview' ? 'Loading…' : 'Preview'}
@@ -351,7 +353,7 @@ export default function Files() {
               onClick={async () => {
                 setFileLoading('download')
                 try { await filesApi.download(relPath(path, selected.name), selected.name) }
-                catch { alert('Could not download file.') }
+                catch { toast.error('Could not download file.') }
                 finally { setFileLoading(null) }
               }}>
               {fileLoading === 'download' ? 'Downloading…' : 'Download'}

@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { plans, projects, builders } from '../api/client'
 import SearchSelect from '../components/SearchSelect'
+import { useToast } from '../context/ToastContext'
 
 export default function NewPlan() {
   const navigate = useNavigate()
   const qc = useQueryClient()
+  const toast = useToast()
 
   const [form, setForm] = useState({
     project_id: '', house_type: '', number_of_zones: 1, factor: '0.69', notes: '',
@@ -80,6 +82,7 @@ export default function NewPlan() {
         cell_phone: '', email: '', address: '', city: '', state: '', zip_code: '',
       })
       setError('')
+      toast.success('Builder created')
     },
     onError: (e) => setError(e.response?.data?.detail || 'Failed to create builder'),
   })
@@ -91,6 +94,7 @@ export default function NewPlan() {
       setForm(f => ({ ...f, project_id: data.id }))
       setNewProject({ show: false, code: '', name: '', builder_id: '' })
       setError('')
+      toast.success('Project created — auto-selected')
     },
     onError: (e) => setError(e.response?.data?.detail || 'Failed to create project'),
   })

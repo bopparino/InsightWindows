@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { equipment } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import ConfirmModal from '../components/ConfirmModal'
+import { useToast } from '../context/ToastContext'
 
 // ── Category detection ────────────────────────────────────────
 function detectCategory(code, description) {
@@ -411,6 +412,7 @@ export default function Equipment() {
 
   const { user } = useAuth()
   const queryClient = useQueryClient()
+  const toast = useToast()
   const isAdmin = user?.role === 'admin'
 
   const { data: allSystems = [], isLoading } = useQuery({
@@ -428,9 +430,10 @@ export default function Equipment() {
 
   const bulkRetire = useMutation({
     mutationFn: (ids) => equipment.bulkRetire(ids),
-    onSuccess: () => {
+    onSuccess: (_, ids) => {
       setSelected(new Set())
       queryClient.invalidateQueries({ queryKey: ['equipment-systems-all'] })
+      toast.success(`${ids.length} system${ids.length !== 1 ? 's' : ''} retired`)
     },
   })
 
