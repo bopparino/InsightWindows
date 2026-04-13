@@ -309,8 +309,7 @@ for i in range(100):
                 system_id=sys.id, sort_order="05",
                 description=f"{eq.system_code} — {eq.description[:60]}",
                 quantity=1, unit_price=float(eq.bid_price),
-                part_number=eq.system_code, pricing_flag="standard",
-            ))
+                part_number=eq.system_code,             ))
             total_bid += float(eq.bid_price)
 
         # Standard consumable items
@@ -334,8 +333,7 @@ for i in range(100):
             db.add(LineItem(
                 system_id=sys.id, sort_order=sort,
                 description=desc, quantity=qty,
-                unit_price=price, pricing_flag="standard",
-            ))
+                unit_price=price,             ))
             total_bid += qty * price
 
     # Draws (50/25/25 split)
