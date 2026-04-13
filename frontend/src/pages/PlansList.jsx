@@ -5,6 +5,7 @@ import { plans } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import Pagination from '../components/Pagination'
 import PageAlert from '../components/PageAlert'
+import ConfirmModal from '../components/ConfirmModal'
 
 const PAGE_SIZE = 50
 
@@ -24,6 +25,8 @@ export default function PlansList() {
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState(new Set())
   const [pageAlert, setPageAlert] = useState(null)
+  const [confirm, setConfirm] = useState(null)
+  const [exporting, setExporting] = useState(false)
 
   useEffect(() => { setPage(1) }, [search, builderFilter, estimatorFilter, statusFilter])
 
@@ -111,9 +114,15 @@ export default function PlansList() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn-secondary"
-            onClick={() => plans.exportCsv(statusFilter === 'all' ? null : statusFilter)}
-            style={{ fontSize: 13 }}>
-            ⬇ Export CSV
+            disabled={exporting}
+            onClick={async () => {
+              setExporting(true)
+              try { await plans.exportCsv(statusFilter === 'all' ? null : statusFilter) }
+              finally { setExporting(false) }
+            }}
+            style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+            {exporting ? <span className="spinner" style={{ width: 14, height: 14, borderWidth: 1.5 }} /> : '⬇'}
+            {exporting ? 'Exporting…' : 'Export CSV'}
           </button>
           <Link to="/plans/new">
             <button className="btn-primary">+ New Plan</button>
@@ -188,7 +197,7 @@ export default function PlansList() {
           {isAdmin && (
             <>
               <span style={{ color: 'var(--blue-mid)', marginLeft: 4 }}>·</span>
-              <button onClick={() => { if (window.confirm(`Delete ${selected.size} plan(s)? Contracted plans will be skipped.`)) bulkDelete.mutate() }}
+              <button onClick={() => setConfirm({ title: `Delete ${selected.size} plan(s)?`, message: 'Contracted plans will be skipped. This cannot be undone.', confirmLabel: 'Delete', onConfirm: () => bulkDelete.mutate() })}
                 disabled={bulkDelete.isPending}
                 style={{ fontSize: 12, padding: '3px 10px', borderRadius: 6,
                   background: 'var(--card-bg)', border: '1px solid var(--status-lost-border)',
@@ -284,6 +293,7 @@ export default function PlansList() {
       </div>
       <Pagination page={page} totalPages={totalPages} total={filtered.length}
         pageSize={PAGE_SIZE} onChange={setPage} />
+      {confirm && <ConfirmModal {...confirm} onCancel={() => setConfirm(null)} />}
     </div>
   )
 }

@@ -351,7 +351,32 @@ export default function Dashboard() {
         </div>
       )}
 
+      {isLoading && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '8px 20px', background: 'var(--gray-200)', height: 34 }} />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
+              {[...Array(4)].map((_, i) => (
+                <div key={i} style={{ padding: '20px 24px', borderRight: i < 3 ? '1px solid var(--gray-100)' : 'none' }}>
+                  <div style={{ height: 10, width: 80, background: 'var(--gray-100)', borderRadius: 4, marginBottom: 12 }} />
+                  <div style={{ height: 24, width: 100, background: 'var(--gray-100)', borderRadius: 4 }} />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20 }}>
+            <div className="card" style={{ height: 240, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span className="spinner" />
+            </div>
+            <div className="card" style={{ height: 240, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span className="spinner" />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Metric tiles ─────────────────────────────────── */}
+      <div style={{ display: isLoading ? 'none' : undefined }}>
       <div className="card" style={{ padding: 0, marginBottom: 24, overflow: 'hidden' }}>
         <div style={{
           padding: '8px 20px', background: 'var(--blue)',
@@ -703,6 +728,7 @@ export default function Dashboard() {
           </table>
         )}
       </div>
+    </div>
     </div>
   )
 }

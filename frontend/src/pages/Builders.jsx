@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { builders } from '../api/client'
 import Pagination from '../components/Pagination'
 import PageAlert from '../components/PageAlert'
+import ConfirmModal from '../components/ConfirmModal'
 import { useAuth } from '../context/AuthContext'
 
 const PAGE_SIZE = 50
@@ -118,6 +119,7 @@ export default function Builders() {
   const [pageAlert, setPageAlert] = useState(null) // {msg, type}
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState(new Set())
+  const [confirm, setConfirm] = useState(null)
 
   useEffect(() => { setPage(1) }, [search])
 
@@ -217,7 +219,7 @@ export default function Builders() {
           <span style={{ fontSize: 13, color: 'var(--blue)', fontWeight: 600 }}>
             {selected.size} selected
           </span>
-          <button onClick={() => { if (window.confirm(`Delete ${selected.size} builder(s)? Those with projects will be skipped.`)) bulkDelete.mutate() }}
+          <button onClick={() => setConfirm({ title: `Delete ${selected.size} builder(s)?`, message: 'Builders with existing projects will be skipped. This cannot be undone.', confirmLabel: 'Delete', onConfirm: () => bulkDelete.mutate() })}
             disabled={bulkDelete.isPending}
             style={{ fontSize: 12, padding: '3px 10px', borderRadius: 6,
               background: 'var(--card-bg)', border: '1px solid var(--status-lost-border)',
@@ -290,11 +292,7 @@ export default function Builders() {
                         {editingId === b.id ? 'Cancel' : 'Edit'}
                       </button>
                       <button className="btn-danger btn-sm"
-                        onClick={() => {
-                          if (window.confirm(
-                            `Delete builder "${b.name}" (${b.code})?\n\nThis will fail if any projects reference this builder.`
-                          )) deleteBuilder.mutate(b.id)
-                        }}>
+                        onClick={() => setConfirm({ title: `Delete "${b.name}"?`, message: `Builder code: ${b.code}\n\nCannot be deleted if projects reference this builder.`, confirmLabel: 'Delete', onConfirm: () => deleteBuilder.mutate(b.id) })}>
                         Delete
                       </button>
                     </td>
@@ -330,6 +328,7 @@ export default function Builders() {
 
       <Pagination page={page} totalPages={totalPages} total={filtered.length}
         pageSize={PAGE_SIZE} onChange={setPage} />
+      {confirm && <ConfirmModal {...confirm} onCancel={() => setConfirm(null)} />}
     </div>
   )
 }

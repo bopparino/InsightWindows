@@ -12,6 +12,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { kit } from '../api/client'
+import ConfirmModal from '../components/ConfirmModal'
 
 function fmt(n) { return n > 0 ? `$${Number(n).toFixed(2)}` : '—' }
 function fmtCost(n) { return n > 0 ? `$${Number(n).toFixed(4)}` : '$0.0000' }
@@ -30,6 +31,7 @@ function ComponentEditor({ variant }) {
   const [newRow, setNewRow] = useState(EMPTY)
   const [editId, setEditId] = useState(null)
   const [editRow, setEditRow] = useState({})
+  const [confirm, setConfirm] = useState(null)
 
   const addMut = useMutation({
     mutationFn: (data) => kit.addComponent(variant.id, data),
@@ -119,7 +121,7 @@ function ComponentEditor({ variant }) {
                   <td style={{ ...tdStyle, textAlign: 'right', color: 'var(--gray-500)' }}>{fmtCost(c.extended_cost)}</td>
                   <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
                     <button className="btn-secondary btn-sm" onClick={() => startEdit(c)} style={{ marginRight: 4 }}>Edit</button>
-                    <button className="btn-danger btn-sm" onClick={() => { if (window.confirm(`Remove "${c.description}" from template?`)) removeMut.mutate(c.id) }} disabled={removeMut.isPending}>✕</button>
+                    <button className="btn-danger btn-sm" onClick={() => setConfirm({ title: 'Remove component?', message: `"${c.description}" will be removed from this kit template.`, confirmLabel: 'Remove', onConfirm: () => removeMut.mutate(c.id) })} disabled={removeMut.isPending}>✕</button>
                   </td>
                 </tr>
               )
@@ -152,6 +154,7 @@ function ComponentEditor({ variant }) {
           </strong>
         </div>
       )}
+      {confirm && <ConfirmModal {...confirm} onCancel={() => setConfirm(null)} />}
     </div>
   )
 }
@@ -382,6 +385,7 @@ export default function KitAdmin() {
   const [savingId,   setSavingId]   = useState(null)
   const [addingCat,  setAddingCat]  = useState(null)
   const [deletingId, setDeletingId] = useState(null)
+  const [confirm,    setConfirm]    = useState(null)
 
   const { data: categories = [], isLoading, isError } = useQuery({
     queryKey: ['kit-variants'],
@@ -412,9 +416,12 @@ export default function KitAdmin() {
   }
   function handleAdd(catCode, data) { setAddingCat(catCode); createMut.mutate(data) }
   function handleDelete(v) {
-    if (!window.confirm(`Remove "${v.variant_name}"?\n\nHides it from the kit picker but keeps existing bid line items.`)) return
-    setDeletingId(v.id)
-    deleteMut.mutate(v.id)
+    setConfirm({
+      title: `Remove "${v.variant_name}"?`,
+      message: 'Hides it from the kit picker. Existing bid line items are unaffected.',
+      confirmLabel: 'Remove',
+      onConfirm: () => { setDeletingId(v.id); deleteMut.mutate(v.id) },
+    })
   }
 
   const totalVariants = categories.reduce((s, c) => s + c.variants.length, 0)
@@ -442,6 +449,7 @@ export default function KitAdmin() {
           onDelete={handleDelete}
         />
       ))}
+      {confirm && <ConfirmModal {...confirm} onCancel={() => setConfirm(null)} />}
     </div>
   )
 }

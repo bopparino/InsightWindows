@@ -5,6 +5,7 @@ import { projects, builders } from '../api/client'
 import SearchSelect from '../components/SearchSelect'
 import Pagination from '../components/Pagination'
 import PageAlert from '../components/PageAlert'
+import ConfirmModal from '../components/ConfirmModal'
 
 const PAGE_SIZE = 50
 
@@ -58,6 +59,7 @@ export default function Projects() {
   const [pageAlert, setPageAlert] = useState(null)
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState(new Set())
+  const [confirm, setConfirm] = useState(null)
 
   useEffect(() => { setPage(1) }, [search])
 
@@ -171,7 +173,7 @@ export default function Projects() {
           <span style={{ fontSize: 13, color: 'var(--blue)', fontWeight: 600 }}>
             {selected.size} selected
           </span>
-          <button onClick={() => { if (window.confirm(`Delete ${selected.size} project(s)? Those with plans will be skipped.`)) bulkDelete.mutate() }}
+          <button onClick={() => setConfirm({ title: `Delete ${selected.size} project(s)?`, message: 'Projects with existing plans will be skipped. This cannot be undone.', confirmLabel: 'Delete', onConfirm: () => bulkDelete.mutate() })}
             disabled={bulkDelete.isPending}
             style={{ fontSize: 12, padding: '3px 10px', borderRadius: 6,
               background: 'var(--card-bg)', border: '1px solid var(--status-lost-border)',
@@ -235,11 +237,7 @@ export default function Projects() {
                         {editingId === p.id ? 'Cancel' : 'Edit'}
                       </button>
                       <button className="btn-danger btn-sm"
-                        onClick={() => {
-                          if (window.confirm(
-                            `Delete project "${p.name}" (${p.code})?\n\nThis will fail if any plans reference it.`
-                          )) deleteProject.mutate(p.id)
-                        }}>
+                        onClick={() => setConfirm({ title: `Delete "${p.name}"?`, message: `Project code: ${p.code}\n\nCannot be deleted if plans reference this project.`, confirmLabel: 'Delete', onConfirm: () => deleteProject.mutate(p.id) })}>
                         Delete
                       </button>
                     </td>
@@ -277,6 +275,7 @@ export default function Projects() {
 
       <Pagination page={page} totalPages={totalPages} total={filtered.length}
         pageSize={PAGE_SIZE} onChange={setPage} />
+      {confirm && <ConfirmModal {...confirm} onCancel={() => setConfirm(null)} />}
     </div>
   )
 }

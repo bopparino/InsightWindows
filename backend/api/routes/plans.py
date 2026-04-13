@@ -495,7 +495,10 @@ def bulk_update_status(data: BulkStatusUpdate, db: Session = Depends(get_db),
         "complete":   set(),
         "lost":       {"draft"},
     }
-    plans_list = db.query(Plan).filter(Plan.id.in_(data.ids)).all()
+    q = db.query(Plan).filter(Plan.id.in_(data.ids))
+    if current_user.role == "account_manager":
+        q = q.filter(Plan.estimator_initials == current_user.initials)
+    plans_list = q.all()
     errors, updated = [], 0
     for plan in plans_list:
         if data.status not in VALID_TRANSITIONS.get(plan.status, set()):
@@ -552,6 +555,8 @@ def get_plan(plan_id: int, db: Session = Depends(get_db),
 
     if not plan:
         raise HTTPException(404, "Plan not found")
+    if current_user.role == "account_manager" and plan.estimator_initials != current_user.initials:
+        raise HTTPException(403, "Access denied")
 
     return {
         "id": plan.id,
@@ -652,6 +657,8 @@ def update_plan(plan_id: int, data: PlanUpdate, db: Session = Depends(get_db),
     plan = db.query(Plan).filter_by(id=plan_id).first()
     if not plan:
         raise HTTPException(404, "Plan not found")
+    if current_user.role == "account_manager" and plan.estimator_initials != current_user.initials:
+        raise HTTPException(403, "Access denied")
 
     VALID_TRANSITIONS = {
         "draft":      {"proposed", "lost"},

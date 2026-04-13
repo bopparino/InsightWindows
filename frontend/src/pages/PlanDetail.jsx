@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { plans, documents, lineItems, houseTypes, equipment, houseTypeApi, systems, draws as drawsApi, search, kit } from '../api/client'
 import InlineKitSelector from '../components/InlineKitSelector'
+import ConfirmModal from '../components/ConfirmModal'
 
 // ── Email Quote modal ─────────────────────────────────────────
 function EmailQuoteModal({ plan, currentUser, onClose, onSent }) {
@@ -294,6 +295,7 @@ function LineItemRow({ planId, li, onDelete }) {
   const qc = useQueryClient()
   const [editing, setEditing] = useState(false)
   const [showComponents, setShowComponents] = useState(false)
+  const [confirm, setConfirm] = useState(null)
   const [form, setForm] = useState({
     description: li.description,
     quantity:    li.quantity,
@@ -422,7 +424,7 @@ function LineItemRow({ planId, li, onDelete }) {
           </button>
         )}
         <button
-          onClick={e => { e.stopPropagation(); if (window.confirm('Remove this item?')) onDelete(li.id) }}
+          onClick={e => { e.stopPropagation(); setConfirm({ title: 'Remove item?', message: li.description, confirmLabel: 'Remove', onConfirm: () => onDelete(li.id) }) }}
           style={{ background: 'none', border: 'none', color: 'var(--gray-300)',
             fontSize: 20, cursor: 'pointer', padding: '0 2px', flexShrink: 0, lineHeight: 1 }}>
           ×
@@ -441,6 +443,7 @@ function LineItemRow({ planId, li, onDelete }) {
           {components.map(c => <KitComponentRow key={c.id} planId={planId} comp={c} />)}
         </div>
       )}
+      {confirm && <ConfirmModal {...confirm} onCancel={() => setConfirm(null)} />}
     </div>
   )
 }
@@ -913,6 +916,7 @@ export default function PlanDetail() {
   const [factorInput, setFactorInput] = useState('')
   const [copied, setCopied] = useState(false)
   const [historyTab, setHistoryTab] = useState('activity')
+  const [confirm, setConfirm] = useState(null)
 
   const { data: plan, isLoading } = useQuery({
     queryKey: ['plan', id],
@@ -1112,11 +1116,11 @@ export default function PlanDetail() {
                       accent: plan.is_template,
                       action: () => {
                         const next = !plan.is_template
-                        if (!next && !window.confirm(`Remove "${plan.plan_number}" from templates?`)) return
-                        plans.update(id, { is_template: next }).then(() => {
-                          qc.invalidateQueries({ queryKey: ['plan', id] })
-                          qc.invalidateQueries({ queryKey: ['plans', 'templates'] })
-                        })
+                        if (!next) {
+                          setConfirm({ title: 'Remove from templates?', message: `"${plan.plan_number}" will no longer appear in the templates list.`, confirmLabel: 'Remove', danger: false, onConfirm: () => plans.update(id, { is_template: false }).then(() => { qc.invalidateQueries({ queryKey: ['plan', id] }); qc.invalidateQueries({ queryKey: ['plans', 'templates'] }) }) })
+                        } else {
+                          plans.update(id, { is_template: true }).then(() => { qc.invalidateQueries({ queryKey: ['plan', id] }); qc.invalidateQueries({ queryKey: ['plans', 'templates'] }) })
+                        }
                       },
                     }] : []),
                   ].map((item, i) => (
@@ -1149,11 +1153,7 @@ export default function PlanDetail() {
           {/* Revert */}
           {prevStatus && (
             <button
-              onClick={() => {
-                if (window.confirm(
-                  `Revert "${plan.plan_number}" from ${plan.status} back to ${prevStatus}?`
-                )) updateStatus.mutate(prevStatus)
-              }}
+              onClick={() => setConfirm({ title: `Revert to ${prevStatus}?`, message: `Move "${plan.plan_number}" from ${plan.status} back to ${prevStatus}.`, confirmLabel: 'Revert', danger: false, onConfirm: () => updateStatus.mutate(prevStatus) })}
               disabled={updateStatus.isPending}
               style={{ background: 'var(--gray-100)', color: 'var(--gray-600)',
                 border: '1px solid var(--gray-200)', borderRadius: 'var(--radius)',
@@ -1183,11 +1183,7 @@ export default function PlanDetail() {
           {/* Mark as Lost — proposed only */}
           {plan.status === 'proposed' && (
             <button
-              onClick={() => {
-                if (window.confirm(
-                  `Mark "${plan.plan_number}" as Lost/Declined?\n\nThis indicates the bid was not won.`
-                )) updateStatus.mutate('lost')
-              }}
+              onClick={() => setConfirm({ title: 'Mark as Lost?', message: `Mark "${plan.plan_number}" as Lost/Declined — indicates the bid was not won.`, confirmLabel: 'Mark Lost', onConfirm: () => updateStatus.mutate('lost') })}
               disabled={updateStatus.isPending}
               style={{ background: 'var(--status-lost-bg)', color: 'var(--status-lost-text)',
                 border: '1px solid var(--status-lost-border)',
@@ -1199,11 +1195,7 @@ export default function PlanDetail() {
           {/* Delete — admin only, draft plans only */}
           {isAdmin && plan.status === 'draft' && (
             <button
-              onClick={() => {
-                if (window.confirm(
-                  `Permanently delete plan "${plan.plan_number}"?\n\nThis cannot be undone.`
-                )) deletePlan.mutate()
-              }}
+              onClick={() => setConfirm({ title: `Delete "${plan.plan_number}"?`, message: 'This will permanently delete the plan and all its zones, line items, and draws. This cannot be undone.', confirmLabel: 'Delete', onConfirm: () => deletePlan.mutate() })}
               disabled={deletePlan.isPending}
               style={{ background: 'var(--status-lost-bg)', color: 'var(--status-lost-text)',
                 border: '1px solid var(--status-lost-border)',
@@ -1347,11 +1339,7 @@ export default function PlanDetail() {
                 </div>
               </div>
               <button
-                onClick={() => {
-                  if (window.confirm(
-                    `Duplicate "${ht.name}" (House #${ht.house_number})?\n\nThis copies all zones and line items.`
-                  )) duplicateHouseType.mutate({ houseTypeId: ht.id })
-                }}
+                onClick={() => setConfirm({ title: `Duplicate "${ht.name}"?`, message: `Copies all zones and line items from House #${ht.house_number}.`, confirmLabel: 'Duplicate', danger: false, onConfirm: () => duplicateHouseType.mutate({ houseTypeId: ht.id }) })}
                 title="Duplicate this house type"
                 style={{ background: 'var(--gray-100)', color: 'var(--gray-600)',
                   border: '1px solid var(--gray-200)', borderRadius: 8,
@@ -1391,10 +1379,7 @@ export default function PlanDetail() {
                   isOnly={ht.systems.length === 1}
                   zoneBid={sysZoneBid}
                   onLabelSave={(label) => updateZoneLabel.mutate({ systemId: sys.id, zone_label: label })}
-                  onDelete={() => {
-                    if (window.confirm(`Delete Zone ${sys.system_number}${sys.zone_label ? ` — ${sys.zone_label}` : ''}?\n\nAll line items in this zone will be lost.`))
-                      deleteZone.mutate(sys.id)
-                  }}
+                  onDelete={() => setConfirm({ title: `Delete Zone ${sys.system_number}${sys.zone_label ? ` — ${sys.zone_label}` : ''}?`, message: 'All line items in this zone will be permanently removed.', confirmLabel: 'Delete Zone', onConfirm: () => deleteZone.mutate(sys.id) })}
                 />
               </div>
 
@@ -1611,6 +1596,7 @@ export default function PlanDetail() {
         <PlanTasks planId={parseInt(id)} currentUser={user} />
       </div>
 
+      {confirm && <ConfirmModal {...confirm} onCancel={() => setConfirm(null)} />}
     </div>
   )
 }
@@ -1866,7 +1852,7 @@ function DrawSchedule({ planId, houseTypeId, draws }) {
                     borderRadius: 4, padding: '1px 6px', cursor: 'pointer', color: 'var(--gray-500)' }}>
                   Edit
                 </button>
-                <button onClick={() => { if (window.confirm('Delete this draw?')) deleteDraw.mutate(d.draw_number) }}
+                <button onClick={() => setConfirm({ title: 'Delete draw?', message: `Draw ${d.draw_number} — ${d.stage} ($${d.amount.toLocaleString()})`, confirmLabel: 'Delete', onConfirm: () => deleteDraw.mutate(d.draw_number) })}
                   style={{ fontSize: 11, background: 'none', border: '1px solid var(--status-lost-border)',
                     borderRadius: 4, padding: '1px 6px', cursor: 'pointer', color: 'var(--danger)' }}>
                   ×

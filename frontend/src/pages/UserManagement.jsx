@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { authApi } from '../api/client'
+import ConfirmModal from '../components/ConfirmModal'
 
 const ROLES       = ['admin', 'account_executive', 'account_manager']
 const ROLE_LABELS = {
@@ -186,6 +187,7 @@ export default function UserManagement() {
     email: '', password: '', role: 'account_manager',
   })
   const [error, setError] = useState('')
+  const [confirm, setConfirm] = useState(null)
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['users'], queryFn: authApi.listUsers,
@@ -347,11 +349,7 @@ export default function UserManagement() {
                           Edit
                         </button>
                         <button
-                          onClick={() => {
-                            if (window.confirm(
-                              `Deactivate ${u.full_name}? They won't be able to log in.`
-                            )) deactivate.mutate(u.id)
-                          }}
+                          onClick={() => setConfirm({ title: `Deactivate ${u.full_name}?`, message: `They won't be able to log in. Their plans and data are preserved and they can be reactivated later.`, confirmLabel: 'Deactivate', danger: true, onConfirm: () => deactivate.mutate(u.id) })}
                           style={{ background: 'none', color: 'var(--danger)',
                             border: '1px solid var(--status-lost-border)', borderRadius: 6,
                             padding: '4px 10px', fontSize: 12, cursor: 'pointer' }}>
@@ -400,6 +398,7 @@ export default function UserManagement() {
           </table>
         </div>
       )}
+      {confirm && <ConfirmModal {...confirm} onCancel={() => setConfirm(null)} />}
     </div>
   )
 }

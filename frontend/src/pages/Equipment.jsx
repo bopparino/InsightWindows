@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { equipment } from '../api/client'
 import { useAuth } from '../context/AuthContext'
+import ConfirmModal from '../components/ConfirmModal'
 
 // ── Category detection ────────────────────────────────────────
 function detectCategory(code, description) {
@@ -405,6 +406,7 @@ export default function Equipment() {
   const [manageMode, setManageMode] = useState(false)
   const [selected, setSelected]     = useState(new Set())
   const [showAddMfr, setShowAddMfr] = useState(false)
+  const [confirm, setConfirm]       = useState(null)
   const [showAddSys, setShowAddSys] = useState(false)
 
   const { user } = useAuth()
@@ -455,8 +457,12 @@ export default function Equipment() {
 
   function handleBulkRetire() {
     const ids = [...selected]
-    if (!window.confirm(`Retire ${ids.length} selected system${ids.length !== 1 ? 's' : ''}?\n\nThey will be hidden from new bids. Existing plan data is unaffected.`)) return
-    bulkRetire.mutate(ids)
+    setConfirm({
+      title: `Retire ${ids.length} system${ids.length !== 1 ? 's' : ''}?`,
+      message: 'They will be hidden from new bids. Existing plan data is unaffected.',
+      confirmLabel: 'Retire',
+      onConfirm: () => bulkRetire.mutate(ids),
+    })
   }
 
   const categorized = useMemo(() => {
@@ -606,6 +612,7 @@ export default function Equipment() {
           onSave={() => invalidate()}
         />
       )}
+      {confirm && <ConfirmModal {...confirm} onCancel={() => setConfirm(null)} />}
     </div>
   )
 }
