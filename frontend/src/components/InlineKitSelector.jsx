@@ -11,7 +11,7 @@
  */
 import { useState, useMemo, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { kit, lineItems, documents } from '../api/client'
+import { kit, lineItems } from '../api/client'
 
 const mono = "'JetBrains Mono', 'SF Mono', 'Fira Code', monospace"
 const tacticalLabel = {
@@ -45,7 +45,6 @@ const WORKFLOW_BUTTONS = [
   { id: 'stats',       label: 'Thermostats',        codes: ['X'],  form: 'model-picker' },
   { id: 'registers',   label: 'Reg & Grills',       codes: ['S'],  form: 'model-picker' },
   { id: 'misc',        label: 'Misc / All',         codes: ['D','E','F','G','H','I','J','K','L','M','N','O','P','Q','T','U','W'], form: 'browse-all' },
-  { id: 'report',      label: 'Report',             codes: [],     form: 'report' },
 ]
 
 // ── Main component ──────────────────────────────────────────────────────────
@@ -127,20 +126,10 @@ export default function InlineKitSelector({ planId, systemId, existingCategoryCo
         {WORKFLOW_BUTTONS.map(btn => {
           const isActive = activeId === btn.id
           const isDone = buttonHasItems(btn)
-          const isReport = btn.form === 'report'
           return (
             <button
               key={btn.id}
-              onClick={() => {
-                if (isReport) {
-                  // Report triggers document generation
-                  documents.generate(planId).then(() => {
-                    qc.invalidateQueries({ queryKey: ['plan', String(planId)] })
-                  })
-                  return
-                }
-                setActiveId(isActive ? null : btn.id)
-              }}
+              onClick={() => setActiveId(isActive ? null : btn.id)}
               style={{
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
@@ -152,11 +141,7 @@ export default function InlineKitSelector({ planId, systemId, existingCategoryCo
                   : isDone
                     ? '2px solid var(--success)'
                     : '1.5px solid var(--gray-200)',
-                background: isActive
-                  ? 'var(--gray-900)'
-                  : isReport
-                    ? 'var(--gray-50)'
-                    : 'var(--card-bg)',
+                background: isActive ? 'var(--gray-900)' : 'var(--card-bg)',
                 cursor: 'pointer',
                 transition: 'all 0.1s ease',
                 position: 'relative',
@@ -169,7 +154,7 @@ export default function InlineKitSelector({ planId, systemId, existingCategoryCo
                 letterSpacing: '0.04em',
                 textAlign: 'center',
                 lineHeight: 1.2,
-                color: isActive ? '#fff' : isReport ? 'var(--gray-500)' : 'var(--gray-700)',
+                color: isActive ? '#fff' : 'var(--gray-700)',
               }}>{btn.label}</span>
 
               {/* Code badges — show category letters */}
@@ -203,7 +188,7 @@ export default function InlineKitSelector({ planId, systemId, existingCategoryCo
       </div>
 
       {/* Active sub-form */}
-      {activeBtn && activeBtn.form !== 'report' && (
+      {activeBtn && (
         <div style={{
           background: 'var(--card-bg)',
           border: '1px solid var(--gray-200)',
