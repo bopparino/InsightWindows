@@ -1029,17 +1029,23 @@ export default function PlanDetail() {
   const statusIdx  = STATUS_FLOW.indexOf(plan.status)
   const nextStatus = statusIdx >= 0 ? STATUS_FLOW[statusIdx + 1] : null
   const prevStatus = statusIdx > 0  ? STATUS_FLOW[statusIdx - 1]  : null
-  const totalBid = (plan.house_types ?? []).reduce((sum, ht) =>
-    sum + (ht.systems ?? []).reduce((s2, sys) => {
-      const matCost    = (sys.line_items ?? []).reduce((s3, li) => s3 + li.extended_price, 0)
+  const bidCalc = (plan.house_types ?? []).reduce((acc, ht) => {
+    for (const sys of (ht.systems ?? [])) {
+      const matCost    = (sys.line_items ?? []).reduce((s, li) => s + li.extended_price, 0)
       const matSelling = plan.factor > 0 ? matCost / plan.factor : 0
       const equipSell  = sys.equipment_system?.bid_price ?? 0
+      const equipCost  = sys.equipment_system?.component_cost ?? 0
       const laborAmt   = (sys.labor_hrs ?? 0) * LABOR_RATE
       const serviceAmt = (sys.service_qty ?? 0) * SERVICE_RATE
       const permitAmt  = sys.permit_yn ? PERMIT_COST : 0
       const taxAmt     = matCost * (sys.sales_tax_pct ?? 0.06)
-      return s2 + matSelling + equipSell + laborAmt + serviceAmt + permitAmt + taxAmt
-    }, 0), 0)
+      acc.total += matSelling + equipSell + laborAmt + serviceAmt + permitAmt + taxAmt
+      acc.cost  += matCost + equipCost + laborAmt + serviceAmt + permitAmt + taxAmt
+    }
+    return acc
+  }, { total: 0, cost: 0 })
+  const totalBid    = bidCalc.total
+  const grossProfit = bidCalc.total - bidCalc.cost
 
   return (
     <div>
@@ -1283,6 +1289,16 @@ export default function PlanDetail() {
               factor {plan.factor.toFixed(2)}
             </span>
           </div>
+          {grossProfit !== 0 && (
+            <div style={{ marginTop: 8, borderTop: '1px dashed var(--blue-mid)', paddingTop: 6,
+              display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 11, color: 'var(--blue)', opacity: 0.7 }}>Gross Profit</span>
+              <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--blue)',
+                fontFamily: "'JetBrains Mono', 'SF Mono', monospace" }}>
+                ${grossProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

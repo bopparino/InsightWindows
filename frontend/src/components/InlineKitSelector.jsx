@@ -29,9 +29,9 @@ const WORKFLOW_BUTTONS = [
   // Row 1: Ductwork & sheet metal
   { id: 'sm-runs',     label: 'SM Runs',           codes: ['A'],  form: 'footage-run' },
   { id: 'ductboard',   label: 'Ductboard',         codes: ['B'],  form: 'footage-run' },
-  { id: 'sheet-metal', label: 'Sheet Metal',        codes: ['SM'], form: 'model-picker' },
+  { id: 'sheet-metal', label: 'Sheet Metal',        codes: ['SM'], form: 'footage-run' },
   { id: 'round-trunk', label: 'Round Trunk',        codes: ['RT'], form: 'model-picker' },
-  { id: 'flex-duct',   label: 'Flex Duct',          codes: ['FD'], form: 'model-picker' },
+  { id: 'flex-duct',   label: 'Flex Duct',          codes: ['FD'], form: 'footage-run' },
 
   // Row 2: Runs & venting
   { id: 'flex-runs',    label: 'Flex Runs',         codes: ['FR'], form: 'model-picker' },

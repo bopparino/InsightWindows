@@ -611,6 +611,7 @@ def get_plan(plan_id: int, db: Session = Depends(get_db),
                             "system_code": s.equipment_system.system_code,
                             "description": s.equipment_system.description,
                             "bid_price": float(s.equipment_system.bid_price),
+                            "component_cost": float(s.equipment_system.component_cost) if s.equipment_system.component_cost else 0,
                         } if s.equipment_system else None,
                         "line_items": [
                             {

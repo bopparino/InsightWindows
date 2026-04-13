@@ -99,7 +99,7 @@ def build_quote_html(plan, db=None) -> str:
 
     # Per-zone rows + running totals
     zone_rows_html = ""
-    totals     = {k: 0.0 for k in ("mat_selling", "equip", "labor", "service", "permit", "tax")}
+    totals     = {k: 0.0 for k in ("mat_cost", "mat_selling", "equip", "equip_cost", "labor", "service", "permit", "tax")}
     grand_total = 0.0
 
     for ht in plan.house_types:
@@ -107,8 +107,10 @@ def build_quote_html(plan, db=None) -> str:
             zone_rows_html += f'<tr class="ht-row"><td colspan="4">{ht.name}</td></tr>'
         for sys in sorted(ht.systems, key=lambda x: x.system_number):
             z = _zone_bid(sys, factor)
-            for k in totals:
+            for k in ("mat_selling", "equip", "labor", "service", "permit", "tax"):
                 totals[k] += z[k]
+            totals["mat_cost"]   += z["mat_cost"]
+            totals["equip_cost"] += float(sys.equipment_system.component_cost) if sys.equipment_system and sys.equipment_system.component_cost else 0.0
             grand_total += z["total"]
             label   = sys.zone_label or f"Zone {sys.system_number}"
             eq_code = sys.equipment_system.system_code if sys.equipment_system else "\u2014"
@@ -208,6 +210,10 @@ def build_quote_html(plan, db=None) -> str:
                  border-top:2px solid #111; margin-top:8px; padding-top:8px; }}
   .total-line .lbl {{ font-size:11pt; font-weight:700; }}
   .total-line .amt {{ font-size:13pt; font-weight:700; }}
+  .profit-line {{ display:flex; justify-content:space-between; align-items:baseline;
+                  border-top:1px dashed #999; margin-top:6px; padding-top:6px;
+                  font-size:8.5pt; color:#555; font-style:italic; }}
+  .profit-line span:last-child {{ font-weight:700; font-size:10pt; color:#333; }}
 
   .draws-section {{ margin-bottom:20px; }}
   .draws-title {{ font-size:9pt; font-weight:700; margin-bottom:8px; }}
@@ -279,6 +285,10 @@ def build_quote_html(plan, db=None) -> str:
     <div class="total-line">
       <span class="lbl">Total Bid</span>
       <span class="amt">${grand_total:,.2f}</span>
+    </div>
+    <div class="profit-line">
+      <span>Gross Profit</span>
+      <span>${grand_total - totals["mat_cost"] - totals["equip_cost"] - totals["labor"] - totals["service"] - totals["permit"] - totals["tax"]:,.2f}</span>
     </div>
   </div>
 
