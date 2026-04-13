@@ -31,35 +31,7 @@ export const THEMES = [
     },
   },
 
-  // ── 2. Nordic Frost — glass-inspired, cool high-tech ──────────
-  {
-    id:    'nordic',
-    label: 'Nordic Frost',
-    description: 'Glass-inspired, cool and professional',
-    chartColors: {
-      primary:   '#38bdf8',
-      secondary: '#818cf8',
-      bar:       '#0ea5e9',
-      donut: {
-        draft:      '#94a3b8',
-        proposed:   '#fbbf24',
-        contracted: '#2dd4bf',
-        complete:   '#38bdf8',
-        lost:       '#f43f5e',
-      },
-      estimators: ['#38bdf8','#818cf8','#2dd4bf','#fbbf24','#f43f5e','#a78bfa','#6ee7b7','#93c5fd'],
-    },
-    preview: {
-      bg:      '#0f172a',
-      card:    '#1e293b',
-      accent:  '#38bdf8',
-      text:    '#f1f5f9',
-      border:  'rgba(255,255,255,0.08)',
-      sidebar: '#020617',
-    },
-  },
-
-  // ── 3. Slate & Sulfur — fintech high-contrast ─────────────────
+  // ── 2. Slate & Sulfur — fintech high-contrast ─────────────────
   {
     id:    'fintech',
     label: 'Slate & Sulfur',
@@ -87,7 +59,7 @@ export const THEMES = [
     },
   },
 
-  // ── 4. Clay & Rose — warm earthy, human ───────────────────────
+  // ── 3. Clay & Rose — warm earthy, human ───────────────────────
   {
     id:    'clay',
     label: 'Clay & Rose',
@@ -115,35 +87,7 @@ export const THEMES = [
     },
   },
 
-  // ── 5. Obsidian Gold — luxury dark mode ───────────────────────
-  {
-    id:    'obsidian',
-    label: 'Obsidian Gold',
-    description: 'Deep luxury dark mode',
-    chartColors: {
-      primary:   '#d4af37',
-      secondary: '#94a3b8',
-      bar:       '#d4af37',
-      donut: {
-        draft:      '#475569',
-        proposed:   '#d4af37',
-        contracted: '#10b981',
-        complete:   '#f8fafc',
-        lost:       '#ef4444',
-      },
-      estimators: ['#d4af37','#f8fafc','#94a3b8','#10b981','#ef4444','#c084fc','#67e8f9','#a3a3a3'],
-    },
-    preview: {
-      bg:      '#0a0a0a',
-      card:    '#171717',
-      accent:  '#d4af37',
-      text:    '#f5f5f5',
-      border:  '#262626',
-      sidebar: '#000000',
-    },
-  },
-
-  // ── 6. Heritage Ledger — traditional green and cream ──────────
+  // ── 4. Heritage Ledger — traditional green and cream ──────────
   {
     id:    'heritage',
     label: 'Heritage Ledger',
@@ -185,7 +129,8 @@ export function ThemeProvider({ children }) {
     el.classList.remove(...THEMES.map(t => `theme-${t.id}`),
       // Remove any legacy theme classes
       'theme-pearl', 'theme-graphite', 'theme-metcalfe', 'theme-emerald',
-      'theme-indigo', 'theme-mono', 'theme-warm', 'theme-dark',
+      'theme-indigo', 'theme-nordic', 'theme-obsidian',
+      'theme-mono', 'theme-warm', 'theme-dark',
       'theme-sunstone', 'theme-arcadia', 'theme-midnight', 'theme-ashen',
       'theme-eldenring', 'theme-industrial', 'theme-harmony', 'theme-dusk')
     el.classList.add(`theme-${theme}`)

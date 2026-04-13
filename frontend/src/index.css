@@ -137,6 +137,21 @@ input, select, textarea {
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   font-family: inherit;
 }
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
+  padding-right: 36px;
+  cursor: pointer;
+}
+select option {
+  padding: 8px 12px;
+  background: var(--card-bg);
+  color: var(--gray-800);
+}
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--accent);
@@ -342,86 +357,6 @@ aside nav a:hover {
 .theme-blueprint ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
 .theme-blueprint ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-/* ── Nordic Frost ─────────────────────────────────────────────── */
-.theme-nordic {
-  --body-bg:   #0f172a;
-  --card-bg:   #1e293b;
-  --input-bg:  #1e293b;
-  --sidebar-bg:#020617;
-
-  --gray-50:   #1e293b;
-  --gray-100:  #334155;
-  --gray-200:  #475569;
-  --gray-300:  #64748b;
-  --gray-400:  #94a3b8;
-  --gray-600:  #cbd5e1;
-  --gray-800:  #f1f5f9;
-
-  --blue:      #38bdf8;
-  --blue-mid:  #7dd3fc;
-  --blue-light:rgba(56,189,248,0.12);
-  --accent:    #38bdf8;
-  --success:   #2dd4bf;
-  --danger:    #f43f5e;
-
-  --shadow:    0 1px 4px rgba(0,0,0,0.6), 0 1px 2px rgba(0,0,0,0.4);
-  --shadow-md: 0 4px 20px rgba(0,0,0,0.7);
-
-  --status-draft-bg:          rgba(51,65,85,0.8);
-  --status-draft-border:      rgba(100,116,139,0.5);
-  --status-draft-text:        #94a3b8;
-  --status-draft-accent:      #64748b;
-
-  --status-proposed-bg:       rgba(251,191,36,0.1);
-  --status-proposed-border:   rgba(251,191,36,0.35);
-  --status-proposed-text:     #fbbf24;
-  --status-proposed-accent:   #f59e0b;
-
-  --status-contracted-bg:     rgba(45,212,191,0.1);
-  --status-contracted-border: rgba(45,212,191,0.35);
-  --status-contracted-text:   #2dd4bf;
-  --status-contracted-accent: #14b8a6;
-
-  --status-complete-bg:       rgba(56,189,248,0.12);
-  --status-complete-border:   rgba(56,189,248,0.35);
-  --status-complete-text:     #7dd3fc;
-  --status-complete-accent:   #38bdf8;
-
-  --status-lost-bg:           rgba(244,63,94,0.1);
-  --status-lost-border:       rgba(244,63,94,0.35);
-  --status-lost-text:         #f43f5e;
-  --status-lost-accent:       #e11d48;
-}
-
-.theme-nordic body { color: #f1f5f9; }
-.theme-nordic .card {
-  border-color: rgba(255,255,255,0.08);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
-  backdrop-filter: blur(2px);
-}
-.theme-nordic input, .theme-nordic select, .theme-nordic textarea {
-  border-color: rgba(255,255,255,0.1); color: #f1f5f9; background: rgba(30,41,59,0.8);
-}
-.theme-nordic input::placeholder, .theme-nordic textarea::placeholder { color: #64748b; }
-.theme-nordic input:focus, .theme-nordic select:focus, .theme-nordic textarea:focus {
-  border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56,189,248,0.15);
-}
-.theme-nordic select { color-scheme: dark; }
-.theme-nordic select option { background: #1e293b; color: #f1f5f9; }
-.theme-nordic label { color: #94a3b8; }
-.theme-nordic .btn-primary { background: #38bdf8; color: #0f172a; font-weight: 700; }
-.theme-nordic .btn-primary:hover { background: #7dd3fc; }
-.theme-nordic .btn-secondary { border-color: rgba(255,255,255,0.12); color: #f1f5f9; background: rgba(51,65,85,0.6); }
-.theme-nordic .table th { background: #1e293b; border-color: rgba(255,255,255,0.08); color: #64748b; }
-.theme-nordic .table td { border-color: rgba(255,255,255,0.06); color: #f1f5f9; }
-.theme-nordic .table tbody tr:hover { background: rgba(56,189,248,0.06); }
-.theme-nordic .spinner { border-color: #334155; border-top-color: #38bdf8; }
-.theme-nordic a { color: #38bdf8; }
-.theme-nordic ::-webkit-scrollbar { width: 6px; height: 6px; }
-.theme-nordic ::-webkit-scrollbar-track { background: #0f172a; }
-.theme-nordic ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-.theme-nordic ::-webkit-scrollbar-thumb:hover { background: #475569; }
-
 /* ── Slate & Sulfur ───────────────────────────────────────────── */
 .theme-fintech {
   --body-bg:   #f4f4f5;
@@ -569,91 +504,6 @@ aside nav a:hover {
 .theme-clay ::-webkit-scrollbar-track { background: #fafaf9; }
 .theme-clay ::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 3px; }
 .theme-clay ::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
-
-/* ═══════════════════════════════════════════════════════════
-   OBSIDIAN GOLD — Luxury dark mode, Mercedes interior feel
-   Deep charcoals + warm gold. NOT "gamer" dark.
-═══════════════════════════════════════════════════════════ */
-.theme-obsidian {
-  --body-bg:   #0a0a0a;
-  --card-bg:   #171717;
-  --input-bg:  #1c1c1c;
-  --sidebar-bg:#000000;
-
-  --gray-50:   #171717;
-  --gray-100:  #262626;
-  --gray-200:  #363636;
-  --gray-300:  #525252;
-  --gray-400:  #a3a3a3;
-  --gray-600:  #d4d4d4;
-  --gray-800:  #f5f5f5;
-
-  --blue:      #d4af37;
-  --blue-mid:  #e5c349;
-  --blue-light:rgba(212,175,55,0.1);
-  --accent:    #d4af37;
-  --success:   #10b981;
-  --danger:    #ef4444;
-
-  --shadow:    0 1px 4px rgba(0,0,0,0.7), 0 1px 2px rgba(0,0,0,0.5);
-  --shadow-md: 0 4px 24px rgba(0,0,0,0.8);
-
-  --status-draft-bg:          rgba(82,82,82,0.4);
-  --status-draft-border:      rgba(82,82,82,0.6);
-  --status-draft-text:        #a3a3a3;
-  --status-draft-accent:      #737373;
-
-  --status-proposed-bg:       rgba(212,175,55,0.1);
-  --status-proposed-border:   rgba(212,175,55,0.35);
-  --status-proposed-text:     #d4af37;
-  --status-proposed-accent:   #e5c349;
-
-  --status-contracted-bg:     rgba(16,185,129,0.1);
-  --status-contracted-border: rgba(16,185,129,0.35);
-  --status-contracted-text:   #34d399;
-  --status-contracted-accent: #10b981;
-
-  --status-complete-bg:       rgba(245,245,245,0.06);
-  --status-complete-border:   rgba(245,245,245,0.15);
-  --status-complete-text:     #f5f5f5;
-  --status-complete-accent:   #e5e5e5;
-
-  --status-lost-bg:           rgba(239,68,68,0.1);
-  --status-lost-border:       rgba(239,68,68,0.35);
-  --status-lost-text:         #f87171;
-  --status-lost-accent:       #ef4444;
-}
-
-.theme-obsidian body { color: #f5f5f5; }
-.theme-obsidian .card {
-  border-color: #262626;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.03);
-}
-.theme-obsidian input, .theme-obsidian select, .theme-obsidian textarea {
-  border-color: #363636; color: #f5f5f5; background: #1c1c1c;
-}
-.theme-obsidian input::placeholder, .theme-obsidian textarea::placeholder { color: #525252; }
-.theme-obsidian input:focus, .theme-obsidian select:focus, .theme-obsidian textarea:focus {
-  border-color: #d4af37; box-shadow: 0 0 0 3px rgba(212,175,55,0.12);
-}
-.theme-obsidian select { color-scheme: dark; }
-.theme-obsidian select option { background: #171717; color: #f5f5f5; }
-.theme-obsidian label { color: #a3a3a3; }
-.theme-obsidian .btn-primary {
-  background: #d4af37; color: #0a0a0a; font-weight: 700;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
-}
-.theme-obsidian .btn-primary:hover:not(:disabled) { background: #e5c349; }
-.theme-obsidian .btn-secondary { border-color: #363636; color: #f5f5f5; background: #262626; }
-.theme-obsidian .table th { background: #171717; border-color: #262626; color: #737373; }
-.theme-obsidian .table td { border-color: #1c1c1c; color: #f5f5f5; }
-.theme-obsidian .table tbody tr:hover { background: rgba(212,175,55,0.04); }
-.theme-obsidian .spinner { border-color: #363636; border-top-color: #d4af37; }
-.theme-obsidian a { color: #d4af37; }
-.theme-obsidian ::-webkit-scrollbar { width: 6px; height: 6px; }
-.theme-obsidian ::-webkit-scrollbar-track { background: #0a0a0a; }
-.theme-obsidian ::-webkit-scrollbar-thumb { background: #363636; border-radius: 3px; }
-.theme-obsidian ::-webkit-scrollbar-thumb:hover { background: #525252; }
 
 /* ═══════════════════════════════════════════════════════════
    HERITAGE LEDGER — Traditional green and cream "money" feel
