@@ -211,9 +211,10 @@ function MetricTile({ label, value, sub, accent = false, large = false, delta = 
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
         <div style={{
-          fontSize: large ? 30 : 22, fontWeight: 800,
+          fontSize: large ? 28 : 20, fontWeight: 700,
+          fontFamily: "'JetBrains Mono', 'SF Mono', monospace",
           letterSpacing: '-0.03em', lineHeight: 1,
-          color: accent ? 'var(--success)' : 'var(--gray-800)',
+          color: accent ? 'var(--success)' : 'var(--gray-900)',
         }}>
           {value}
         </div>
@@ -586,7 +587,8 @@ export default function Dashboard() {
                 </div>
                 <div style={{ padding: '10px 14px' }}>
                   <div style={{ fontSize: 10, color: 'var(--gray-400)', marginBottom: 2 }}>Total value</div>
-                  <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em',
+                  <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.02em',
+                    fontFamily: "'JetBrains Mono', 'SF Mono', monospace",
                     color: isLoading || g.total === 0 ? 'var(--gray-300)' : 'var(--gray-800)' }}>
                     {isLoading ? '—' : currency(g.total)}
                   </div>
@@ -709,7 +711,8 @@ export default function Dashboard() {
                     <td style={{ fontSize: 13 }}>{p.builder_name}</td>
                     <td style={{ fontSize: 13, color: 'var(--gray-600)' }}>{p.project_name}</td>
                     <td style={{ fontSize: 13, color: 'var(--gray-600)' }}>{p.house_type || '—'}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600, fontSize: 13 }}>
+                    <td style={{ textAlign: 'right', fontWeight: 600, fontSize: 13,
+                      fontFamily: "'JetBrains Mono', 'SF Mono', monospace", letterSpacing: '-0.02em' }}>
                       {p.total_bid > 0 ? currencyFull(p.total_bid) : '—'}
                     </td>
                     <td style={{ textAlign: 'center' }}>

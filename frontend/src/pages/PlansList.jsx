@@ -275,7 +275,8 @@ export default function PlansList() {
                       <div style={{ color: 'var(--gray-400)', fontSize: 12 }}>{p.project_code}</div>
                     </td>
                     <td>{p.builder_name}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600 }}>
+                    <td style={{ textAlign: 'right', fontWeight: 600,
+                      fontFamily: "'JetBrains Mono', 'SF Mono', monospace", letterSpacing: '-0.02em' }}>
                       {p.total_bid > 0
                         ? '$' + p.total_bid.toLocaleString('en-US', { minimumFractionDigits: 2 })
                         : '—'}

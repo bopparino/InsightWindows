@@ -3,115 +3,115 @@ import { createContext, useContext, useState, useEffect } from 'react'
 const ThemeContext = createContext()
 
 export const THEMES = [
-  // ── 1. The Blueprint — crisp, technical, high-contrast white ──
+  // ── 1. Amber Alabaster — Solar Industrial default ─────────
   {
-    id:    'blueprint',
-    label: 'The Blueprint',
-    description: 'Clean, technical, high-contrast white',
+    id:    'amber',
+    label: 'Amber Alabaster',
+    description: 'Warm paper tones with safety-orange accents',
     chartColors: {
-      primary:   '#0369a1',
-      secondary: '#0f172a',
-      bar:       '#0ea5e9',
+      primary:   '#FF8C00',
+      secondary: '#1A1A1A',
+      bar:       '#FFB347',
       donut: {
-        draft:      '#94a3b8',
-        proposed:   '#0369a1',
-        contracted: '#15803d',
-        complete:   '#1e293b',
-        lost:       '#b91c1c',
+        draft:      '#D6D3D1',
+        proposed:   '#FF8C00',
+        contracted: '#10B981',
+        complete:   '#1A1A1A',
+        lost:       '#EF4444',
       },
-      estimators: ['#0369a1','#15803d','#0f172a','#0ea5e9','#64748b','#b91c1c','#0891b2','#475569'],
+      estimators: ['#FF8C00','#1A1A1A','#10B981','#FFB347','#EF4444','#6366F1','#0EA5E9','#A8A29E'],
     },
     preview: {
-      bg:      '#ffffff',
-      card:    '#f8fafc',
-      accent:  '#0369a1',
-      text:    '#0f172a',
-      border:  '#cbd5e1',
-      sidebar: '#0f172a',
+      bg:      '#F9F9F8',
+      card:    '#FFFFFF',
+      accent:  '#FF8C00',
+      text:    '#1A1A1A',
+      border:  '#E7E5E4',
+      sidebar: '#1A1A1A',
     },
   },
 
-  // ── 2. Slate & Sulfur — fintech high-contrast ─────────────────
+  // ── 2. Slate & Sulfur — monochrome fintech ────────────────
   {
     id:    'fintech',
     label: 'Slate & Sulfur',
-    description: 'High-contrast fintech aesthetic',
+    description: 'High-contrast monochrome precision',
     chartColors: {
-      primary:   '#000000',
-      secondary: '#10b981',
-      bar:       '#18181b',
+      primary:   '#18181B',
+      secondary: '#10B981',
+      bar:       '#18181B',
       donut: {
-        draft:      '#e4e4e7',
-        proposed:   '#facc15',
-        contracted: '#10b981',
-        complete:   '#000000',
-        lost:       '#ef4444',
+        draft:      '#E4E4E7',
+        proposed:   '#FACC15',
+        contracted: '#10B981',
+        complete:   '#18181B',
+        lost:       '#EF4444',
       },
-      estimators: ['#18181b','#10b981','#facc15','#6366f1','#ec4899','#0ea5e9','#8b5cf6','#71717a'],
+      estimators: ['#18181B','#10B981','#FACC15','#6366F1','#EC4899','#0EA5E9','#8B5CF6','#71717A'],
     },
     preview: {
-      bg:      '#f4f4f5',
-      card:    '#ffffff',
-      accent:  '#18181b',
-      text:    '#18181b',
-      border:  '#e4e4e7',
-      sidebar: '#18181b',
+      bg:      '#F4F4F5',
+      card:    '#FFFFFF',
+      accent:  '#18181B',
+      text:    '#18181B',
+      border:  '#E4E4E7',
+      sidebar: '#18181B',
     },
   },
 
-  // ── 3. Clay & Rose — warm earthy, human ───────────────────────
+  // ── 3. Clay & Rose — warm editorial ───────────────────────
   {
     id:    'clay',
     label: 'Clay & Rose',
     description: 'Warm tones for a human touch',
     chartColors: {
-      primary:   '#e11d48',
-      secondary: '#44403c',
-      bar:       '#fb7185',
+      primary:   '#E11D48',
+      secondary: '#44403C',
+      bar:       '#FB7185',
       donut: {
-        draft:      '#d6d3d1',
-        proposed:   '#d97706',
+        draft:      '#D6D3D1',
+        proposed:   '#D97706',
         contracted: '#166534',
-        complete:   '#e11d48',
-        lost:       '#7f1d1d',
+        complete:   '#E11D48',
+        lost:       '#7F1D1D',
       },
-      estimators: ['#e11d48','#44403c','#d97706','#166534','#a8a29e','#be123c','#92400e','#78716c'],
+      estimators: ['#E11D48','#44403C','#D97706','#166534','#A8A29E','#BE123C','#92400E','#78716C'],
     },
     preview: {
-      bg:      '#fafaf9',
-      card:    '#ffffff',
-      accent:  '#e11d48',
-      text:    '#1c1917',
-      border:  '#e7e5e4',
-      sidebar: '#1c1917',
+      bg:      '#FAF9F7',
+      card:    '#FFFFFF',
+      accent:  '#E11D48',
+      text:    '#1C1917',
+      border:  '#E7E5E4',
+      sidebar: '#1C1917',
     },
   },
 
-  // ── 4. Heritage Ledger — traditional green and cream ──────────
+  // ── 4. Heritage Ledger — traditional green & cream ────────
   {
     id:    'heritage',
     label: 'Heritage Ledger',
-    description: 'Stable, traditional green and cream',
+    description: 'Traditional green and cream',
     chartColors: {
-      primary:   '#14532d',
-      secondary: '#78350f',
+      primary:   '#14532D',
+      secondary: '#78350F',
       bar:       '#166534',
       donut: {
-        draft:      '#a1a1aa',
-        proposed:   '#ca8a04',
-        contracted: '#14532d',
-        complete:   '#1e293b',
-        lost:       '#991b1b',
+        draft:      '#A1A1AA',
+        proposed:   '#CA8A04',
+        contracted: '#14532D',
+        complete:   '#1E293B',
+        lost:       '#991B1B',
       },
-      estimators: ['#14532d','#78350f','#ca8a04','#1e293b','#991b1b','#166534','#92400e','#6b7280'],
+      estimators: ['#14532D','#78350F','#CA8A04','#1E293B','#991B1B','#166534','#92400E','#6B7280'],
     },
     preview: {
-      bg:      '#fdfbf7',
-      card:    '#ffffff',
-      accent:  '#14532d',
-      text:    '#064e3b',
-      border:  '#d1d5db',
-      sidebar: '#064e3b',
+      bg:      '#FDFBF7',
+      card:    '#FFFFFF',
+      accent:  '#14532D',
+      text:    '#064E3B',
+      border:  '#D5D0C8',
+      sidebar: '#064E3B',
     },
   },
 ]
@@ -120,8 +120,8 @@ export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem('theme')
     const valid = THEMES.map(t => t.id)
-    // Migrate old themes to blueprint default
-    return valid.includes(saved) ? saved : 'blueprint'
+    // Migrate old themes to amber default
+    return valid.includes(saved) ? saved : 'amber'
   })
 
   useEffect(() => {
@@ -129,11 +129,14 @@ export function ThemeProvider({ children }) {
     el.classList.remove(...THEMES.map(t => `theme-${t.id}`),
       // Remove any legacy theme classes
       'theme-pearl', 'theme-graphite', 'theme-metcalfe', 'theme-emerald',
-      'theme-indigo', 'theme-nordic', 'theme-obsidian',
+      'theme-indigo', 'theme-nordic', 'theme-obsidian', 'theme-blueprint',
       'theme-mono', 'theme-warm', 'theme-dark',
       'theme-sunstone', 'theme-arcadia', 'theme-midnight', 'theme-ashen',
       'theme-eldenring', 'theme-industrial', 'theme-harmony', 'theme-dusk')
-    el.classList.add(`theme-${theme}`)
+    // Only add theme class for non-default themes (amber uses :root defaults)
+    if (theme !== 'amber') {
+      el.classList.add(`theme-${theme}`)
+    }
   }, [theme])
 
   function applyTheme(t) {

@@ -647,11 +647,12 @@ function Sidebar({ onOpenHelp, onOpenFeedback }) {
     display: 'flex', alignItems: 'center',
     gap: collapsed ? 0 : 10,
     justifyContent: collapsed ? 'center' : 'flex-start',
-    padding: '9px 12px', borderRadius: 8, marginBottom: 2,
-    textDecoration: 'none', fontSize: 14,
+    padding: '8px 12px', borderRadius: 8, marginBottom: 1,
+    textDecoration: 'none', fontSize: 13,
     fontWeight: isActive ? 600 : 400,
-    color: isActive ? 'white' : 'rgba(255,255,255,0.6)',
-    background: isActive ? 'rgba(255,255,255,0.15)' : 'transparent',
+    color: isActive ? 'white' : 'rgba(255,255,255,0.55)',
+    background: isActive ? 'rgba(255,255,255,0.12)' : 'transparent',
+    borderLeft: isActive ? '2px solid var(--accent)' : '2px solid transparent',
     transition: 'all 0.15s',
   })
 
@@ -702,8 +703,8 @@ function Sidebar({ onOpenHelp, onOpenFeedback }) {
           <div style={{ overflow: 'hidden', display: 'flex', alignItems: 'center' }}>
             <img
               src={logo}
-              alt="Metcalfe Heating & Air Conditioning"
-              style={{ height: 88, width: 'auto', maxWidth: 240, objectFit: 'contain',
+              alt="Insight"
+              style={{ height: 80, width: 'auto', maxWidth: 200, objectFit: 'contain',
                 filter: 'brightness(0) invert(1)', display: 'block' }}
             />
           </div>
@@ -863,7 +864,7 @@ function AppLayout() {
         onOpenFeedback={() => setShowFeedback(true)}
       />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'auto' }}>
-        <main style={{ flex: 1, padding: '32px 40px', width: '100%', boxSizing: 'border-box' }}>
+        <main style={{ flex: 1, padding: '28px 36px', width: '100%', boxSizing: 'border-box' }}>
           <Routes>
             <Route path="/"            element={isAccountManager ? <Navigate to="/plans" replace /> : <Dashboard />} />
             <Route path="/plans"       element={<PlansList />} />

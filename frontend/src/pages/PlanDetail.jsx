@@ -1245,7 +1245,8 @@ export default function PlanDetail() {
         </div>
         <div className="card" style={{ background: 'var(--blue-light)', border: '1px solid var(--blue-mid)' }}>
           <div style={{ fontSize: 12, color: 'var(--blue)', marginBottom: 4, fontWeight: 600 }}>Total Bid</div>
-          <div style={{ fontWeight: 800, fontSize: 28, color: 'var(--blue)', lineHeight: 1 }}>
+          <div style={{ fontWeight: 700, fontSize: 26, color: 'var(--blue)', lineHeight: 1,
+            fontFamily: "'JetBrains Mono', 'SF Mono', monospace", letterSpacing: '-0.02em' }}>
             ${totalBid.toLocaleString('en-US', { minimumFractionDigits: 2 })}
           </div>
           {/* Always-visible margin editor */}
