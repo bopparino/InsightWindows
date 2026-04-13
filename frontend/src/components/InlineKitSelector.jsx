@@ -29,16 +29,16 @@ const WORKFLOW_BUTTONS = [
   // Row 1: Ductwork & sheet metal
   { id: 'sm-runs',     label: 'SM Runs',           codes: ['A'],  form: 'footage-run' },
   { id: 'ductboard',   label: 'Ductboard',         codes: ['B'],  form: 'footage-run' },
-  { id: 'sheet-metal', label: 'Sheet Metal',        codes: [],     form: 'custom-item', descPrefix: 'Sheet Metal' },
-  { id: 'round-trunk', label: 'Round Trunk',        codes: [],     form: 'custom-item', descPrefix: 'Round Trunk' },
-  { id: 'flex-duct',   label: 'Flex Duct',          codes: [],     form: 'custom-item', descPrefix: 'Flex Duct', toggle: ['Insulated', 'Non-Insulated'] },
+  { id: 'sheet-metal', label: 'Sheet Metal',        codes: ['SM'], form: 'model-picker' },
+  { id: 'round-trunk', label: 'Round Trunk',        codes: ['RT'], form: 'model-picker' },
+  { id: 'flex-duct',   label: 'Flex Duct',          codes: ['FD'], form: 'model-picker' },
 
   // Row 2: Runs & venting
-  { id: 'flex-runs',    label: 'Flex Runs',         codes: [],     form: 'custom-item', descPrefix: 'Flex Run' },
-  { id: 'db-tri-ra',    label: 'DB Tri / RA',       codes: [],     form: 'custom-item', descPrefix: 'DB Triangle / RA Pan' },
+  { id: 'flex-runs',    label: 'Flex Runs',         codes: ['FR'], form: 'model-picker' },
+  { id: 'db-tri-ra',    label: 'DB Tri / RA',       codes: ['DT'], form: 'model-picker' },
   { id: 'exhaust-runs', label: 'Exhaust Runs',      codes: ['C'],  form: 'model-picker' },
   { id: 'fresh-air',    label: 'Fresh Air',          codes: ['R'],  form: 'model-picker' },
-  { id: 'wall-roof',    label: 'Caps / Jacks',       codes: [],     form: 'custom-item', descPrefix: 'Wall Cap / Roof Jack' },
+  { id: 'wall-roof',    label: 'Caps / Jacks',       codes: ['WC'], form: 'model-picker' },
 
   // Row 3: Equipment & controls
   { id: 'fans',        label: 'Fans',               codes: ['V'],  form: 'model-picker' },
