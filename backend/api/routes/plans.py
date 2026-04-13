@@ -492,7 +492,7 @@ def bulk_update_status(data: BulkStatusUpdate, db: Session = Depends(get_db),
         "draft":      {"proposed", "lost"},
         "proposed":   {"contracted", "lost", "draft"},
         "contracted": {"complete"},
-        "complete":   set(),
+        "complete":   {"contracted"},
         "lost":       {"draft"},
     }
     q = db.query(Plan).filter(Plan.id.in_(data.ids))
@@ -664,7 +664,7 @@ def update_plan(plan_id: int, data: PlanUpdate, db: Session = Depends(get_db),
         "draft":      {"proposed", "lost"},
         "proposed":   {"contracted", "lost", "draft"},
         "contracted": {"complete"},
-        "complete":   set(),
+        "complete":   {"contracted"},
         "lost":       {"draft"},
     }
     if data.status:

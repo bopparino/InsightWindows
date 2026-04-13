@@ -942,6 +942,7 @@ export default function PlanDetail() {
   const updateStatus = useMutation({
     mutationFn: (status) => plans.update(id, { status }),
     onSuccess: (_, status) => { invalidatePlan(); toast.success(`Status set to ${status}`) },
+    onError: (e) => toast.error(e.response?.data?.detail || 'Failed to update status'),
   })
 
   const generateQuote = useMutation({
@@ -975,6 +976,7 @@ export default function PlanDetail() {
     mutationFn: ({ systemId, equipmentSystemId }) =>
       systems.update(parseInt(id), systemId, { equipment_system_id: equipmentSystemId }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['plan', id] }),
+    onError: (e) => toast.error(e.response?.data?.detail || 'Failed to update equipment'),
   })
 
   const addZone = useMutation({
