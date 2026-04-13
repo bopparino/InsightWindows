@@ -313,10 +313,26 @@ label {
   margin-bottom: var(--space-8);
 }
 .page-title {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 28px;
+  font-weight: 700;
   color: var(--gray-900);
-  letter-spacing: -0.025em;
+  letter-spacing: -0.03em;
+}
+
+/* ─── Tactical Label Utility ─────────────────────────────────── */
+.label-tactical {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gray-400);
+}
+
+/* ─── Monospace Utility ──────────────────────────────────────── */
+.font-mono {
+  font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+  letter-spacing: -0.02em;
+  font-feature-settings: 'tnum' 1;
 }
 
 /* ─── Misc ────────────────────────────────────────────────── */

@@ -225,7 +225,7 @@ export default function Projects() {
                     <td style={{ paddingLeft: 12 }}>
                       <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleOne(p.id)} style={{ cursor: 'pointer' }} />
                     </td>
-                    <td style={{ fontFamily: 'monospace',
+                    <td style={{ fontFamily: "'JetBrains Mono', 'SF Mono', monospace",
                       fontSize: 13, color: 'var(--blue-mid)', fontWeight: 600 }}>
                       {p.code}
                     </td>

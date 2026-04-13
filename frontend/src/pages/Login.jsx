@@ -78,17 +78,18 @@ export default function Login() {
       <div style={{ width: '100%', maxWidth: 400, padding: '0 20px' }}>
 
         {/* Logo / brand */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ fontWeight: 800, fontSize: 28, color: 'var(--blue)',
-            letterSpacing: '-0.02em' }}>Metcalfe</div>
-          <div style={{ fontSize: 14, color: 'var(--gray-400)', marginTop: 4 }}>
+        <div style={{ textAlign: 'center', marginBottom: 36 }}>
+          <div style={{ fontWeight: 800, fontSize: 32, color: 'var(--accent)',
+            letterSpacing: '-0.03em' }}>Insight</div>
+          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
+            letterSpacing: '0.12em', color: 'var(--gray-400)', marginTop: 6 }}>
             HVAC Bid System
           </div>
         </div>
 
         <div className="card" style={{ padding: 32 }}>
-          <div style={{ fontWeight: 600, fontSize: 18, marginBottom: 24,
-            color: 'var(--gray-800)' }}>Sign in</div>
+          <div style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase',
+            letterSpacing: '0.08em', color: 'var(--gray-600)', marginBottom: 24 }}>Sign in</div>
 
           {sessionExpired && (
             <div style={{

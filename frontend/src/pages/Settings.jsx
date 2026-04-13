@@ -148,7 +148,7 @@ function BrandingCard() {
 
   return (
     <div className="card" style={{ marginBottom: 20 }}>
-      <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>Company Branding</div>
+      <div style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--gray-600)', marginBottom: 4 }}>Company Branding</div>
       <div style={{ fontSize: 13, color: 'var(--gray-400)', marginBottom: 16 }}>
         Used on all generated quote PDFs and field sheets.
       </div>
@@ -298,7 +298,7 @@ export default function Settings() {
 
       {/* Appearance */}
       <div className="card" style={{ marginBottom: 20 }}>
-        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>Appearance</div>
+        <div style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--gray-600)', marginBottom: 4 }}>Appearance</div>
         <div style={{ fontSize: 13, color: 'var(--gray-400)', marginBottom: 20 }}>
           Choose a theme for your view. Your preference is saved locally.
         </div>
@@ -316,7 +316,7 @@ export default function Settings() {
 
       {/* Profile */}
       <div className="card" style={{ marginBottom: 20 }}>
-        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 16 }}>Profile</div>
+        <div style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--gray-600)', marginBottom: 16 }}>Profile</div>
 
         <div className="form-row form-row-2" style={{ marginBottom: 12 }}>
           <div>
@@ -352,7 +352,7 @@ export default function Settings() {
 
       {/* Password */}
       <div className="card">
-        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 16 }}>Change Password</div>
+        <div style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--gray-600)', marginBottom: 16 }}>Change Password</div>
 
         {pwError && <div className="error-msg">{pwError}</div>}
 

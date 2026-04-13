@@ -242,7 +242,7 @@ export default function UserManagement() {
       {/* New user form */}
       {showForm && (
         <div className="card" style={{ marginBottom: 20 }}>
-          <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 16 }}>New User</div>
+          <div style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--gray-600)', marginBottom: 16 }}>New User</div>
           {error && <div className="error-msg">{error}</div>}
           <div className="form-row form-row-2" style={{ marginBottom: 12 }}>
             <div>
@@ -295,8 +295,8 @@ export default function UserManagement() {
 
       {/* Active users */}
       <div className="card" style={{ padding: 0, marginBottom: 20 }}>
-        <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--gray-100)',
-          fontWeight: 600, fontSize: 15 }}>Active Users</div>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--gray-100)',
+          fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--gray-600)' }}>Active Users</div>
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: 40 }}><span className="spinner" /></div>
         ) : active.length === 0 ? (
@@ -320,7 +320,7 @@ export default function UserManagement() {
                   <tr key={u.id}>
                     <td style={{ paddingLeft: 20, fontWeight: 500 }}>{u.full_name}</td>
                     <td style={{ fontSize: 13, color: 'var(--gray-600)',
-                      fontFamily: 'monospace' }}>{u.username}</td>
+                      fontFamily: "'JetBrains Mono', 'SF Mono', monospace" }}>{u.username}</td>
                     <td style={{ textAlign: 'center' }}>
                       <span style={{ background: 'var(--blue-light)', color: 'var(--blue)',
                         padding: '2px 10px', borderRadius: 6, fontSize: 13,
@@ -375,7 +375,7 @@ export default function UserManagement() {
               {inactive.map(u => (
                 <tr key={u.id} style={{ opacity: 0.5 }}>
                   <td style={{ paddingLeft: 20, fontWeight: 500 }}>{u.full_name}</td>
-                  <td style={{ fontSize: 13, fontFamily: 'monospace',
+                  <td style={{ fontSize: 13, fontFamily: "'JetBrains Mono', 'SF Mono', monospace",
                     color: 'var(--gray-400)' }}>{u.username}</td>
                   <td><RoleBadge role={u.role} /></td>
                   <td style={{ fontSize: 13, color: 'var(--gray-400)' }}>

@@ -1,13 +1,16 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   ResponsiveContainer,
-  BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  LineChart, Line,
+  BarChart, Bar, Cell, XAxis, YAxis, Tooltip, Legend,
+  AreaChart, Area,
 } from 'recharts'
 import { plans as plansApi } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import { useTheme, THEMES } from '../context/ThemeContext'
+
+const mono = "'JetBrains Mono', 'SF Mono', 'Fira Code', monospace"
+const tacticalLabel = { fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--gray-400)' }
 
 // ── Formatters ────────────────────────────────────────────────
 function currency(n) {
@@ -16,12 +19,7 @@ function currency(n) {
   return '$' + Number(n).toFixed(0)
 }
 
-function pct(n) {
-  if (n === null || n === undefined) return '—'
-  return (n * 100).toFixed(0) + '%'
-}
-
-// ── Date range helpers (same as Dashboard) ───────────────────
+// ── Date range helpers ───────────────────────────────────────
 const DATE_RANGES = [
   { id: 'month',   label: 'This Month' },
   { id: 'quarter', label: 'This Quarter' },
@@ -71,39 +69,14 @@ const DEFAULT_ESTIMATOR_COLORS = [
 // ── Win-rate badge ────────────────────────────────────────────
 function WinRateBadge({ rate }) {
   if (rate === null || rate === undefined) return <span style={{ color: 'var(--gray-300)' }}>—</span>
-  const pct = Math.round(rate * 100)
-  const color = pct >= 60 ? 'var(--status-contracted-text)' : pct >= 40 ? 'var(--status-proposed-text)' : 'var(--status-lost-text)'
-  const bg    = pct >= 60 ? 'var(--status-contracted-bg)'   : pct >= 40 ? 'var(--status-proposed-bg)'   : 'var(--status-lost-bg)'
+  const pctVal = Math.round(rate * 100)
+  const color = pctVal >= 60 ? 'var(--status-contracted-text)' : pctVal >= 40 ? 'var(--status-proposed-text)' : 'var(--status-lost-text)'
+  const bg    = pctVal >= 60 ? 'var(--status-contracted-bg)'   : pctVal >= 40 ? 'var(--status-proposed-bg)'   : 'var(--status-lost-bg)'
   return (
     <span style={{
-      fontSize: 12, fontWeight: 700, padding: '2px 8px',
-      borderRadius: 99, background: bg, color,
-    }}>{pct}%</span>
-  )
-}
-
-// ── Status breakdown mini-bar ─────────────────────────────────
-function StatusBar({ byStatus, statusColors }) {
-  const colors = statusColors || DEFAULT_STATUS_COLORS
-  const STATUS_LABELS = { draft: 'Draft', proposed: 'Proposed', contracted: 'Contracted', complete: 'Complete', lost: 'Lost' }
-  const total = STATUSES.reduce((s, k) => s + (byStatus[k]?.count || 0), 0)
-  if (total === 0) return <span style={{ color: 'var(--gray-300)', fontSize: 12 }}>—</span>
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-      <div style={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', width: 80, flexShrink: 0 }}>
-        {STATUSES.map(k => {
-          const count = byStatus[k]?.count || 0
-          if (!count) return null
-          return (
-            <div key={k} style={{
-              width: `${(count / total) * 100}%`,
-              background: colors[k],
-            }} title={`${STATUS_LABELS[k]}: ${count}`} />
-          )
-        })}
-      </div>
-      <span style={{ fontSize: 11, color: 'var(--gray-400)', whiteSpace: 'nowrap' }}>{total} plans</span>
-    </div>
+      fontSize: 11, fontWeight: 700, padding: '3px 10px',
+      borderRadius: 6, background: bg, color, fontFamily: mono,
+    }}>{pctVal}%</span>
   )
 }
 
@@ -129,22 +102,25 @@ function EstimatorRow({ e, rank, isOnly }) {
         onMouseLeave={ev => { if (!expanded) ev.currentTarget.style.background = 'transparent' }}
       >
         {!isOnly && (
-          <td style={{ padding: '12px 18px', fontWeight: 700, color: 'var(--gray-400)', fontSize: 13, width: 32 }}>
+          <td style={{ padding: '12px 18px', fontWeight: 700, color: 'var(--gray-400)',
+            fontSize: 12, fontFamily: mono, width: 32 }}>
             #{rank}
           </td>
         )}
         <td style={{ padding: '12px 18px' }}>
           <div style={{ fontWeight: 600, fontSize: 14 }}>{e.estimator_name}</div>
-          <div style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 1 }}>{e.estimator_initials}</div>
+          <div style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 1, fontFamily: mono }}>{e.estimator_initials}</div>
         </td>
         <td style={{ padding: '12px 12px', textAlign: 'center', fontWeight: 600,
-          fontSize: 14, color: e.total_plans > 0 ? 'var(--gray-800)' : 'var(--gray-300)' }}>
+          fontSize: 14, fontFamily: mono, color: e.total_plans > 0 ? 'var(--gray-800)' : 'var(--gray-300)' }}>
           {e.total_plans}
         </td>
-        <td style={{ padding: '12px 12px', textAlign: 'right', fontSize: 13, color: 'var(--gray-500)' }}>
+        <td style={{ padding: '12px 12px', textAlign: 'right', fontSize: 13,
+          color: 'var(--gray-500)', fontFamily: mono }}>
           {currency(e.pipeline)}
         </td>
-        <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 700, fontSize: 14 }}>
+        <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 700,
+          fontSize: 14, fontFamily: mono }}>
           {currency(e.contracted_revenue)}
         </td>
         <td style={{ padding: '12px 18px', textAlign: 'center' }}>
@@ -168,16 +144,17 @@ function EstimatorRow({ e, rank, isOnly }) {
                   <div key={k} style={{
                     background: STATUS_META[k].bg,
                     border: `1px solid ${STATUS_META[k].color}30`,
-                    borderRadius: 8, padding: '8px 14px', minWidth: 110,
+                    borderRadius: 10, padding: '10px 16px', minWidth: 110,
                   }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: STATUS_META[k].color,
-                      textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
+                    <div style={{ ...tacticalLabel, color: STATUS_META[k].color, marginBottom: 6 }}>
                       {STATUS_META[k].label}
                     </div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--gray-800)' }}>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--gray-800)',
+                      fontFamily: mono, lineHeight: 1 }}>
                       {s.count}
                     </div>
-                    <div style={{ fontSize: 12, color: 'var(--gray-500)', marginTop: 2 }}>
+                    <div style={{ fontSize: 12, color: 'var(--gray-500)', marginTop: 4,
+                      fontFamily: mono }}>
                       {currency(s.total)}
                     </div>
                   </div>
@@ -191,27 +168,33 @@ function EstimatorRow({ e, rank, isOnly }) {
   )
 }
 
-// ── Monthly chart tooltip ─────────────────────────────────────
+// ── Chart tooltip ─────────────────────────────────────────────
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
   const total = payload.reduce((s, p) => s + (p.value || 0), 0)
   return (
     <div style={{
-      background: 'var(--card-bg)', border: '1px solid var(--gray-200)',
-      borderRadius: 8, padding: '10px 14px', fontSize: 13,
-      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+      background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)',
+      WebkitBackdropFilter: 'blur(12px)',
+      border: '1px solid var(--gray-200)',
+      borderRadius: 10, padding: '12px 16px', fontSize: 13,
+      boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
     }}>
-      <div style={{ fontWeight: 700, marginBottom: 6, color: 'var(--gray-800)' }}>{label}</div>
+      <div style={{ fontWeight: 700, marginBottom: 8, color: 'var(--gray-800)', fontSize: 12 }}>{label}</div>
       {payload.map(p => (
-        <div key={p.dataKey} style={{ display: 'flex', justifyContent: 'space-between', gap: 24, marginBottom: 2 }}>
-          <span style={{ color: p.fill }}>{p.name}</span>
-          <span style={{ fontWeight: 600 }}>{currency(p.value)}</span>
+        <div key={p.dataKey} style={{ display: 'flex', justifyContent: 'space-between',
+          gap: 24, marginBottom: 3, alignItems: 'center' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: p.color || p.fill }} />
+            <span style={{ color: 'var(--gray-600)', fontSize: 12 }}>{p.name}</span>
+          </span>
+          <span style={{ fontWeight: 600, fontFamily: mono, fontSize: 12 }}>{currency(p.value)}</span>
         </div>
       ))}
       {payload.length > 1 && (
-        <div style={{ borderTop: '1px solid var(--gray-200)', marginTop: 6, paddingTop: 6,
-          display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
-          <span>Total</span><span>{currency(total)}</span>
+        <div style={{ borderTop: '1px solid var(--gray-200)', marginTop: 8, paddingTop: 8,
+          display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 12 }}>
+          <span>Total</span><span style={{ fontFamily: mono }}>{currency(total)}</span>
         </div>
       )}
     </div>
@@ -249,7 +232,6 @@ export default function Performance() {
   const STATUS_COLORS    = chartColors.donut       || DEFAULT_STATUS_COLORS
   const STATUS_META      = buildStatusMeta(STATUS_COLORS)
 
-  // Build monthly chart data: [{month: "Mar 2026", AC: 45000, JB: 32000}, ...]
   const estimatorInits = [...new Set(summary.map(e => e.estimator_initials))]
   const monthlyChart = useMemo(() => {
     const map = {}
@@ -261,21 +243,24 @@ export default function Performance() {
     return Object.values(map).sort((a, b) => a._sort - b._sort)
   }, [monthly])
 
-  // Totals row
   const grandTotal = useMemo(() => ({
     contracted_revenue: summary.reduce((s, e) => s + e.contracted_revenue, 0),
     pipeline:           summary.reduce((s, e) => s + e.pipeline, 0),
     total_plans:        summary.reduce((s, e) => s + e.total_plans, 0),
   }), [summary])
 
+  const thStyle = {
+    padding: '10px 12px', ...tacticalLabel,
+  }
+
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div className="page-header">
         <div>
-          <h1 className="page-title">
+          <h1 className="page-title" style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em' }}>
             {isAccountManager ? 'My Performance' : 'Sales Performance'}
           </h1>
-          <div style={{ fontSize: 13, color: 'var(--gray-400)', marginTop: 2 }}>
+          <div style={{ fontSize: 13, color: 'var(--gray-400)', marginTop: 4 }}>
             {isAccountManager
               ? 'Your bid history and win rate'
               : 'Bid history and win rates by estimator'}
@@ -289,12 +274,12 @@ export default function Performance() {
             {DATE_RANGES.map(r => (
               <button key={r.id} onClick={() => setRange(r.id)}
                 style={{
-                  background: range === r.id ? 'var(--card-bg)' : 'transparent',
+                  background: range === r.id ? 'var(--gray-900)' : 'transparent',
                   border: 'none', borderRadius: 6,
-                  padding: '5px 12px', fontSize: 12, fontWeight: range === r.id ? 600 : 400,
-                  color: range === r.id ? 'var(--gray-800)' : 'var(--gray-400)',
+                  padding: '6px 14px', fontSize: 11, fontWeight: 600,
+                  textTransform: 'uppercase', letterSpacing: '0.04em',
+                  color: range === r.id ? '#FFFFFF' : 'var(--gray-400)',
                   cursor: 'pointer', transition: 'all 0.15s',
-                  boxShadow: range === r.id ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
                 }}>
                 {r.label}
               </button>
@@ -321,14 +306,14 @@ export default function Performance() {
       ) : (
         <>
           {/* ── Summary table ── */}
-          <div className="card" style={{ marginBottom: 24, padding: 0, overflow: 'hidden' }}>
-            <div style={{ padding: '16px 18px 12px', borderBottom: '1px solid var(--gray-100)',
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid var(--gray-100)',
               display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontWeight: 600, fontSize: 15 }}>
+              <div style={{ ...tacticalLabel, fontSize: 11, color: 'var(--gray-600)' }}>
                 {isAccountManager ? 'Your Summary' : 'Account Manager Summary'}
               </div>
-              <div style={{ fontSize: 12, color: 'var(--gray-400)' }}>
-                Click a row to expand status breakdown
+              <div style={{ fontSize: 11, color: 'var(--gray-400)' }}>
+                Click a row to expand
               </div>
             </div>
 
@@ -336,26 +321,14 @@ export default function Performance() {
               <thead>
                 <tr style={{ background: 'var(--gray-50)' }}>
                   {!isAccountManager && (
-                    <th style={{ padding: '8px 18px', textAlign: 'left', fontWeight: 600,
-                      fontSize: 11, color: 'var(--gray-400)', textTransform: 'uppercase',
-                      letterSpacing: '0.04em', width: 32 }}>#</th>
+                    <th style={{ ...thStyle, textAlign: 'left', paddingLeft: 18, width: 32 }}>#</th>
                   )}
-                  <th style={{ padding: '8px 18px', textAlign: 'left', fontWeight: 600,
-                    fontSize: 11, color: 'var(--gray-400)', textTransform: 'uppercase',
-                    letterSpacing: '0.04em' }}>Estimator</th>
-                  <th style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 600,
-                    fontSize: 11, color: 'var(--gray-400)', textTransform: 'uppercase',
-                    letterSpacing: '0.04em' }}>Plans</th>
-                  <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600,
-                    fontSize: 11, color: 'var(--gray-400)', textTransform: 'uppercase',
-                    letterSpacing: '0.04em' }}>Pipeline</th>
-                  <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600,
-                    fontSize: 11, color: 'var(--gray-400)', textTransform: 'uppercase',
-                    letterSpacing: '0.04em' }}>Contracted</th>
-                  <th style={{ padding: '8px 18px', textAlign: 'center', fontWeight: 600,
-                    fontSize: 11, color: 'var(--gray-400)', textTransform: 'uppercase',
-                    letterSpacing: '0.04em' }}>Win Rate</th>
-                  <th style={{ padding: '8px 18px', width: 28 }} />
+                  <th style={{ ...thStyle, textAlign: 'left', paddingLeft: 18 }}>Estimator</th>
+                  <th style={{ ...thStyle, textAlign: 'center' }}>Plans</th>
+                  <th style={{ ...thStyle, textAlign: 'right' }}>Pipeline</th>
+                  <th style={{ ...thStyle, textAlign: 'right' }}>Contracted</th>
+                  <th style={{ ...thStyle, textAlign: 'center', paddingRight: 18 }}>Win Rate</th>
+                  <th style={{ ...thStyle, width: 28 }} />
                 </tr>
               </thead>
               <tbody>
@@ -368,25 +341,24 @@ export default function Performance() {
                   />
                 ))}
               </tbody>
-              {/* Totals footer (admin/AE only, multiple estimators) */}
               {!isAccountManager && summary.length > 1 && (
                 <tfoot>
                   <tr style={{ background: 'var(--gray-50)',
                     borderTop: '2px solid var(--gray-200)' }}>
-                    <td style={{ padding: '10px 18px' }} />
-                    <td style={{ padding: '10px 18px', fontWeight: 700, fontSize: 13 }}>
+                    <td style={{ padding: '12px 18px' }} />
+                    <td style={{ padding: '12px 18px', fontWeight: 700, fontSize: 13 }}>
                       Total — {summary.length} estimators
                     </td>
-                    <td style={{ padding: '10px 12px', textAlign: 'center',
-                      fontWeight: 700, fontSize: 14 }}>
+                    <td style={{ padding: '12px 12px', textAlign: 'center',
+                      fontWeight: 700, fontSize: 14, fontFamily: mono }}>
                       {grandTotal.total_plans}
                     </td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right',
-                      fontSize: 13, color: 'var(--gray-500)', fontWeight: 600 }}>
+                    <td style={{ padding: '12px 12px', textAlign: 'right',
+                      fontSize: 13, color: 'var(--gray-500)', fontWeight: 600, fontFamily: mono }}>
                       {currency(grandTotal.pipeline)}
                     </td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right',
-                      fontWeight: 700, fontSize: 15 }}>
+                    <td style={{ padding: '12px 12px', textAlign: 'right',
+                      fontWeight: 700, fontSize: 15, fontFamily: mono }}>
                       {currency(grandTotal.contracted_revenue)}
                     </td>
                     <td colSpan={2} />
@@ -398,11 +370,11 @@ export default function Performance() {
 
           {/* ── Two-panel charts ── */}
           {summary.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
 
               {/* Panel 1 — Horizontal ranked bar */}
               <div className="card">
-                <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>
+                <div style={{ ...tacticalLabel, fontSize: 11, color: 'var(--gray-600)', marginBottom: 4 }}>
                   Contracted Revenue
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--gray-400)', marginBottom: 20 }}>
@@ -420,29 +392,22 @@ export default function Performance() {
                       }))}
                     margin={{ top: 0, right: 16, left: 0, bottom: 0 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--gray-200)" horizontal={false} />
                     <XAxis type="number" tickFormatter={v => currency(v)}
-                      tick={{ fontSize: 11, fill: 'var(--gray-400)' }}
+                      tick={{ fontSize: 11, fill: 'var(--gray-400)', fontFamily: mono }}
                       axisLine={false} tickLine={false} />
                     <YAxis type="category" dataKey="name" width={90}
                       tick={{ fontSize: 12, fill: 'var(--gray-700)' }}
                       axisLine={false} tickLine={false} />
-                    <Tooltip
-                      formatter={(v) => [currency(v), 'Contracted']}
-                      contentStyle={{
-                        background: 'var(--card-bg)', border: '1px solid var(--gray-200)',
-                        borderRadius: 8, fontSize: 13,
-                      }}
-                    />
-                    <Bar dataKey="revenue" radius={[0, 4, 4, 0]} maxBarSize={28}>
+                    <Tooltip content={<ChartTooltip />} />
+                    <Bar dataKey="revenue" radius={[0, 6, 6, 0]} maxBarSize={28}>
                       {[...summary]
                         .sort((a, b) => b.contracted_revenue - a.contracted_revenue)
-                        .map((e) => (
+                        .map((e, i) => (
                           <Cell
                             key={e.estimator_initials}
-                            fill={ESTIMATOR_COLORS[
-                              estimatorInits.indexOf(e.estimator_initials) % ESTIMATOR_COLORS.length
-                            ]}
+                            fill={i === 0
+                              ? (chartColors.primary || 'var(--accent)')
+                              : 'var(--gray-300)'}
                           />
                         ))}
                     </Bar>
@@ -450,9 +415,9 @@ export default function Performance() {
                 </ResponsiveContainer>
               </div>
 
-              {/* Panel 2 — Monthly trend lines */}
+              {/* Panel 2 — Monthly trend (area chart) */}
               <div className="card">
-                <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>
+                <div style={{ ...tacticalLabel, fontSize: 11, color: 'var(--gray-600)', marginBottom: 4 }}>
                   Monthly Trend
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--gray-400)', marginBottom: 20 }}>
@@ -465,29 +430,37 @@ export default function Performance() {
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height={Math.max(180, summary.length * 44)}>
-                    <LineChart data={monthlyChart} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="var(--gray-200)" vertical={false} />
+                    <AreaChart data={monthlyChart} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
+                      <defs>
+                        {estimatorInits.map((init, i) => (
+                          <linearGradient key={init} id={`perf-grad-${init}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={ESTIMATOR_COLORS[i % ESTIMATOR_COLORS.length]} stopOpacity={0.3} />
+                            <stop offset="100%" stopColor={ESTIMATOR_COLORS[i % ESTIMATOR_COLORS.length]} stopOpacity={0.02} />
+                          </linearGradient>
+                        ))}
+                      </defs>
                       <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'var(--gray-400)' }}
                         axisLine={false} tickLine={false} />
                       <YAxis tickFormatter={v => currency(v)}
-                        tick={{ fontSize: 11, fill: 'var(--gray-400)' }}
+                        tick={{ fontSize: 11, fill: 'var(--gray-400)', fontFamily: mono }}
                         axisLine={false} tickLine={false} width={56} />
                       <Tooltip content={<ChartTooltip />} />
-                      <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                      <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
                       {estimatorInits.map((init, i) => (
-                        <Line
+                        <Area
                           key={init}
                           type="monotone"
                           dataKey={init}
                           name={summary.find(e => e.estimator_initials === init)?.estimator_name || init}
                           stroke={ESTIMATOR_COLORS[i % ESTIMATOR_COLORS.length]}
+                          fill={`url(#perf-grad-${init})`}
                           strokeWidth={2}
                           dot={{ r: 3, strokeWidth: 0 }}
                           activeDot={{ r: 5 }}
                           connectNulls
                         />
                       ))}
-                    </LineChart>
+                    </AreaChart>
                   </ResponsiveContainer>
                 )}
               </div>
@@ -495,32 +468,31 @@ export default function Performance() {
             </div>
           )}
 
-          {/* ── Status breakdown cards (all statuses) ── */}
-          <div className="card" style={{ marginBottom: 24 }}>
-            <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 16 }}>
-              Pipeline Breakdown — All Statuses
+          {/* ── Status breakdown cards ── */}
+          <div className="card">
+            <div style={{ ...tacticalLabel, fontSize: 11, color: 'var(--gray-600)', marginBottom: 16 }}>
+              Pipeline Breakdown
             </div>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
               {STATUSES.map(k => {
                 const count = summary.reduce((s, e) => s + (e.by_status[k]?.count || 0), 0)
                 const total = summary.reduce((s, e) => s + (e.by_status[k]?.total || 0), 0)
                 const meta  = STATUS_META[k]
                 return (
                   <div key={k} style={{
-                    flex: '1 1 140px',
                     background: meta.bg,
                     border: `1px solid ${meta.color}30`,
-                    borderRadius: 10, padding: '14px 18px',
+                    borderRadius: 10, padding: '16px 18px',
                   }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: meta.color,
-                      textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
+                    <div style={{ ...tacticalLabel, color: meta.color, marginBottom: 8 }}>
                       {meta.label}
                     </div>
-                    <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--gray-800)',
-                      lineHeight: 1 }}>
+                    <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--gray-800)',
+                      fontFamily: mono, lineHeight: 1 }}>
                       {count}
                     </div>
-                    <div style={{ fontSize: 13, color: 'var(--gray-500)', marginTop: 4 }}>
+                    <div style={{ fontSize: 13, color: 'var(--gray-500)', marginTop: 6,
+                      fontFamily: mono }}>
                       {currency(total)}
                     </div>
                   </div>
@@ -531,43 +503,42 @@ export default function Performance() {
 
           {/* ── Builder breakdown ── */}
           {byBuilder.length > 0 && (
-            <div className="card" style={{ marginBottom: 24, padding: 0, overflow: 'hidden' }}>
-              <div style={{ padding: '16px 18px 12px', borderBottom: '1px solid var(--gray-100)' }}>
-                <div style={{ fontWeight: 600, fontSize: 15 }}>Builder Breakdown</div>
-                <div style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 2 }}>
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid var(--gray-100)' }}>
+                <div style={{ ...tacticalLabel, fontSize: 11, color: 'var(--gray-600)' }}>Builder Breakdown</div>
+                <div style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 4 }}>
                   Ranked by contracted revenue
                 </div>
               </div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: 'var(--gray-50)' }}>
-                    {['#', 'Builder', 'Plans', 'Pipeline', 'Contracted', 'Win Rate'].map((h, i) => (
-                      <th key={h} style={{
-                        padding: '8px 12px',
-                        textAlign: i <= 1 ? 'left' : i === 2 ? 'center' : 'right',
-                        fontWeight: 600, fontSize: 11, color: 'var(--gray-400)',
-                        textTransform: 'uppercase', letterSpacing: '0.04em',
-                        paddingLeft: i === 0 ? 18 : undefined,
-                        paddingRight: i === 5 ? 18 : undefined,
-                      }}>{h}</th>
-                    ))}
+                    <th style={{ ...thStyle, textAlign: 'left', paddingLeft: 18, width: 32 }}>#</th>
+                    <th style={{ ...thStyle, textAlign: 'left' }}>Builder</th>
+                    <th style={{ ...thStyle, textAlign: 'center' }}>Plans</th>
+                    <th style={{ ...thStyle, textAlign: 'right' }}>Pipeline</th>
+                    <th style={{ ...thStyle, textAlign: 'right' }}>Contracted</th>
+                    <th style={{ ...thStyle, textAlign: 'right', paddingRight: 18 }}>Win Rate</th>
                   </tr>
                 </thead>
                 <tbody>
                   {byBuilder.map((b, i) => (
                     <tr key={b.builder_name} style={{ borderBottom: '1px solid var(--gray-100)' }}>
                       <td style={{ padding: '11px 18px', fontWeight: 700, color: 'var(--gray-400)',
-                        fontSize: 13, width: 32 }}>#{i + 1}</td>
+                        fontSize: 12, fontFamily: mono, width: 32 }}>#{i + 1}</td>
                       <td style={{ padding: '11px 12px', fontWeight: 600, fontSize: 14 }}>
                         {b.builder_name}
                       </td>
-                      <td style={{ padding: '11px 12px', textAlign: 'center', color: 'var(--gray-600)' }}>
+                      <td style={{ padding: '11px 12px', textAlign: 'center', color: 'var(--gray-600)',
+                        fontFamily: mono }}>
                         {b.total_plans}
                       </td>
-                      <td style={{ padding: '11px 12px', textAlign: 'right', color: 'var(--gray-500)', fontSize: 13 }}>
+                      <td style={{ padding: '11px 12px', textAlign: 'right', color: 'var(--gray-500)',
+                        fontSize: 13, fontFamily: mono }}>
                         {currency(b.pipeline)}
                       </td>
-                      <td style={{ padding: '11px 12px', textAlign: 'right', fontWeight: 700, fontSize: 14 }}>
+                      <td style={{ padding: '11px 12px', textAlign: 'right', fontWeight: 700,
+                        fontSize: 14, fontFamily: mono }}>
                         {currency(b.contracted_revenue)}
                       </td>
                       <td style={{ padding: '11px 18px', textAlign: 'right' }}>
@@ -583,24 +554,21 @@ export default function Performance() {
           {/* ── House type breakdown ── */}
           {byHouseType.length > 0 && (
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ padding: '16px 18px 12px', borderBottom: '1px solid var(--gray-100)' }}>
-                <div style={{ fontWeight: 600, fontSize: 15 }}>House Type Breakdown</div>
-                <div style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 2 }}>
+              <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid var(--gray-100)' }}>
+                <div style={{ ...tacticalLabel, fontSize: 11, color: 'var(--gray-600)' }}>House Type Breakdown</div>
+                <div style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 4 }}>
                   Ranked by number of plans
                 </div>
               </div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: 'var(--gray-50)' }}>
-                    {['House Type', 'Plans', 'Avg Bid', 'Pipeline', 'Contracted', 'Win Rate'].map((h, i) => (
-                      <th key={h} style={{
-                        padding: '8px 12px', fontWeight: 600, fontSize: 11,
-                        color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '0.04em',
-                        textAlign: i === 0 ? 'left' : i === 1 ? 'center' : 'right',
-                        paddingLeft: i === 0 ? 18 : undefined,
-                        paddingRight: i === 5 ? 18 : undefined,
-                      }}>{h}</th>
-                    ))}
+                    <th style={{ ...thStyle, textAlign: 'left', paddingLeft: 18 }}>House Type</th>
+                    <th style={{ ...thStyle, textAlign: 'center' }}>Plans</th>
+                    <th style={{ ...thStyle, textAlign: 'right' }}>Avg Bid</th>
+                    <th style={{ ...thStyle, textAlign: 'right' }}>Pipeline</th>
+                    <th style={{ ...thStyle, textAlign: 'right' }}>Contracted</th>
+                    <th style={{ ...thStyle, textAlign: 'right', paddingRight: 18 }}>Win Rate</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -609,16 +577,20 @@ export default function Performance() {
                       <td style={{ padding: '11px 18px', fontWeight: 600, fontSize: 14 }}>
                         {ht.house_type}
                       </td>
-                      <td style={{ padding: '11px 12px', textAlign: 'center', color: 'var(--gray-600)' }}>
+                      <td style={{ padding: '11px 12px', textAlign: 'center', color: 'var(--gray-600)',
+                        fontFamily: mono }}>
                         {ht.total_plans}
                       </td>
-                      <td style={{ padding: '11px 12px', textAlign: 'right', color: 'var(--gray-500)', fontSize: 13 }}>
+                      <td style={{ padding: '11px 12px', textAlign: 'right', color: 'var(--gray-500)',
+                        fontSize: 13, fontFamily: mono }}>
                         {ht.avg_bid > 0 ? currency(ht.avg_bid) : '—'}
                       </td>
-                      <td style={{ padding: '11px 12px', textAlign: 'right', color: 'var(--gray-500)', fontSize: 13 }}>
+                      <td style={{ padding: '11px 12px', textAlign: 'right', color: 'var(--gray-500)',
+                        fontSize: 13, fontFamily: mono }}>
                         {currency(ht.pipeline)}
                       </td>
-                      <td style={{ padding: '11px 12px', textAlign: 'right', fontWeight: 700, fontSize: 14 }}>
+                      <td style={{ padding: '11px 12px', textAlign: 'right', fontWeight: 700,
+                        fontSize: 14, fontFamily: mono }}>
                         {currency(ht.contracted_revenue)}
                       </td>
                       <td style={{ padding: '11px 18px', textAlign: 'right' }}>

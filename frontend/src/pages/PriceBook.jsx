@@ -133,13 +133,14 @@ export default function PriceBook() {
                       <tr key={v.id} style={{
                         borderBottom: idx < cat.variants.length - 1 ? '1px solid var(--gray-100)' : 'none',
                       }}>
-                        <td style={{ padding: '7px 10px', fontFamily: 'monospace', fontSize: 11, color: 'var(--gray-500)' }}>
+                        <td style={{ padding: '7px 10px', fontFamily: "'JetBrains Mono', 'SF Mono', monospace", fontSize: 11, color: 'var(--gray-500)' }}>
                           {v.variant_code}
                         </td>
                         <td style={{ padding: '7px 10px', color: 'var(--gray-800)' }}>
                           {v.variant_name}
                         </td>
-                        <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 600, color: 'var(--gray-900)' }}>
+                        <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 600, color: 'var(--gray-900)',
+                          fontFamily: "'JetBrains Mono', 'SF Mono', monospace", fontSize: 12 }}>
                           {fmt(v.per_kit)}
                           {v.per_foot > 0 && (
                             <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--gray-400)', marginLeft: 2 }}>kit</span>

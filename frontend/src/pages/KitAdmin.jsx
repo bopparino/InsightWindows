@@ -116,7 +116,7 @@ function ComponentEditor({ variant }) {
                 <tr key={c.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
                   <td style={{ ...tdStyle, textAlign: 'center', color: 'var(--gray-400)' }}>{c.sort_order}</td>
                   <td style={tdStyle}>{c.description}</td>
-                  <td style={{ ...tdStyle, color: 'var(--gray-500)', fontFamily: 'monospace', fontSize: 11 }}>{c.part_number || '—'}</td>
+                  <td style={{ ...tdStyle, color: 'var(--gray-500)', fontFamily: "'JetBrains Mono', 'SF Mono', monospace", fontSize: 11 }}>{c.part_number || '—'}</td>
                   <td style={{ ...tdStyle, textAlign: 'right' }}>{c.quantity}</td>
                   <td style={{ ...tdStyle, textAlign: 'right' }}>{fmtCost(c.unit_cost)}</td>
                   <td style={{ ...tdStyle, textAlign: 'right', color: 'var(--gray-500)' }}>{fmtCost(c.extended_cost)}</td>
@@ -317,7 +317,7 @@ function CategorySection({ cat, editingId, savingId, addingCat, deletingId, onEd
               ) : (
                 <>
                   <tr key={v.id} style={{ borderBottom: expandedComponents.has(v.id) ? 'none' : '1px solid var(--gray-100)' }}>
-                    <td style={{ padding: '8px 8px', color: 'var(--gray-500)', fontFamily: 'monospace', fontSize: 11 }}>
+                    <td style={{ padding: '8px 8px', color: 'var(--gray-500)', fontFamily: "'JetBrains Mono', 'SF Mono', monospace", fontSize: 11 }}>
                       {v.variant_code}
                     </td>
                     <td style={{ padding: '8px 8px' }}>{v.variant_name}</td>

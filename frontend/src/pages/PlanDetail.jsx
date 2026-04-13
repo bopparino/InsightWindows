@@ -5,6 +5,9 @@ import { plans, documents, lineItems, houseTypes, equipment, houseTypeApi, syste
 import InlineKitSelector from '../components/InlineKitSelector'
 import ConfirmModal from '../components/ConfirmModal'
 
+const mono = "'JetBrains Mono', 'SF Mono', 'Fira Code', monospace"
+const tacticalLabel = { fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--gray-400)' }
+
 // ── Email Quote modal ─────────────────────────────────────────
 function EmailQuoteModal({ plan, currentUser, onClose, onSent }) {
   const builderEmail = plan.project?.builder?.email || ''
@@ -38,9 +41,9 @@ function EmailQuoteModal({ plan, currentUser, onClose, onSent }) {
         onClick={e => e.stopPropagation()}>
 
         {/* Header */}
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--gray-200)',
+        <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--gray-200)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontWeight: 600, fontSize: 16 }}>Email Quote</div>
+          <div style={{ ...tacticalLabel, fontSize: 12, color: 'var(--gray-800)' }}>Email Quote</div>
           <button onClick={onClose} style={{ background: 'none', border: 'none',
             fontSize: 22, color: 'var(--gray-400)', cursor: 'pointer', lineHeight: 1 }}>×</button>
         </div>
@@ -143,9 +146,9 @@ function EquipmentPicker({ planId, systemId, onSelect, onClose }) {
       }} onClick={e => e.stopPropagation()}>
 
         {/* Header */}
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--gray-200)',
+        <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--gray-200)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontWeight: 600, fontSize: 16 }}>Equipment Catalog</div>
+          <div style={{ ...tacticalLabel, fontSize: 12, color: 'var(--gray-800)' }}>Equipment Catalog</div>
           <button onClick={onClose} style={{ background: 'none', color: 'var(--gray-400)',
             fontSize: 22, padding: '0 4px', lineHeight: 1 }}>×</button>
         </div>
@@ -191,7 +194,7 @@ function EquipmentPicker({ planId, systemId, onSelect, onClose }) {
                     style={{ cursor: 'pointer' }}
                     onClick={() => onSelect(s)}>
                     <td style={{ paddingLeft: 20, fontWeight: 600,
-                      fontFamily: 'monospace', color: 'var(--blue-mid)' }}>
+                      fontFamily: mono, fontSize: 13, color: 'var(--blue-mid)' }}>
                       {s.system_code}
                     </td>
                     <td>{s.manufacturer}</td>
@@ -201,11 +204,12 @@ function EquipmentPicker({ planId, systemId, onSelect, onClose }) {
                         {s.description}
                       </span>
                     </td>
-                    <td style={{ textAlign: 'right', color: 'var(--gray-600)' }}>
+                    <td style={{ textAlign: 'right', color: 'var(--gray-600)',
+                      fontFamily: mono, fontSize: 13 }}>
                       ${s.component_cost.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </td>
                     <td style={{ textAlign: 'right', paddingRight: 20, fontWeight: 600,
-                      color: 'var(--blue)' }}>
+                      color: 'var(--blue)', fontFamily: mono, fontSize: 13 }}>
                       ${s.bid_price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </td>
                   </tr>
@@ -263,7 +267,7 @@ function KitComponentRow({ planId, comp }) {
         textDecoration: comp.excluded ? 'line-through' : 'none' }}>
         {comp.description}
         {comp.part_number && (
-          <span style={{ marginLeft: 6, color: 'var(--gray-400)', fontFamily: 'monospace', fontSize: 10 }}>
+          <span style={{ marginLeft: 6, color: 'var(--gray-400)', fontFamily: "'JetBrains Mono', 'SF Mono', monospace", fontSize: 10 }}>
             {comp.part_number}
           </span>
         )}
@@ -277,7 +281,8 @@ function KitComponentRow({ planId, comp }) {
         onKeyDown={e => e.key === 'Enter' && commitQty()}
         style={{ width: 52, fontSize: 12, textAlign: 'center', padding: '2px 4px' }}
       />
-      <span style={{ color: 'var(--gray-400)', fontSize: 11, width: 70, textAlign: 'right', flexShrink: 0 }}>
+      <span style={{ color: 'var(--gray-400)', fontSize: 11, width: 70, textAlign: 'right', flexShrink: 0,
+        fontFamily: mono }}>
         {comp.excluded ? '—' : `$${(comp.quantity * comp.unit_cost).toFixed(4)}`}
       </span>
       <button
@@ -403,15 +408,16 @@ function LineItemRow({ planId, li, onDelete }) {
             </span>
           )}
           {isKit && (
-            <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-              letterSpacing: '0.05em', color: 'var(--blue-mid)', background: 'var(--blue-light)',
-              borderRadius: 4, padding: '1px 5px' }}>
+            <span style={{ marginLeft: 8, fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
+              letterSpacing: '0.08em', color: 'var(--blue-mid)', background: 'var(--blue-light)',
+              borderRadius: 4, padding: '2px 6px', fontFamily: mono }}>
               Kit
             </span>
           )}
         </span>
         {li.extended_price > 0 && (
-          <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--gray-700)', flexShrink: 0 }}>
+          <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--gray-700)', flexShrink: 0,
+            fontFamily: mono, letterSpacing: '-0.02em' }}>
             ${li.extended_price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
           </span>
         )}
@@ -698,7 +704,7 @@ function ZoneHeader({ sys, isOnly, onLabelSave, onDelete, zoneBid }) {
       {/* Zone total always visible in header */}
       {zoneBid > 0 && (
         <span style={{ marginLeft: 'auto', fontWeight: 700, fontSize: 15, color: 'var(--blue)',
-          flexShrink: 0 }}>
+          flexShrink: 0, fontFamily: mono, letterSpacing: '-0.02em' }}>
           ${zoneBid.toLocaleString('en-US', { minimumFractionDigits: 2 })}
         </span>
       )}
@@ -759,16 +765,17 @@ function BidSummary({ planId, system, factor }) {
   const inputStyle = {
     width: 58, fontSize: 14, textAlign: 'center', padding: '2px 6px',
     background: 'var(--input-bg)', border: '1px solid var(--gray-300)',
-    borderRadius: 6, fontWeight: 600,
+    borderRadius: 6, fontWeight: 600, fontFamily: mono,
   }
   const rowStyle = {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    padding: '7px 0', borderBottom: '1px solid var(--gray-100)',
+    padding: '8px 0', borderBottom: '1px solid var(--gray-100)',
   }
   const labelStyle = { display: 'flex', alignItems: 'center', gap: 8,
-    fontSize: 15, color: 'var(--gray-700)' }
-  const amtStyle  = { fontSize: 15, color: 'var(--gray-800)', fontWeight: 500 }
-  const hintStyle = { fontSize: 12, color: 'var(--gray-400)' }
+    fontSize: 14, color: 'var(--gray-700)' }
+  const amtStyle  = { fontSize: 14, color: 'var(--gray-800)', fontWeight: 600,
+    fontFamily: mono, letterSpacing: '-0.02em' }
+  const hintStyle = { fontSize: 11, color: 'var(--gray-400)', fontFamily: mono }
 
   return (
     <div style={{ marginTop: 16, borderTop: '2px solid var(--gray-100)', paddingTop: 12 }}>
@@ -782,7 +789,8 @@ function BidSummary({ planId, system, factor }) {
               cursor: 'pointer', padding: '4px 0', display: 'flex', alignItems: 'center', gap: 5 }}>
             <span style={{ fontSize: 10 }}>▸</span> Adjust labor, permit &amp; tax
           </button>
-          <span style={{ fontSize: 24, fontWeight: 800, color: 'var(--blue)' }}>
+          <span style={{ fontSize: 24, fontWeight: 800, color: 'var(--blue)',
+            fontFamily: mono, letterSpacing: '-0.02em' }}>
             {fmt(finalBid)}
           </span>
         </div>
@@ -891,7 +899,8 @@ function BidSummary({ planId, system, factor }) {
               textTransform: 'uppercase', letterSpacing: '0.03em' }}>
               Zone Bid
             </span>
-            <span style={{ fontSize: 26, fontWeight: 800, color: 'var(--blue)' }}>
+            <span style={{ fontSize: 26, fontWeight: 800, color: 'var(--blue)',
+              fontFamily: mono, letterSpacing: '-0.02em' }}>
               {fmt(finalBid)}
             </span>
           </div>
@@ -1220,31 +1229,31 @@ export default function PlanDetail() {
       </div>
 
       {/* Meta cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 20, marginBottom: 24 }}>
         <div className="card">
-          <div style={{ fontSize: 12, color: 'var(--gray-400)', marginBottom: 4 }}>Builder</div>
+          <div style={{ ...tacticalLabel, marginBottom: 6 }}>Builder</div>
           <div style={{ fontWeight: 600, fontSize: 15 }}>{plan.project.builder.name}</div>
-          <div style={{ fontSize: 13, color: 'var(--gray-500)', marginTop: 2 }}>
+          <div style={{ fontSize: 13, color: 'var(--gray-500)', marginTop: 4 }}>
             {plan.project.builder.contact_name}
           </div>
         </div>
         <div className="card">
-          <div style={{ fontSize: 12, color: 'var(--gray-400)', marginBottom: 4 }}>Project</div>
+          <div style={{ ...tacticalLabel, marginBottom: 6 }}>Project</div>
           <div style={{ fontWeight: 600, fontSize: 15 }}>{plan.project.name}</div>
-          <div style={{ fontSize: 13, color: 'var(--gray-500)', marginTop: 2 }}>{plan.project.code}</div>
+          <div style={{ fontSize: 12, color: 'var(--gray-500)', marginTop: 4, fontFamily: mono }}>{plan.project.code}</div>
         </div>
         <div className="card">
-          <div style={{ fontSize: 12, color: 'var(--gray-400)', marginBottom: 6 }}>Status</div>
-          <span className={`badge badge-${plan.status}`} style={{ fontSize: 14 }}>
+          <div style={{ ...tacticalLabel, marginBottom: 8 }}>Status</div>
+          <span className={`badge badge-${plan.status}`} style={{ fontSize: 13 }}>
             {plan.status}
           </span>
-          <div style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 6 }}>
+          <div style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 8 }}>
             {plan.estimator_name && `By ${plan.estimator_name}`}
             {plan.contracted_at && ` · ${new Date(plan.contracted_at).toLocaleDateString()}`}
           </div>
         </div>
         <div className="card" style={{ background: 'var(--blue-light)', border: '1px solid var(--blue-mid)' }}>
-          <div style={{ fontSize: 12, color: 'var(--blue)', marginBottom: 4, fontWeight: 600 }}>Total Bid</div>
+          <div style={{ ...tacticalLabel, color: 'var(--blue)', marginBottom: 6 }}>Total Bid</div>
           <div style={{ fontWeight: 700, fontSize: 26, color: 'var(--blue)', lineHeight: 1,
             fontFamily: "'JetBrains Mono', 'SF Mono', monospace", letterSpacing: '-0.02em' }}>
             ${totalBid.toLocaleString('en-US', { minimumFractionDigits: 2 })}
@@ -1346,9 +1355,9 @@ export default function PlanDetail() {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 11, color: 'var(--gray-400)', textTransform: 'uppercase',
-                  letterSpacing: '0.04em' }}>House Bid</div>
-                <div style={{ fontWeight: 700, fontSize: 18, color: 'var(--blue)' }}>
+                <div style={{ ...tacticalLabel }}>House Bid</div>
+                <div style={{ fontWeight: 700, fontSize: 18, color: 'var(--blue)',
+                  fontFamily: mono, letterSpacing: '-0.02em', marginTop: 2 }}>
                   ${htBid.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </div>
               </div>
@@ -1411,12 +1420,11 @@ export default function PlanDetail() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     {sys.equipment_system ? (
                       <>
-                        <div style={{ fontSize: 11, color: 'var(--blue)', fontWeight: 700,
-                          textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>
+                        <div style={{ ...tacticalLabel, color: 'var(--blue)', marginBottom: 4 }}>
                           Equipment
                         </div>
-                        <div style={{ fontWeight: 700, fontFamily: 'monospace', fontSize: 15,
-                          color: 'var(--gray-900)' }}>
+                        <div style={{ fontWeight: 700, fontFamily: mono, fontSize: 15,
+                          color: 'var(--gray-900)', letterSpacing: '-0.02em' }}>
                           {sys.equipment_system.system_code}
                         </div>
                         <div style={{ fontSize: 13, color: 'var(--gray-600)', marginTop: 2,
@@ -1432,8 +1440,9 @@ export default function PlanDetail() {
                   </div>
                   {sys.equipment_system && (
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontSize: 11, color: 'var(--gray-400)' }}>Bid price</div>
-                      <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--blue)' }}>
+                      <div style={{ ...tacticalLabel }}>Bid price</div>
+                      <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--blue)',
+                        fontFamily: mono, letterSpacing: '-0.02em', marginTop: 2 }}>
                         ${sys.equipment_system.bid_price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                       </div>
                     </div>
@@ -1546,7 +1555,7 @@ export default function PlanDetail() {
       <div key={plan.id} className="card" style={{ marginTop: 8 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-600)', marginBottom: 6 }}>INCLUDES</div>
+            <div style={{ ...tacticalLabel, marginBottom: 8 }}>Includes</div>
             <textarea
               defaultValue={plan.includes || ''}
               placeholder="What's included in this bid..."
@@ -1557,7 +1566,7 @@ export default function PlanDetail() {
             />
           </div>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-600)', marginBottom: 6 }}>NOT INCLUDED</div>
+            <div style={{ ...tacticalLabel, marginBottom: 8 }}>Not Included</div>
             <textarea
               defaultValue={plan.excludes || ''}
               placeholder="What's excluded from this bid..."
@@ -1569,7 +1578,7 @@ export default function PlanDetail() {
           </div>
         </div>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-600)', marginBottom: 6 }}>NOTES</div>
+          <div style={{ ...tacticalLabel, marginBottom: 8 }}>Notes</div>
           <textarea
             defaultValue={plan.notes || ''}
             placeholder="Internal notes..."
@@ -1582,7 +1591,7 @@ export default function PlanDetail() {
       </div>
 
       {/* History panel */}
-      <div className="card" style={{ marginTop: 16, padding: 0, overflow: 'hidden' }}>
+      <div className="card" style={{ marginTop: 20, padding: 0, overflow: 'hidden' }}>
         <div style={{ display: 'flex', borderBottom: '1px solid var(--gray-200)', padding: '0 4px' }}>
           {[
             { id: 'activity', label: 'Activity' },
@@ -1592,7 +1601,8 @@ export default function PlanDetail() {
             <button key={tab.id} onClick={() => setHistoryTab(tab.id)}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
-                padding: '10px 16px', fontSize: 13, fontWeight: historyTab === tab.id ? 600 : 400,
+                padding: '12px 18px', fontSize: 11, fontWeight: 700,
+                textTransform: 'uppercase', letterSpacing: '0.06em',
                 color: historyTab === tab.id ? 'var(--blue)' : 'var(--gray-400)',
                 borderBottom: historyTab === tab.id ? '2px solid var(--blue)' : '2px solid transparent',
                 marginBottom: -1, transition: 'color 0.15s',
@@ -1609,7 +1619,7 @@ export default function PlanDetail() {
       </div>
 
       {/* Comments + Tasks */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 24 }}>
         <PlanComments planId={parseInt(id)} currentUser={user} />
         <PlanTasks planId={parseInt(id)} currentUser={user} />
       </div>
@@ -1637,7 +1647,7 @@ function PlanComments({ planId, currentUser }) {
 
   return (
     <div className="card">
-      <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 14 }}>Comments</div>
+      <div style={{ ...tacticalLabel, fontSize: 11, color: 'var(--gray-600)', marginBottom: 14 }}>Comments</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
         {comments.length === 0 && (
           <div style={{ fontSize: 13, color: 'var(--gray-400)' }}>No comments yet.</div>
@@ -1719,7 +1729,7 @@ function PlanTasks({ planId, currentUser }) {
   return (
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-        <div style={{ fontWeight: 600, fontSize: 15 }}>Tasks</div>
+        <div style={{ ...tacticalLabel, fontSize: 11, color: 'var(--gray-600)' }}>Tasks</div>
         {tasks.length > 0 && (
           <div style={{ fontSize: 12, color: 'var(--gray-400)' }}>
             {done.length}/{tasks.length} done
@@ -1818,7 +1828,7 @@ function DrawSchedule({ planId, houseTypeId, draws }) {
   return (
     <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--gray-100)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-600)' }}>DRAW SCHEDULE</div>
+        <div style={{ ...tacticalLabel }}>Draw Schedule</div>
         {!adding && (
           <button onClick={() => { setAdding(true); setForm({ stage: '', amount: '', draw_number: String(nextDrawNumber) }) }}
             style={{ fontSize: 11, background: 'none', border: '1px solid var(--gray-200)',
@@ -1860,7 +1870,8 @@ function DrawSchedule({ planId, houseTypeId, draws }) {
               <div style={{ fontSize: 11, color: 'var(--blue)', fontWeight: 600, textTransform: 'uppercase' }}>
                 Draw {d.draw_number}
               </div>
-              <div style={{ fontWeight: 700, color: 'var(--blue)', fontSize: 15 }}>
+              <div style={{ fontWeight: 700, color: 'var(--blue)', fontSize: 15,
+                fontFamily: mono, letterSpacing: '-0.02em' }}>
                 ${d.amount.toLocaleString()}
               </div>
               <div style={{ fontSize: 11, color: 'var(--gray-600)', marginBottom: 6 }}>{d.stage}</div>

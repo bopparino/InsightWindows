@@ -647,11 +647,11 @@ function Sidebar({ onOpenHelp, onOpenFeedback }) {
     display: 'flex', alignItems: 'center',
     gap: collapsed ? 0 : 10,
     justifyContent: collapsed ? 'center' : 'flex-start',
-    padding: '8px 12px', borderRadius: 8, marginBottom: 1,
-    textDecoration: 'none', fontSize: 13,
+    padding: '8px 14px', borderRadius: 8, marginBottom: 2,
+    textDecoration: 'none', fontSize: 13, letterSpacing: '0.01em',
     fontWeight: isActive ? 600 : 400,
-    color: isActive ? 'white' : 'rgba(255,255,255,0.55)',
-    background: isActive ? 'rgba(255,255,255,0.12)' : 'transparent',
+    color: isActive ? 'white' : 'rgba(255,255,255,0.5)',
+    background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
     borderLeft: isActive ? '2px solid var(--accent)' : '2px solid transparent',
     transition: 'all 0.15s',
   })
@@ -662,8 +662,8 @@ function Sidebar({ onOpenHelp, onOpenFeedback }) {
       <div style={{ marginBottom: 4 }}>
         {!collapsed && (
           <div style={{
-            padding: '8px 12px 4px', fontSize: 10, fontWeight: 700,
-            color: 'rgba(255,255,255,0.35)', letterSpacing: '0.09em', textTransform: 'uppercase',
+            padding: '10px 14px 4px', fontSize: 9, fontWeight: 700,
+            color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em', textTransform: 'uppercase',
           }}>
             {SECTION_LABELS[sectionKey]}
           </div>
@@ -864,7 +864,7 @@ function AppLayout() {
         onOpenFeedback={() => setShowFeedback(true)}
       />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'auto' }}>
-        <main style={{ flex: 1, padding: '28px 36px', width: '100%', boxSizing: 'border-box' }}>
+        <main style={{ flex: 1, padding: '32px 40px', width: '100%', boxSizing: 'border-box' }}>
           <Routes>
             <Route path="/"            element={isAccountManager ? <Navigate to="/plans" replace /> : <Dashboard />} />
             <Route path="/plans"       element={<PlansList />} />

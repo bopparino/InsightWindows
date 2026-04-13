@@ -190,7 +190,7 @@ export default function Files() {
             borderRadius: 8, overflow: 'hidden' }}>
             {['grid','list'].map(v => (
               <button key={v} onClick={() => setView(v)}
-                style={{ background: view === v ? 'var(--blue)' : 'white',
+                style={{ background: view === v ? 'var(--gray-900)' : 'white',
                   color: view === v ? 'white' : 'var(--gray-600)',
                   border: 'none', padding: '7px 14px', fontSize: 13,
                   cursor: 'pointer' }}>

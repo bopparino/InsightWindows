@@ -63,7 +63,7 @@ export default function FeedbackInbox() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>Feedback Inbox</h1>
+          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em' }}>Feedback Inbox</h1>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>
             {openCount > 0 ? `${openCount} open item${openCount !== 1 ? 's' : ''}` : 'All caught up'}
           </p>
@@ -73,11 +73,10 @@ export default function FeedbackInbox() {
         <div style={{ display: 'flex', gap: 4, background: 'var(--body-bg)', borderRadius: 8, padding: 3 }}>
           {[['open', 'Open'], ['resolved', 'Resolved'], ['all', 'All']].map(([val, label]) => (
             <button key={val} onClick={() => setFilter(val)} style={{
-              padding: '5px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 13,
-              background: filter === val ? 'var(--card-bg)' : 'transparent',
-              color: filter === val ? 'var(--text)' : 'var(--text-muted)',
-              fontWeight: filter === val ? 600 : 400,
-              boxShadow: filter === val ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+              padding: '6px 14px', borderRadius: 6, border: 'none', cursor: 'pointer',
+              fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em',
+              background: filter === val ? 'var(--gray-900)' : 'transparent',
+              color: filter === val ? '#FFFFFF' : 'var(--gray-400)',
             }}>{label}</button>
           ))}
         </div>

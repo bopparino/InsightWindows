@@ -173,10 +173,11 @@ export default function PlansList() {
           <button key={s}
             onClick={() => setStatus(s)}
             style={{
-              background: statusFilter === s ? 'var(--blue)' : 'var(--gray-100)',
-              color: statusFilter === s ? 'white' : 'var(--gray-600)',
+              background: statusFilter === s ? 'var(--gray-900)' : 'var(--gray-100)',
+              color: statusFilter === s ? '#FFFFFF' : 'var(--gray-600)',
               border: statusFilter === s ? 'none' : '1px solid var(--gray-200)',
-              padding: '6px 14px', fontSize: 13, borderRadius: 8,
+              padding: '6px 14px', fontSize: 11, fontWeight: 600,
+              textTransform: 'uppercase', letterSpacing: '0.04em', borderRadius: 8,
             }}>
             {s.charAt(0).toUpperCase() + s.slice(1)}
           </button>

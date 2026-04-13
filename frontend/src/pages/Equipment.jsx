@@ -199,7 +199,7 @@ function ComponentRow({ components, colCount }) {
                 color: 'var(--gray-400)', fontWeight: 600, marginBottom: 2 }}>
                 {c.component_type}
               </div>
-              <div style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--gray-800)' }}>
+              <div style={{ fontFamily: "'JetBrains Mono', 'SF Mono', monospace", fontWeight: 600, color: 'var(--gray-800)' }}>
                 {c.model_number}
               </div>
             </div>
@@ -306,7 +306,7 @@ function ManufacturerGroup({ mfr, mfrId, systems, color, manageMode, selected, o
                             : null}
                         </td>
                       )}
-                      <td style={{ padding: '8px 18px', fontFamily: 'monospace', color, fontWeight: 600 }}>
+                      <td style={{ padding: '8px 18px', fontFamily: "'JetBrains Mono', 'SF Mono', monospace", color, fontWeight: 600 }}>
                         {s.system_code}
                       </td>
                       <td style={{ padding: '8px 12px', color: 'var(--gray-600)',
