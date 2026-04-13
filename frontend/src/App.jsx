@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Routes, Route, NavLink, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { search as searchApi } from './api/client'
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -838,32 +838,17 @@ function Sidebar({ onOpenHelp, onOpenFeedback }) {
 }
 
 // ─── Page Transition Wrapper ──────────────────────────────────────────────────
+// Uses key-driven remount so the CSS animation fires exactly once per navigation.
+// No useEffect, no staged state — React unmounts the old div and mounts a fresh
+// one with the animation already baked in via the class.
 
 function PageTransition({ children }) {
   const location = useLocation()
-  const [displayChildren, setDisplayChildren] = useState(children)
-  const [stage, setStage] = useState('enter') // 'enter' | 'exit'
-  const prevPath = useRef(location.pathname)
-
-  useEffect(() => {
-    if (location.pathname !== prevPath.current) {
-      prevPath.current = location.pathname
-      setStage('exit')
-      const t = setTimeout(() => {
-        setDisplayChildren(children)
-        setStage('enter')
-      }, 140)
-      return () => clearTimeout(t)
-    } else {
-      setDisplayChildren(children)
-    }
-  }, [location.pathname, children])
-
-  const style = stage === 'exit'
-    ? { opacity: 0, transform: 'translateY(6px)', transition: 'opacity 0.12s ease, transform 0.12s ease' }
-    : { opacity: 1, transform: 'translateY(0)',   transition: 'opacity 0.18s ease, transform 0.18s ease' }
-
-  return <div style={style}>{displayChildren}</div>
+  return (
+    <div key={location.pathname} className="page-enter">
+      {children}
+    </div>
+  )
 }
 
 // ─── App Layout ────────────────────────────────────────────────────────────────

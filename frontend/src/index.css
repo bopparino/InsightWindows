@@ -335,6 +335,15 @@ label {
   font-feature-settings: 'tnum' 1;
 }
 
+/* ─── Page transition ────────────────────────────────────── */
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.page-enter {
+  animation: pageEnter 0.22s ease-out both;
+}
+
 /* ─── Misc ────────────────────────────────────────────────── */
 .empty-state { text-align: center; padding: 56px 24px; color: var(--gray-400); }
 .empty-state p { font-size: 14px; margin-top: 8px; font-weight: 400; }
