@@ -157,6 +157,16 @@ function migrate(db: Database.Database): void {
     `);
     db.pragma("user_version = 3");
   }
+  if (version < 4) {
+    // Access's Part table has no manufacturer (the old system knew it only by
+    // which XLS you loaded). The per-manufacturer pricing uploads own this
+    // column; until a part is touched by an upload it shows as Unassigned.
+    const cols = db.prepare("PRAGMA table_info(parts)").all() as { name: string }[];
+    if (!cols.some((c) => c.name === "manufacturer")) {
+      db.exec("ALTER TABLE parts ADD COLUMN manufacturer TEXT NOT NULL DEFAULT ''");
+    }
+    db.pragma("user_version = 4");
+  }
 
   // Seed the first admin so a fresh deploy is loggable-into. Password comes
   // from ADMIN_PASSWORD at first boot; change it after first login.

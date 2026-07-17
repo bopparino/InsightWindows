@@ -50,14 +50,22 @@ export default async function PlansPage({
           <h1 className="text-2xl font-bold tracking-tight">Plans</h1>
           <p className="mt-1 text-[13px] text-faint">{count} plans since 2025</p>
         </div>
-        <form method="get" className="w-72">
-          <input
-            name="q"
-            defaultValue={query}
-            placeholder="Search plan #, builder, project, house…"
-            className="w-full border border-input bg-card px-3 py-1.5 text-[13px]"
-          />
-        </form>
+        <div className="flex items-center gap-3">
+          <form method="get" className="w-72">
+            <input
+              name="q"
+              defaultValue={query}
+              placeholder="Search plan #, builder, project, house…"
+              className="w-full border border-input bg-card px-3 py-1.5 text-[13px]"
+            />
+          </form>
+          <Link
+            href="/plans/new"
+            className="btn-glow bg-primary px-4 py-1.5 text-[13px] font-semibold text-primary-foreground"
+          >
+            + New Plan
+          </Link>
+        </div>
       </div>
 
       <table className="mt-6 w-full text-[13px]">
