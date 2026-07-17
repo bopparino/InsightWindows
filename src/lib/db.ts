@@ -110,6 +110,53 @@ function migrate(db: Database.Database): void {
     }
     db.pragma("user_version = 2");
   }
+  if (version < 3) {
+    // Pricing layer, imported from data.mdb: the ...cht kit charts become
+    // kit_items (is_chart=1 rows are geometry/conversion charts, not prices),
+    // Part -> parts, Eqcomp -> eqcomp (equipment bundle -> component models).
+    // Every manual price change lands in price_log.
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS kit_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        category TEXT NOT NULL,
+        code TEXT NOT NULL,
+        label TEXT NOT NULL DEFAULT '',
+        price REAL,
+        per_foot REAL,
+        is_chart INTEGER NOT NULL DEFAULT 0,
+        extra TEXT NOT NULL DEFAULT '{}',
+        price_updated TEXT,
+        sort INTEGER NOT NULL DEFAULT 0,
+        UNIQUE (category, code)
+      );
+      CREATE TABLE IF NOT EXISTS parts (
+        part_nbr TEXT PRIMARY KEY,
+        description TEXT NOT NULL DEFAULT '',
+        cost REAL,
+        a_cost REAL,
+        category TEXT NOT NULL DEFAULT '',
+        seer TEXT NOT NULL DEFAULT '',
+        eqp_type TEXT NOT NULL DEFAULT '',
+        afue TEXT NOT NULL DEFAULT ''
+      );
+      CREATE TABLE IF NOT EXISTS eqcomp (
+        part_nbr TEXT NOT NULL,
+        comp_nbr TEXT NOT NULL,
+        PRIMARY KEY (part_nbr, comp_nbr)
+      );
+      CREATE INDEX IF NOT EXISTS idx_eqcomp_part ON eqcomp(part_nbr);
+      CREATE TABLE IF NOT EXISTS price_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL,
+        target TEXT NOT NULL,
+        field TEXT NOT NULL,
+        old_value REAL,
+        new_value REAL,
+        changed_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+    `);
+    db.pragma("user_version = 3");
+  }
 
   // Seed the first admin so a fresh deploy is loggable-into. Password comes
   // from ADMIN_PASSWORD at first boot; change it after first login.
