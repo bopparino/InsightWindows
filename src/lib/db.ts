@@ -99,6 +99,15 @@ function migrate(db: Database.Database): void {
   if (version < 1) {
     db.pragma("user_version = 1");
   }
+  if (version < 2) {
+    // Master bid files (pricing templates like CS520E11) live among real
+    // plans in Access. They stay browsable but are excluded from sales stats.
+    const cols = db.prepare("PRAGMA table_info(plans)").all() as { name: string }[];
+    if (!cols.some((c) => c.name === "is_master")) {
+      db.exec("ALTER TABLE plans ADD COLUMN is_master INTEGER NOT NULL DEFAULT 0");
+    }
+    db.pragma("user_version = 2");
+  }
 
   // Seed the first admin so a fresh deploy is loggable-into. Password comes
   // from ADMIN_PASSWORD at first boot; change it after first login.
