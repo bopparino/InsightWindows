@@ -16,6 +16,8 @@ function openDb(): Database.Database {
   mkdirSync(dirname(path), { recursive: true });
   const db = new Database(path);
   db.pragma("journal_mode = WAL");
+  // Wait out short-lived writer locks instead of throwing SQLITE_BUSY.
+  db.pragma("busy_timeout = 5000");
   db.pragma("foreign_keys = ON");
   migrate(db);
   return db;
@@ -122,4 +124,15 @@ function migrate(db: Database.Database): void {
   }
 }
 
-export const db: Database.Database = globalThis.__bidDb ?? (globalThis.__bidDb = openDb());
+// Lazy connection: Next's build spawns parallel workers that all import this
+// module during page-data collection, and an eager openDb() would have every
+// worker running migrate() + the admin seed against the same file at once
+// (SQLITE_BUSY). The Proxy defers opening until the first actual query, which
+// only happens at runtime.
+export const db: Database.Database = new Proxy({} as Database.Database, {
+  get(_target, prop) {
+    const real = (globalThis.__bidDb ??= openDb());
+    const value = Reflect.get(real, prop);
+    return typeof value === "function" ? value.bind(real) : value;
+  },
+});
