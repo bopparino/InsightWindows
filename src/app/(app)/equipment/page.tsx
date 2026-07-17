@@ -72,14 +72,24 @@ export default async function EquipmentPage({
             {count} priced parts · {bundles} bundle codes in the component map
           </p>
         </div>
-        <form method="get" className="w-72">
-          <input
-            name="q"
-            defaultValue={query}
-            placeholder="Search part #, description, category…"
-            className="w-full border border-input bg-card px-3 py-1.5 text-[13px]"
-          />
-        </form>
+        <div className="flex items-center gap-3">
+          <form method="get" className="w-72">
+            <input
+              name="q"
+              defaultValue={query}
+              placeholder="Search part #, description, category…"
+              className="w-full border border-input bg-card px-3 py-1.5 text-[13px]"
+            />
+          </form>
+          {isAdmin ? (
+            <Link
+              href="/equipment/import"
+              className="btn-glow bg-primary px-4 py-1.5 text-[13px] font-semibold text-primary-foreground"
+            >
+              Upload pricing
+            </Link>
+          ) : null}
+        </div>
       </div>
 
       {grouped.map(([manufacturer, mrows]) => (
