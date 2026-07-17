@@ -12,25 +12,25 @@ export default async function OverviewPage() {
     .prepare(
       `SELECT COUNT(*) AS plans, COALESCE(SUM(total),0) AS value,
               COALESCE(AVG(NULLIF(total,0)),0) AS avg
-       FROM plans`,
+       FROM plans WHERE is_master = 0`,
     )
     .get() as { plans: number; value: number; avg: number };
 
   const contracted = db
-    .prepare("SELECT COUNT(*) AS n, COALESCE(SUM(total),0) AS v FROM plans WHERE contracted_at >= '2025-01-01'")
+    .prepare("SELECT COUNT(*) AS n, COALESCE(SUM(total),0) AS v FROM plans WHERE is_master = 0 AND contracted_at >= '2025-01-01'")
     .get() as { n: number; v: number };
 
   const last90 = db
     .prepare(
       `SELECT COUNT(*) AS n, COALESCE(SUM(total),0) AS v FROM plans
-       WHERE edited_at >= datetime('now','-90 days')`,
+       WHERE is_master = 0 AND edited_at >= datetime('now','-90 days')`,
     )
     .get() as { n: number; v: number };
 
   const monthly = db
     .prepare(
       `SELECT substr(edited_at, 1, 7) AS ym, COUNT(*) AS n, COALESCE(SUM(total),0) AS v
-       FROM plans WHERE edited_at >= '2025-01-01'
+       FROM plans WHERE is_master = 0 AND edited_at >= '2025-01-01'
        GROUP BY ym ORDER BY ym`,
     )
     .all() as { ym: string; n: number; v: number }[];
@@ -39,7 +39,7 @@ export default async function OverviewPage() {
   const topBuilders = db
     .prepare(
       `SELECT builder_name, COUNT(*) AS n, COALESCE(SUM(total),0) AS v
-       FROM plans WHERE builder_name != ''
+       FROM plans WHERE is_master = 0 AND builder_name != ''
        GROUP BY builder_name ORDER BY v DESC LIMIT 8`,
     )
     .all() as { builder_name: string; n: number; v: number }[];
@@ -47,7 +47,7 @@ export default async function OverviewPage() {
   const recent = db
     .prepare(
       `SELECT id, plan_nbr, builder_name, proj_name, house_types, total, edited_at, contracted_at
-       FROM plans ORDER BY edited_at DESC LIMIT 10`,
+       FROM plans WHERE is_master = 0 ORDER BY edited_at DESC LIMIT 10`,
     )
     .all() as {
     id: number;
@@ -65,7 +65,7 @@ export default async function OverviewPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Sales Overview</h1>
         <p className="mt-1 text-[13px] text-faint">
-          Live from the bid history, 2025 to today.
+          Live from the bid history, 2025 to today. Master bid files excluded.
         </p>
       </div>
 

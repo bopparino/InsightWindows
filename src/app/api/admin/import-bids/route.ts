@@ -63,15 +63,15 @@ export async function POST(req: Request) {
   const findPlan = db.prepare("SELECT id FROM plans WHERE plan_nbr = ?");
   const insertPlan = db.prepare(
     `INSERT INTO plans (plan_nbr, builder_code, builder_name, proj_code, proj_name,
-                        house_types, total, lines_count, proposed_at, contracted_at, edited_at)
+                        house_types, total, lines_count, proposed_at, contracted_at, edited_at, is_master)
      VALUES (@plan_nbr, @builder_code, @builder_name, @proj_code, @proj_name,
-             @house_types, @total, @lines_count, @proposed_at, @contracted_at, @edited_at)`,
+             @house_types, @total, @lines_count, @proposed_at, @contracted_at, @edited_at, @is_master)`,
   );
   const updatePlan = db.prepare(
     `UPDATE plans SET builder_code=@builder_code, builder_name=@builder_name,
                       proj_code=@proj_code, proj_name=@proj_name, house_types=@house_types,
                       total=@total, lines_count=@lines_count, proposed_at=@proposed_at,
-                      contracted_at=@contracted_at, edited_at=@edited_at
+                      contracted_at=@contracted_at, edited_at=@edited_at, is_master=@is_master
      WHERE id=@id`,
   );
   const deleteLines = db.prepare("DELETE FROM plan_lines WHERE plan_id = ?");
@@ -87,7 +87,13 @@ export async function POST(req: Request) {
 
   const run = db.transaction(() => {
     for (const p of bundle.plans) {
+      const isMaster =
+        p.builder_name.toUpperCase().startsWith("MASTER") ||
+        p.proj_name.toUpperCase().startsWith("MASTER")
+          ? 1
+          : 0;
       const fields = {
+        is_master: isMaster,
         plan_nbr: p.plan_nbr,
         builder_code: p.builder_code,
         builder_name: p.builder_name,

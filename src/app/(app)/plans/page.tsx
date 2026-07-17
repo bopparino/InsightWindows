@@ -16,7 +16,7 @@ export default async function PlansPage({
     query
       ? db
           .prepare(
-            `SELECT id, plan_nbr, builder_name, proj_name, house_types, total, lines_count, edited_at, contracted_at
+            `SELECT id, plan_nbr, builder_name, proj_name, house_types, total, lines_count, edited_at, contracted_at, is_master
              FROM plans
              WHERE plan_nbr LIKE $q OR builder_name LIKE $q OR proj_name LIKE $q OR house_types LIKE $q
              ORDER BY edited_at DESC LIMIT 200`,
@@ -24,7 +24,7 @@ export default async function PlansPage({
           .all({ q: `%${query}%` })
       : db
           .prepare(
-            `SELECT id, plan_nbr, builder_name, proj_name, house_types, total, lines_count, edited_at, contracted_at
+            `SELECT id, plan_nbr, builder_name, proj_name, house_types, total, lines_count, edited_at, contracted_at, is_master
              FROM plans ORDER BY edited_at DESC LIMIT 200`,
           )
           .all()
@@ -38,6 +38,7 @@ export default async function PlansPage({
     lines_count: number;
     edited_at: string;
     contracted_at: string | null;
+    is_master: number;
   }[];
 
   const count = (db.prepare("SELECT COUNT(*) AS n FROM plans").get() as { n: number }).n;
@@ -78,6 +79,7 @@ export default async function PlansPage({
                 <Link href={`/plans/${p.id}`} className="font-mono-data font-semibold hover:underline">
                   {p.plan_nbr}
                 </Link>
+                {p.is_master ? <span className="chip chip-muted ml-2">Master</span> : null}
                 {p.contracted_at && p.contracted_at >= "2025-01-01" ? (
                   <span className="chip chip-ok ml-2">Contracted</span>
                 ) : null}
