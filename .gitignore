@@ -33,3 +33,8 @@ Equipment History/
 .claude/
 installer/
 access-source/
+
+.next/
+data/
+*.db
+bundle*.json

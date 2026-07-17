@@ -1,0 +1,226 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Cut Sheet — monochrome graphite UI system.
+   Applied via .theme-insight on the (app) body. Print / PDF routes
+   do NOT receive this class, so they keep the plain :root tokens
+   above. The interface is light-only; there is no dark variant.
+═══════════════════════════════════════════════════════════ */
+.theme-insight {
+  --radius: 2px;
+
+  /* Core surfaces + ink */
+  --background: #F6F7F8;          /* app background */
+  --foreground: #0E1116;          /* ink — primary text */
+  --card: #FFFFFF;                /* surface: cards, panels, sidebar, paper */
+  --card-foreground: #0E1116;
+  --popover: #FFFFFF;
+  --popover-foreground: #0E1116;
+
+  /* Ink is the only accent: primary buttons, active fills, focus, radio dot */
+  --primary: #0E1116;
+  --primary-foreground: #FFFFFF;
+  --primary-hover: #262C34;
+
+  /* bg-secondary / bg-muted / bg-accent all resolve to the light fill tint */
+  --secondary: #F0F2F4;
+  --secondary-foreground: #0E1116;
+  --muted: #F0F2F4;
+  --muted-foreground: #545B63;    /* text-2 — secondary text */
+  --accent: #F0F2F4;              /* active nav/rail tint, row hover */
+  --accent-foreground: #0E1116;
+
+  --destructive: #9E3528;
+  --border: #D1D6DB;              /* structural borders */
+  --input: #C7CCD2;               /* input + segmented borders */
+  --ring: #0E1116;
+
+  /* Extended graphite scale */
+  --ink: #0E1116;
+  --ink-hover: #262C34;
+  --text-2: #545B63;
+  --text-3: #8A929B;              /* metadata + every mono micro-label */
+  --text-ghost: #B6BCC3;          /* faint placeholders, section indices */
+  --value-empty: #C2C7CD;         /* empty duct-cell value */
+  --fill: #F0F2F4;                /* active tint, info-note, lot chip, filled cell */
+  --fill-2: #EAECEF;              /* count chip, monogram bg */
+  --row-tint: #FAFBFC;            /* table header bg, row hover, sub-row */
+  --tile-hover: #FCFCFD;
+  --replica-mat: #E9EBED;
+  --divider: #DBDFE3;             /* row dividers */
+  --line-faint: #E4E7EA;
+  --border-monogram: #D7DBDF;
+  --border-input: #C7CCD2;
+
+  /* Status — small marks + text only, never large fills */
+  --warn-fg:   #8A5A12;
+  --warn-bg:   #F4EDD9;
+  --warn-line: #E0CB95;
+  --warn-sub:  #A07A35;
+  --danger-fg: #9E3528;
+  --danger-bg: #F5E6E3;
+  --danger-line: #DCAFA7;
+  --ok-fg:     #316A43;
+  --ok-check:  #9FE8B8;
+
+  font-family: var(--font-archivo), 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.theme-insight h1,
+.theme-insight h2,
+.theme-insight h3,
+.theme-insight h4 {
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+@theme inline {
+  --radius-sm: 2px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-xl: 2px;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* graphite extras → bg-fill, text-faint, border-divider, etc. */
+  --color-ink: var(--ink);
+  --color-faint: var(--text-3);
+  --color-ghost: var(--text-ghost);
+  --color-fill: var(--fill);
+  --color-fill2: var(--fill-2);
+  --color-divider: var(--divider);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Signature utilities (scoped to .theme-insight)
+═══════════════════════════════════════════════════════════ */
+
+/* Mono micro-label: section/column headers, metadata keys. */
+.theme-insight .label-caps {
+  font-family: var(--font-jetbrains-mono), 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+/* Every value that is data (number, id, lot, size, date, code) is mono + tabular. */
+.theme-insight .font-mono-data {
+  font-family: var(--font-jetbrains-mono), 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Status chip (DUP LOT, etc.): mono, uppercase, bordered, 2px. */
+.theme-insight .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 2px;
+  font-family: var(--font-jetbrains-mono), 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+.theme-insight .chip-warn   { background: var(--warn-bg);   color: var(--warn-fg);   border-color: var(--warn-line); }
+.theme-insight .chip-danger { background: var(--danger-bg); color: var(--danger-fg); border-color: var(--danger-line); }
+.theme-insight .chip-ok     { background: #EAF3EC;          color: var(--ok-fg);     border-color: #BFE0C8; }
+.theme-insight .chip-muted  { background: var(--fill-2);    color: var(--text-3);    border-color: var(--border); }
+
+/* Primary button hover (class kept so existing bg-primary markup still works). */
+.theme-insight .btn-glow { transition: background-color 0.12s ease, border-color 0.12s ease; }
+.theme-insight .btn-glow:hover:not(:disabled) { background: var(--ink-hover); border-color: var(--ink-hover); }
+.theme-insight .btn-glow:active:not(:disabled) { background: var(--ink-hover); }
+
+/* Monochrome focus ring on form controls. */
+.theme-insight input:focus-visible,
+.theme-insight select:focus-visible,
+.theme-insight textarea:focus-visible {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: 0 0 0 3px rgba(14, 17, 22, 0.12);
+}
+
+/* No spinner chevrons on number inputs. */
+.theme-insight input[type="number"]::-webkit-inner-spin-button,
+.theme-insight input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.theme-insight input[type="number"] { -moz-appearance: textfield; }
+
+.theme-insight ::placeholder { color: var(--text-ghost); opacity: 1; }
+.theme-insight ::selection { background: #0E1116; color: #FFFFFF; }
