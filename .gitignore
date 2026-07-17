@@ -38,3 +38,5 @@ access-source/
 data/
 *.db
 *bundle*.json
+pricing*.json
+bids*.json

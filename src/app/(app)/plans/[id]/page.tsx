@@ -84,6 +84,13 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
           qty: Number(raw[`${code}_QTY`] ?? 0),
           cost: Number(raw[`${code}_COS`] ?? 0),
         })).filter((k) => k.qty > 0 || k.cost > 0);
+        // App-created lines carry their kit picks explicitly.
+        if (raw.APP_KIT_ITEMS) {
+          try {
+            const appKits = JSON.parse(raw.APP_KIT_ITEMS) as { label: string; qty: number; unitPrice: number }[];
+            for (const k of appKits) kits.push({ label: k.label, qty: k.qty, cost: k.qty * k.unitPrice });
+          } catch {}
+        }
         const sm = Number(raw.SM_CST ?? 0);
         const smLbs = Number(raw.SM_LBSTOT ?? 0);
         return (

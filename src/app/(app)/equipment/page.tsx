@@ -43,8 +43,22 @@ export default async function EquipmentPage({
     seer: string;
     eqp_type: string;
     afue: string;
+    manufacturer: string;
     comps: number;
   }[];
+
+  // Group by manufacturer (assigned by the per-manufacturer pricing uploads;
+  // parts never touched by an upload sit under Unassigned).
+  const groups = new Map<string, typeof rows>();
+  for (const p of rows) {
+    const key = p.manufacturer || "Unassigned";
+    const g = groups.get(key) ?? [];
+    g.push(p);
+    groups.set(key, g);
+  }
+  const grouped = [...groups.entries()].sort(([a], [b]) =>
+    a === "Unassigned" ? 1 : b === "Unassigned" ? -1 : a.localeCompare(b),
+  );
 
   const count = (db.prepare("SELECT COUNT(*) AS n FROM parts").get() as { n: number }).n;
   const bundles = (db.prepare("SELECT COUNT(DISTINCT part_nbr) AS n FROM eqcomp").get() as { n: number }).n;
@@ -68,7 +82,10 @@ export default async function EquipmentPage({
         </form>
       </div>
 
-      <table className="mt-6 w-full text-[13px]">
+      {grouped.map(([manufacturer, mrows]) => (
+      <section key={manufacturer} className="mt-8">
+      <h2 className="label-caps">{manufacturer}</h2>
+      <table className="mt-2 w-full text-[13px]">
         <thead>
           <tr className="border-b border-border text-left">
             <th className="label-caps py-2 pr-4 font-semibold">Part #</th>
@@ -80,7 +97,7 @@ export default async function EquipmentPage({
           </tr>
         </thead>
         <tbody>
-          {rows.map((p) => (
+          {mrows.map((p) => (
             <tr key={p.part_nbr} className="border-b border-line-faint hover:bg-row-tint">
               <td className="py-2 pr-4">
                 <Link
@@ -116,6 +133,8 @@ export default async function EquipmentPage({
           ))}
         </tbody>
       </table>
+      </section>
+      ))}
       {rows.length === 0 ? <p className="mt-8 text-[13px] text-faint">No parts match “{query}”.</p> : null}
     </div>
   );
