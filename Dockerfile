@@ -1,35 +1,31 @@
-# ── Stage 1: Build React frontend ─────────────────────────────
-FROM node:20-alpine AS frontend-build
-WORKDIR /app/frontend
-COPY frontend/package*.json ./
-RUN npm ci
-COPY frontend/ ./
-# .env.production is copied above — Vite picks it up automatically during build
-RUN npm run build
+# Next.js app image, same recipe as the cut-sheet program. Alpine base;
+# better-sqlite3 ships musl prebuilds so python3/make/g++ are only a fallback.
+FROM node:22-alpine AS builder
 
-# ── Stage 2: Python backend + built frontend ───────────────────
-FROM python:3.11-slim
-
-# System deps for WeasyPrint (PDF generation)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpango-1.0-0 libpangoft2-1.0-0 libpangocairo-1.0-0 \
-    libgdk-pixbuf-2.0-0 libffi-dev libcairo2 libglib2.0-0 \
-    fonts-liberation \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache python3 make g++
 
 WORKDIR /app
 
-# Install Python deps
-COPY backend/requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+COPY package.json package-lock.json ./
+RUN npm ci
 
-# Copy backend source
-COPY backend/ ./backend/
+COPY . .
+RUN npm run build
 
-# Copy built frontend (backend serves it as static files)
-COPY --from=frontend-build /app/frontend/dist ./frontend/dist
+RUN npm prune --omit=dev
 
-WORKDIR /app/backend
+FROM node:22-alpine AS runner
 
-# Railway injects $PORT at runtime
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+ENV NODE_ENV=production
+ENV PORT=3000
+
+WORKDIR /app
+
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/next.config.ts ./next.config.ts
+
+EXPOSE 3000
+
+CMD ["npm", "start"]

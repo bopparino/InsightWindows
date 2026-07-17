@@ -32,3 +32,9 @@ Equipment History/
 # Claude session files (memory is in ~/.claude, not here)
 .claude/
 installer/
+access-source/
+
+.next/
+data/
+*.db
+bundle*.json

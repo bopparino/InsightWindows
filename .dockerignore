@@ -1,33 +1,9 @@
-# Python
-__pycache__/
-*.pyc
-*.pyo
-.venv/
-venv/
-*.egg-info/
-
-# Node
-frontend/node_modules/
-frontend/dist/
-
-# Secrets
-.env
-frontend/.env
-backend/.env
-
-# Data files
-downloadedfiles/
+node_modules
+.next
 data/
-backups/
-"Equipment History/"
-
-# Git
-.git/
-.gitignore
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Claude
-.claude/
+access-source/
+backend/
+frontend/
+cloudflare-tunnel/
+*.md
+!README.md
