@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
 import { destroySession } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(req: Request) {
+export async function POST() {
   await destroySession();
-  return NextResponse.redirect(new URL("/login", req.url), 303);
+  // Relative Location — see login route for why (Railway proxy).
+  return new Response(null, { status: 303, headers: { Location: "/login" } });
 }
