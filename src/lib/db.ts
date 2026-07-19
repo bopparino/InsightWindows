@@ -167,6 +167,20 @@ function migrate(db: Database.Database): void {
     }
     db.pragma("user_version = 4");
   }
+  if (version < 5) {
+    // Parsed-but-unapplied manufacturer XLS uploads awaiting preview approval.
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS pending_imports (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        manufacturer TEXT NOT NULL,
+        filename TEXT NOT NULL,
+        username TEXT NOT NULL,
+        payload TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+    `);
+    db.pragma("user_version = 5");
+  }
 
   // Seed the first admin so a fresh deploy is loggable-into. Password comes
   // from ADMIN_PASSWORD at first boot; change it after first login.
