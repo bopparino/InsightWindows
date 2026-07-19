@@ -7,9 +7,16 @@ import { PlanSchema, persistPlan } from "@/lib/planWrite";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(req: Request) {
+export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const me = await requireApiUser();
   if (me instanceof Response) return me;
+  const { id } = await ctx.params;
+  const planId = Number(id);
+
+  const existing = db.prepare("SELECT plan_nbr FROM plans WHERE id = ?").get(planId) as
+    | { plan_nbr: string }
+    | undefined;
+  if (!existing) return new NextResponse("plan not found", { status: 404 });
 
   let input: z.infer<typeof PlanSchema>;
   try {
@@ -19,11 +26,8 @@ export async function POST(req: Request) {
     return new NextResponse(`bad plan: ${msg}`, { status: 400 });
   }
 
-  const planNbr = input.planNbr.trim().toUpperCase();
-  if (db.prepare("SELECT 1 FROM plans WHERE plan_nbr = ?").get(planNbr)) {
-    return new NextResponse(`plan ${planNbr} already exists`, { status: 409 });
-  }
-
-  const { id, total } = persistPlan(input, null);
-  return NextResponse.json({ id, planNbr, total });
+  // Plan numbers are identity; edits keep the existing one.
+  input.planNbr = existing.plan_nbr;
+  const { total } = persistPlan(input, planId);
+  return NextResponse.json({ id: planId, planNbr: existing.plan_nbr, total });
 }

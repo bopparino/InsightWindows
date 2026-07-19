@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import NewPlanForm, { type KitOption, type PartOption } from "@/components/NewPlanForm";
+import PlanForm, { type KitOption, type PartOption } from "@/components/PlanForm";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +24,7 @@ export default async function NewPlanPage() {
         Prices come from the live Price Book and Equipment tables; totals use the verified bid math.
       </p>
       <div className="mt-6">
-        <NewPlanForm parts={parts} kits={kits} />
+        <PlanForm parts={parts} kits={kits} />
       </div>
     </div>
   );

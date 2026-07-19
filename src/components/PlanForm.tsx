@@ -7,14 +7,15 @@ import { computeSystem, type SystemInput } from "@/lib/bidmath";
 export type PartOption = { part_nbr: string; description: string; cost: number | null };
 export type KitOption = { id: number; code: string; label: string; category: string; price: number | null };
 
-type SystemState = {
+export type SystemState = {
   houseType: string;
   partNbr: string;
   partQuery: string;
+  partCostOverride: string; // "" = book price
   sheetMetalCost: string;
   ductBoardCost: string;
   otherCost: string;
-  kitLines: { id: string; qty: string }[];
+  kitLines: { id: string; label: string; qty: string; unitPrice: string }[]; // id "" = custom item
   laborHours: string;
   laborCost: string;
   factor: string;
@@ -24,10 +25,18 @@ type SystemState = {
   commission: string;
 };
 
-const blankSystem = (): SystemState => ({
+export type PlanInitial = {
+  planNbr: string;
+  builderName: string;
+  projName: string;
+  systems: SystemState[];
+};
+
+export const blankSystem = (): SystemState => ({
   houseType: "",
   partNbr: "",
   partQuery: "",
+  partCostOverride: "",
   sheetMetalCost: "",
   ductBoardCost: "",
   otherCost: "",
@@ -45,16 +54,27 @@ const n = (v: string) => {
   const x = Number(v.replace(/[$,\s]/g, ""));
   return Number.isFinite(x) ? x : 0;
 };
+const maybe = (v: string): number | null => (v.trim() === "" ? null : n(v));
 
 const usd = (v: number) =>
   v.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 });
 
-export default function NewPlanForm({ parts, kits }: { parts: PartOption[]; kits: KitOption[] }) {
+export default function PlanForm({
+  parts,
+  kits,
+  planId,
+  initial,
+}: {
+  parts: PartOption[];
+  kits: KitOption[];
+  planId?: number;
+  initial?: PlanInitial;
+}) {
   const router = useRouter();
-  const [planNbr, setPlanNbr] = useState("");
-  const [builderName, setBuilderName] = useState("");
-  const [projName, setProjName] = useState("");
-  const [systems, setSystems] = useState<SystemState[]>([blankSystem()]);
+  const [planNbr, setPlanNbr] = useState(initial?.planNbr ?? "");
+  const [builderName, setBuilderName] = useState(initial?.builderName ?? "");
+  const [projName, setProjName] = useState(initial?.projName ?? "");
+  const [systems, setSystems] = useState<SystemState[]>(initial?.systems?.length ? initial.systems : [blankSystem()]);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -70,65 +90,82 @@ export default function NewPlanForm({ parts, kits }: { parts: PartOption[]; kits
     return [...m.entries()];
   }, [kits]);
 
-  const toInput = (s: SystemState): SystemInput => ({
-    houseType: s.houseType,
-    partNbr: s.partNbr,
-    partCost: partIndex.get(s.partNbr)?.cost ?? 0,
-    sheetMetalCost: n(s.sheetMetalCost),
-    ductBoardCost: n(s.ductBoardCost),
-    otherCost: n(s.otherCost),
-    kitLines: s.kitLines
-      .filter((k) => n(k.qty) > 0 && kitIndex.has(k.id))
-      .map((k) => ({
-        code: k.id,
-        label: kitIndex.get(k.id)!.label,
-        qty: n(k.qty),
-        unitPrice: kitIndex.get(k.id)!.price ?? 0,
-      })),
-    laborHours: n(s.laborHours),
-    laborCost: n(s.laborCost),
-    factor: n(s.factor) || 1,
-    taxPct: n(s.taxPct),
-    permitCost: n(s.permitCost),
-    serviceCost: n(s.serviceCost),
-    commission: n(s.commission),
-  });
+  const toInput = (s: SystemState): SystemInput => {
+    const bookPart = partIndex.get(s.partNbr)?.cost ?? 0;
+    return {
+      houseType: s.houseType,
+      partNbr: s.partNbr,
+      partCost: maybe(s.partCostOverride) ?? bookPart,
+      sheetMetalCost: n(s.sheetMetalCost),
+      ductBoardCost: n(s.ductBoardCost),
+      otherCost: n(s.otherCost),
+      kitLines: s.kitLines
+        .filter((k) => n(k.qty) > 0 && (kitIndex.has(k.id) || (k.id === "" && k.label.trim())))
+        .map((k) => {
+          const item = kitIndex.get(k.id);
+          return {
+            code: item?.code ?? "CUSTOM",
+            label: item?.label ?? k.label,
+            qty: n(k.qty),
+            unitPrice: maybe(k.unitPrice) ?? item?.price ?? 0,
+          };
+        }),
+      laborHours: n(s.laborHours),
+      laborCost: n(s.laborCost),
+      factor: n(s.factor) || 1,
+      taxPct: n(s.taxPct),
+      permitCost: n(s.permitCost),
+      serviceCost: n(s.serviceCost),
+      commission: n(s.commission),
+    };
+  };
 
   const totals = systems.map((s) => computeSystem(toInput(s)));
   const planTotal = totals.reduce((sum, t) => sum + t.finalTotal, 0);
 
   const patch = (i: number, p: Partial<SystemState>) =>
     setSystems((prev) => prev.map((s, j) => (j === i ? { ...s, ...p } : s)));
+  const patchKit = (i: number, ki: number, p: Partial<SystemState["kitLines"][number]>) =>
+    setSystems((prev) =>
+      prev.map((s, j) =>
+        j === i ? { ...s, kitLines: s.kitLines.map((x, xi) => (xi === ki ? { ...x, ...p } : x)) } : s,
+      ),
+    );
 
   async function save() {
     setSaving(true);
     setError("");
-    const res = await fetch("/api/plans", {
-      method: "POST",
+    const payload = {
+      planNbr,
+      builderName,
+      projName,
+      systems: systems.map((s) => ({
+        houseType: s.houseType.trim(),
+        partNbr: s.partNbr.trim(),
+        partCostOverride: maybe(s.partCostOverride),
+        sheetMetalCost: n(s.sheetMetalCost),
+        ductBoardCost: n(s.ductBoardCost),
+        otherCost: n(s.otherCost),
+        kitLines: s.kitLines
+          .filter((k) => n(k.qty) > 0)
+          .map((k) =>
+            k.id !== ""
+              ? { id: Number(k.id), qty: n(k.qty), unitPrice: maybe(k.unitPrice) }
+              : { label: k.label.trim(), qty: n(k.qty), unitPrice: maybe(k.unitPrice) ?? 0 },
+          ),
+        laborHours: n(s.laborHours),
+        laborCost: n(s.laborCost),
+        factor: n(s.factor) || 1,
+        taxPct: n(s.taxPct),
+        permitCost: n(s.permitCost),
+        serviceCost: n(s.serviceCost),
+        commission: n(s.commission),
+      })),
+    };
+    const res = await fetch(planId != null ? `/api/plans/${planId}` : "/api/plans", {
+      method: planId != null ? "PUT" : "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        planNbr,
-        builderName,
-        projName,
-        systems: systems.map((s) => {
-          const input = toInput(s);
-          return {
-            houseType: input.houseType,
-            partNbr: input.partNbr,
-            sheetMetalCost: input.sheetMetalCost,
-            ductBoardCost: input.ductBoardCost,
-            otherCost: input.otherCost,
-            kitLines: input.kitLines.map((k) => ({ id: Number(k.code), qty: k.qty })),
-            laborHours: input.laborHours,
-            laborCost: input.laborCost,
-            factor: input.factor,
-            taxPct: input.taxPct,
-            permitCost: input.permitCost,
-            serviceCost: input.serviceCost,
-            commission: input.commission,
-          };
-        }),
-      }),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) {
       setError(await res.text());
@@ -137,6 +174,7 @@ export default function NewPlanForm({ parts, kits }: { parts: PartOption[]; kits
     }
     const { id } = (await res.json()) as { id: number };
     router.push(`/plans/${id}`);
+    router.refresh();
   }
 
   const inputCls = "w-full border border-input bg-card px-2 py-1.5 text-[13px]";
@@ -147,7 +185,13 @@ export default function NewPlanForm({ parts, kits }: { parts: PartOption[]; kits
       <section className="grid gap-4 border-y border-divider py-5 sm:grid-cols-3">
         <div>
           <label className="label-caps">Plan #</label>
-          <input className={`${inputCls} font-mono-data`} value={planNbr} onChange={(e) => setPlanNbr(e.target.value)} placeholder="AC101F26" />
+          <input
+            className={`${inputCls} font-mono-data`}
+            value={planNbr}
+            onChange={(e) => setPlanNbr(e.target.value)}
+            placeholder="AC101F26"
+            disabled={planId != null}
+          />
         </div>
         <div>
           <label className="label-caps">Builder</label>
@@ -161,14 +205,17 @@ export default function NewPlanForm({ parts, kits }: { parts: PartOption[]; kits
 
       {systems.map((s, i) => {
         const part = partIndex.get(s.partNbr);
+        const bookPart = part?.cost ?? null;
         const t = totals[i];
         const matches =
           s.partQuery.length >= 2
-            ? parts.filter(
-                (p) =>
-                  p.part_nbr.toUpperCase().includes(s.partQuery.toUpperCase()) ||
-                  p.description.toUpperCase().includes(s.partQuery.toUpperCase()),
-              ).slice(0, 8)
+            ? parts
+                .filter(
+                  (p) =>
+                    p.part_nbr.toUpperCase().includes(s.partQuery.toUpperCase()) ||
+                    p.description.toUpperCase().includes(s.partQuery.toUpperCase()),
+                )
+                .slice(0, 8)
             : [];
         return (
           <section key={i} className="border border-border bg-card">
@@ -215,10 +262,21 @@ export default function NewPlanForm({ parts, kits }: { parts: PartOption[]; kits
                       ))}
                     </div>
                   ) : null}
-                  {part ? (
-                    <p className="mt-1 text-[12px] text-faint">
-                      {part.description || "bundle"} — <span className="font-mono-data">{part.cost === null ? "no cost" : usd(part.cost)}</span>
-                    </p>
+                  {part || s.partNbr ? (
+                    <div className="mt-1 flex items-center gap-2 text-[12px] text-faint">
+                      <span className="truncate">{part?.description || "—"}</span>
+                      <span className="label-caps ml-auto">cost</span>
+                      <input
+                        className="w-24 border border-input bg-card px-1 py-0.5 text-right font-mono-data text-[12px]"
+                        value={s.partCostOverride}
+                        onChange={(e) => patch(i, { partCostOverride: e.target.value })}
+                        placeholder={bookPart === null ? "0.00" : bookPart.toFixed(2)}
+                        inputMode="decimal"
+                      />
+                      {maybe(s.partCostOverride) != null && maybe(s.partCostOverride) !== bookPart ? (
+                        <span className="chip chip-warn">override</span>
+                      ) : null}
+                    </div>
                   ) : null}
                 </div>
                 <div className="grid grid-cols-3 gap-3">
@@ -237,40 +295,56 @@ export default function NewPlanForm({ parts, kits }: { parts: PartOption[]; kits
                 </div>
 
                 <div>
-                  <label className="label-caps">Kit items</label>
+                  <label className="label-caps">Kit items · price editable in-bid</label>
                   {s.kitLines.map((k, ki) => {
                     const item = kitIndex.get(k.id);
+                    const isCustom = k.id === "";
+                    const book = item?.price ?? null;
+                    const used = maybe(k.unitPrice) ?? book ?? 0;
+                    const overridden = maybe(k.unitPrice) != null && maybe(k.unitPrice) !== book;
                     return (
                       <div key={ki} className="mt-1 flex items-center gap-2">
-                        <select
-                          className="min-w-0 flex-1 border border-input bg-card px-1 py-1 text-[12px]"
-                          value={k.id}
-                          onChange={(e) =>
-                            patch(i, { kitLines: s.kitLines.map((x, xi) => (xi === ki ? { ...x, id: e.target.value } : x)) })
-                          }
-                        >
-                          <option value="">— pick item —</option>
-                          {kitCategories.map(([cat, items]) => (
-                            <optgroup key={cat} label={cat}>
-                              {items.map((it) => (
-                                <option key={it.id} value={String(it.id)}>
-                                  {it.label || it.code} ({it.price === null ? "—" : usd(it.price)})
-                                </option>
-                              ))}
-                            </optgroup>
-                          ))}
-                        </select>
+                        {isCustom ? (
+                          <input
+                            className="min-w-0 flex-1 border border-input bg-card px-1 py-1 text-[12px]"
+                            value={k.label}
+                            onChange={(e) => patchKit(i, ki, { label: e.target.value })}
+                            placeholder="Custom item description…"
+                          />
+                        ) : (
+                          <select
+                            className="min-w-0 flex-1 border border-input bg-card px-1 py-1 text-[12px]"
+                            value={k.id}
+                            onChange={(e) => patchKit(i, ki, { id: e.target.value, unitPrice: "" })}
+                          >
+                            <option value="">— pick item —</option>
+                            {kitCategories.map(([cat, items]) => (
+                              <optgroup key={cat} label={cat}>
+                                {items.map((it) => (
+                                  <option key={it.id} value={String(it.id)}>
+                                    {it.label || it.code} ({it.price === null ? "—" : usd(it.price)})
+                                  </option>
+                                ))}
+                              </optgroup>
+                            ))}
+                          </select>
+                        )}
                         <input
                           className="w-14 border border-input bg-card px-1 py-1 text-right font-mono-data text-[12px]"
                           value={k.qty}
-                          onChange={(e) =>
-                            patch(i, { kitLines: s.kitLines.map((x, xi) => (xi === ki ? { ...x, qty: e.target.value } : x)) })
-                          }
+                          onChange={(e) => patchKit(i, ki, { qty: e.target.value })}
                           inputMode="numeric"
+                          title="Quantity"
                         />
-                        <span className="w-20 text-right font-mono-data text-[12px]">
-                          {item?.price != null ? usd(n(k.qty) * item.price) : "—"}
-                        </span>
+                        <input
+                          className={`w-20 border px-1 py-1 text-right font-mono-data text-[12px] ${overridden || isCustom ? "border-warn-line bg-warn-bg" : "border-input bg-card"}`}
+                          value={k.unitPrice}
+                          onChange={(e) => patchKit(i, ki, { unitPrice: e.target.value })}
+                          placeholder={book === null ? "0.00" : book.toFixed(2)}
+                          inputMode="decimal"
+                          title="Unit price (blank = Price Book)"
+                        />
+                        <span className="w-20 text-right font-mono-data text-[12px]">{usd(n(k.qty) * used)}</span>
                         <button
                           type="button"
                           className="text-[12px] text-faint hover:text-destructive"
@@ -281,13 +355,24 @@ export default function NewPlanForm({ parts, kits }: { parts: PartOption[]; kits
                       </div>
                     );
                   })}
-                  <button
-                    type="button"
-                    className="mt-1 text-[12px] text-faint hover:text-ink"
-                    onClick={() => patch(i, { kitLines: [...s.kitLines, { id: "", qty: "1" }] })}
-                  >
-                    + Add kit item
-                  </button>
+                  <div className="mt-1 flex gap-4">
+                    <button
+                      type="button"
+                      className="text-[12px] text-faint hover:text-ink"
+                      onClick={() => patch(i, { kitLines: [...s.kitLines, { id: "", label: "", qty: "1", unitPrice: "" }] })}
+                    >
+                      + Custom item
+                    </button>
+                    <button
+                      type="button"
+                      className="text-[12px] text-faint hover:text-ink"
+                      onClick={() =>
+                        patch(i, { kitLines: [...s.kitLines, { id: String(kits[0]?.id ?? ""), label: "", qty: "1", unitPrice: "" }] })
+                      }
+                    >
+                      + Book item
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -361,7 +446,7 @@ export default function NewPlanForm({ parts, kits }: { parts: PartOption[]; kits
             onClick={save}
             className="btn-glow bg-primary px-6 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-40"
           >
-            {saving ? "Saving…" : "Create plan"}
+            {saving ? "Saving…" : planId != null ? "Save changes" : "Create plan"}
           </button>
         </div>
       </div>

@@ -181,6 +181,16 @@ function migrate(db: Database.Database): void {
     `);
     db.pragma("user_version = 5");
   }
+  if (version < 6) {
+    // Workflow status for app-managed plans: '' (imported/none), draft,
+    // proposed, contracted, lost. proposed_at/contracted_at stamp on
+    // transition; the dashboard's Contracted stat reads contracted_at.
+    const cols = db.prepare("PRAGMA table_info(plans)").all() as { name: string }[];
+    if (!cols.some((c) => c.name === "status")) {
+      db.exec("ALTER TABLE plans ADD COLUMN status TEXT NOT NULL DEFAULT ''");
+    }
+    db.pragma("user_version = 6");
+  }
 
   // Seed the first admin so a fresh deploy is loggable-into. Password comes
   // from ADMIN_PASSWORD at first boot; change it after first login.

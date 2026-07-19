@@ -31,12 +31,16 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
         proj_name: string;
         proj_code: string;
         total: number;
+        status: string;
         proposed_at: string | null;
         contracted_at: string | null;
         edited_at: string;
       }
     | undefined;
   if (!plan) notFound();
+  const STATUSES = ["draft", "proposed", "contracted", "lost"] as const;
+  const chipFor = (s: string) =>
+    s === "contracted" ? "chip-ok" : s === "lost" ? "chip-danger" : s === "proposed" ? "chip-warn" : "chip-muted";
 
   const lines = db
     .prepare(
@@ -66,8 +70,27 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
           ← Plans
         </Link>
         <div className="mt-2 flex items-baseline justify-between">
-          <h1 className="font-mono-data text-2xl font-bold tracking-tight">{plan.plan_nbr}</h1>
-          <div className="font-mono-data text-2xl font-semibold">{money(plan.total)}</div>
+          <h1 className="font-mono-data text-2xl font-bold tracking-tight">
+            {plan.plan_nbr}
+            {plan.status ? <span className={`chip ${chipFor(plan.status)} ml-3 align-middle`}>{plan.status}</span> : null}
+          </h1>
+          <div className="flex items-baseline gap-4">
+            <Link href={`/plans/${plan.id}/edit`} className="text-[13px] text-faint underline-offset-4 hover:text-ink hover:underline">
+              Edit
+            </Link>
+            <div className="font-mono-data text-2xl font-semibold">{money(plan.total)}</div>
+          </div>
+        </div>
+        <div className="mt-3 flex items-center gap-2">
+          <span className="label-caps">Mark:</span>
+          {STATUSES.filter((st) => st !== plan.status).map((st) => (
+            <form key={st} action={`/api/plans/${plan.id}/status`} method="post" className="inline">
+              <input type="hidden" name="status" value={st} />
+              <button className={`chip ${chipFor(st)} cursor-pointer`} type="submit">
+                {st}
+              </button>
+            </form>
+          ))}
         </div>
         <dl className="mt-3 grid grid-cols-2 gap-x-8 gap-y-2 border-y border-divider py-4 text-[13px] sm:grid-cols-4">
           <Meta k="Builder" v={plan.builder_name || plan.builder_code || "—"} />
