@@ -75,8 +75,16 @@ export default async function EditPlanPage({ params }: { params: Promise<{ id: s
     const residual = Math.round((totCost - line.part_cost - sm - dbCost - kitTotal) * 100) / 100;
     s.otherCost = residual > 0 ? String(residual) : "";
 
-    s.laborHours = raw.LABOR_HRS ? String(f(raw, "LABOR_HRS")) : "";
-    s.laborCost = raw.LABOR_COS ? String(f(raw, "LABOR_COS")) : "";
+    const hrs = f(raw, "LABOR_HRS");
+    const laborCost = f(raw, "LABOR_COS");
+    s.laborHours = hrs ? String(hrs) : "";
+    // Historical rate is cost/hours ($86/hr in all 2025+ data); rare
+    // hourless labor dollars ride through as a synthetic-hours line.
+    if (hrs > 0) s.laborRate = String(Math.round((laborCost / hrs) * 100) / 100);
+    else if (laborCost > 0) {
+      s.laborHours = String(Math.round((laborCost / 86) * 100) / 100);
+      s.laborRate = "86";
+    }
     s.factor = String(f(raw, "FACTOR") || 1);
     s.taxPct = String(f(raw, "SALTAX_PCT"));
     const permits = f(raw, "PERMIT_COS") + f(raw, "ELPERM_COS");

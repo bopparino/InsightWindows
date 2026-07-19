@@ -18,7 +18,7 @@ export type SystemState = {
   // id "" + label => custom item; picking rows are the in-progress search UI
   kitLines: { id: string; label: string; qty: string; unitPrice: string; picking?: boolean; query?: string }[];
   laborHours: string;
-  laborCost: string;
+  laborRate: string;
   factor: string;
   taxPct: string;
   permitCost: string;
@@ -43,7 +43,7 @@ export const blankSystem = (): SystemState => ({
   otherCost: "",
   kitLines: [],
   laborHours: "",
-  laborCost: "",
+  laborRate: "86",
   factor: "0.6",
   taxPct: "0.06",
   permitCost: "",
@@ -108,7 +108,7 @@ export default function PlanForm({
           };
         }),
       laborHours: n(s.laborHours),
-      laborCost: n(s.laborCost),
+      laborCost: Math.round(n(s.laborHours) * n(s.laborRate) * 100) / 100,
       factor: n(s.factor) || 1,
       taxPct: pct(s.taxPct),
       permitCost: n(s.permitCost),
@@ -155,7 +155,7 @@ export default function PlanForm({
               : { label: k.label.trim(), qty: n(k.qty), unitPrice: maybe(k.unitPrice) ?? 0 },
           ),
         laborHours: n(s.laborHours),
-        laborCost: n(s.laborCost),
+        laborCost: Math.round(n(s.laborHours) * n(s.laborRate) * 100) / 100,
         factor: n(s.factor) || 1,
         taxPct: pct(s.taxPct),
         permitCost: n(s.permitCost),
@@ -434,8 +434,8 @@ export default function PlanForm({
                     <input className={numCls} value={s.laborHours} onChange={(e) => patch(i, { laborHours: e.target.value })} inputMode="decimal" />
                   </div>
                   <div>
-                    <label className="label-caps">Labor $</label>
-                    <input className={numCls} value={s.laborCost} onChange={(e) => patch(i, { laborCost: e.target.value })} inputMode="decimal" />
+                    <label className="label-caps">Rate $/hr</label>
+                    <input className={numCls} value={s.laborRate} onChange={(e) => patch(i, { laborRate: e.target.value })} inputMode="decimal" />
                   </div>
                   <div>
                     <label className="label-caps">Factor</label>
@@ -461,6 +461,7 @@ export default function PlanForm({
 
                 <table className="w-full text-[13px]">
                   <tbody>
+                    <TR k={`Labor (${s.laborHours || 0} × $${s.laborRate || 0})`} v={usd(n(s.laborHours) * n(s.laborRate))} />
                     <TR k="Kit total" v={usd(t.kitTotal)} />
                     <TR k="Total cost" v={usd(t.totCost)} />
                     <TR k={`Selling (cost ÷ ${s.factor || "?"})`} v={usd(t.totSelling)} />
