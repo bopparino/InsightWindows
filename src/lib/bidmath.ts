@@ -1,11 +1,13 @@
 // The bid money math, reverse-engineered from 550 real Access bidsheet lines
 // (2025+) and verified exact on all 550:
 //
-//   TOTSELLING = round(TOTCOST / FACTOR)     factor is a cost ratio (0.6 =>
+//   TOTSELLING = ceil(TOTCOST / FACTOR)      factor is a cost ratio (0.6 =>
 //                                            sell at cost/0.6); Access rounds
-//                                            to whole dollars here
+//                                            UP to whole dollars (estimator's
+//                                            rounding - strict test: 482/485)
 //   FACTOR_TOT = TOTSELLING - TOTCOST        the profit slice
-//   SALTAX_TOT = round(TOTCOST * SALTAX_PCT) tax on COST, pct as fraction
+//   SALTAX_TOT = ceil(TOTCOST * SALTAX_PCT)  tax on COST, pct as fraction
+//                                            (ceiling exact on 485/485)
 //   FINALTOT   = TOTSELLING + LABOR_COS + SALTAX_TOT + SALCOM_TOT
 //                + PERMIT_COS + ELPERM_COS + SERV_COS
 //
@@ -41,14 +43,16 @@ export type SystemTotals = {
 };
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
+// Ceiling with a float-noise guard so an exact integer quotient stays put.
+const ceil$ = (n: number) => Math.ceil(n - 1e-9);
 
 export function computeSystem(s: SystemInput): SystemTotals {
   const kitTotal = r2(s.kitLines.reduce((sum, k) => sum + k.qty * k.unitPrice, 0));
   const totCost = r2(s.partCost + s.sheetMetalCost + s.ductBoardCost + s.otherCost + kitTotal);
   const factor = s.factor > 0 && s.factor <= 1 ? s.factor : 1;
-  const totSelling = Math.round(totCost / factor);
+  const totSelling = ceil$(totCost / factor);
   const factorTot = r2(totSelling - totCost);
-  const salesTax = Math.round(totCost * s.taxPct);
+  const salesTax = ceil$(totCost * s.taxPct);
   const finalTotal = r2(
     totSelling + s.laborCost + salesTax + s.commission + s.permitCost + s.serviceCost,
   );
