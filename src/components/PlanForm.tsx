@@ -15,7 +15,8 @@ export type SystemState = {
   sheetMetalCost: string;
   ductBoardCost: string;
   otherCost: string;
-  kitLines: { id: string; label: string; qty: string; unitPrice: string }[]; // id "" = custom item
+  // id "" + label => custom item; picking rows are the in-progress search UI
+  kitLines: { id: string; label: string; qty: string; unitPrice: string; picking?: boolean; query?: string }[];
   laborHours: string;
   laborCost: string;
   factor: string;
@@ -51,10 +52,15 @@ export const blankSystem = (): SystemState => ({
 });
 
 const n = (v: string) => {
-  const x = Number(v.replace(/[$,\s]/g, ""));
+  const x = Number(v.replace(/[$,%\s]/g, ""));
   return Number.isFinite(x) ? x : 0;
 };
 const maybe = (v: string): number | null => (v.trim() === "" ? null : n(v));
+// Tax accepts "6", "6%", or "0.06" - anything above 1 is read as a percent.
+const pct = (v: string) => {
+  const x = n(v);
+  return x > 1 ? x / 100 : x;
+};
 
 const usd = (v: number) =>
   v.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 });
@@ -80,15 +86,6 @@ export default function PlanForm({
 
   const partIndex = useMemo(() => new Map(parts.map((p) => [p.part_nbr, p])), [parts]);
   const kitIndex = useMemo(() => new Map(kits.map((k) => [String(k.id), k])), [kits]);
-  const kitCategories = useMemo(() => {
-    const m = new Map<string, KitOption[]>();
-    for (const k of kits) {
-      const g = m.get(k.category) ?? [];
-      g.push(k);
-      m.set(k.category, g);
-    }
-    return [...m.entries()];
-  }, [kits]);
 
   const toInput = (s: SystemState): SystemInput => {
     const bookPart = partIndex.get(s.partNbr)?.cost ?? 0;
@@ -100,7 +97,7 @@ export default function PlanForm({
       ductBoardCost: n(s.ductBoardCost),
       otherCost: n(s.otherCost),
       kitLines: s.kitLines
-        .filter((k) => n(k.qty) > 0 && (kitIndex.has(k.id) || (k.id === "" && k.label.trim())))
+        .filter((k) => !k.picking && n(k.qty) > 0 && (kitIndex.has(k.id) || (k.id === "" && k.label.trim())))
         .map((k) => {
           const item = kitIndex.get(k.id);
           return {
@@ -113,7 +110,7 @@ export default function PlanForm({
       laborHours: n(s.laborHours),
       laborCost: n(s.laborCost),
       factor: n(s.factor) || 1,
-      taxPct: n(s.taxPct),
+      taxPct: pct(s.taxPct),
       permitCost: n(s.permitCost),
       serviceCost: n(s.serviceCost),
       commission: n(s.commission),
@@ -131,6 +128,10 @@ export default function PlanForm({
         j === i ? { ...s, kitLines: s.kitLines.map((x, xi) => (xi === ki ? { ...x, ...p } : x)) } : s,
       ),
     );
+  const dropKit = (i: number, ki: number) =>
+    setSystems((prev) =>
+      prev.map((s, j) => (j === i ? { ...s, kitLines: s.kitLines.filter((_, xi) => xi !== ki) } : s)),
+    );
 
   async function save() {
     setSaving(true);
@@ -147,7 +148,7 @@ export default function PlanForm({
         ductBoardCost: n(s.ductBoardCost),
         otherCost: n(s.otherCost),
         kitLines: s.kitLines
-          .filter((k) => n(k.qty) > 0)
+          .filter((k) => !k.picking && n(k.qty) > 0)
           .map((k) =>
             k.id !== ""
               ? { id: Number(k.id), qty: n(k.qty), unitPrice: maybe(k.unitPrice) }
@@ -156,7 +157,7 @@ export default function PlanForm({
         laborHours: n(s.laborHours),
         laborCost: n(s.laborCost),
         factor: n(s.factor) || 1,
-        taxPct: n(s.taxPct),
+        taxPct: pct(s.taxPct),
         permitCost: n(s.permitCost),
         serviceCost: n(s.serviceCost),
         commission: n(s.commission),
@@ -178,7 +179,7 @@ export default function PlanForm({
   }
 
   const inputCls = "w-full border border-input bg-card px-2 py-1.5 text-[13px]";
-  const numCls = "w-24 border border-input bg-card px-2 py-1 text-right font-mono-data text-[13px]";
+  const numCls = "w-full border border-input bg-card px-2 py-1 text-right font-mono-data text-[13px]";
 
   return (
     <div className="space-y-8">
@@ -220,7 +221,10 @@ export default function PlanForm({
         return (
           <section key={i} className="border border-border bg-card">
             <div className="flex items-baseline justify-between border-b border-divider px-5 py-3">
-              <span className="label-caps">System {i + 1}</span>
+              <div className="flex items-baseline gap-4">
+                <span className="label-caps">System {i + 1}</span>
+                <span className="font-mono-data text-[13px] font-semibold">{usd(t.finalTotal)}</span>
+              </div>
               {systems.length > 1 ? (
                 <button
                   type="button"
@@ -232,54 +236,58 @@ export default function PlanForm({
               ) : null}
             </div>
 
-            <div className="grid gap-x-8 gap-y-4 px-5 py-4 sm:grid-cols-2">
-              <div className="space-y-3">
-                <div>
-                  <label className="label-caps">House type / zone</label>
-                  <input className={inputCls} value={s.houseType} onChange={(e) => patch(i, { houseType: e.target.value })} placeholder="HADLEY Z-1 90+" />
+            <div className="grid gap-x-10 gap-y-5 px-5 py-5 lg:grid-cols-[1fr_320px]">
+              {/* ————— left: what's in the system ————— */}
+              <div className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="label-caps">House type / zone</label>
+                    <input className={inputCls} value={s.houseType} onChange={(e) => patch(i, { houseType: e.target.value })} placeholder="HADLEY Z-1 90+" />
+                  </div>
+                  <div>
+                    <label className="label-caps">Equipment</label>
+                    <input
+                      className={`${inputCls} font-mono-data`}
+                      value={s.partNbr || s.partQuery}
+                      onChange={(e) => patch(i, { partQuery: e.target.value, partNbr: "" })}
+                      placeholder="Search part # or description…"
+                    />
+                    {matches.length && !s.partNbr ? (
+                      <div className="absolute z-10 mt-1 max-h-64 overflow-auto border border-border bg-card shadow-sm">
+                        {matches.map((m) => (
+                          <button
+                            key={m.part_nbr}
+                            type="button"
+                            className="flex w-full items-baseline gap-3 px-2 py-1 text-left text-[12px] hover:bg-row-tint"
+                            onClick={() => patch(i, { partNbr: m.part_nbr, partQuery: "" })}
+                          >
+                            <span className="font-mono-data font-semibold">{m.part_nbr}</span>
+                            <span className="min-w-0 flex-1 truncate text-faint">{m.description}</span>
+                            <span className="font-mono-data">{m.cost === null ? "—" : usd(m.cost)}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                    {part ? (
+                      <div className="mt-1 flex items-center gap-2 text-[12px] text-faint">
+                        <span className="min-w-0 truncate">{part.description || "bundle"}</span>
+                        <span className="label-caps ml-auto shrink-0">cost</span>
+                        <input
+                          className="w-24 shrink-0 border border-input bg-card px-1 py-0.5 text-right font-mono-data text-[12px]"
+                          value={s.partCostOverride}
+                          onChange={(e) => patch(i, { partCostOverride: e.target.value })}
+                          placeholder={bookPart === null ? "0.00" : bookPart.toFixed(2)}
+                          inputMode="decimal"
+                        />
+                        {maybe(s.partCostOverride) != null && maybe(s.partCostOverride) !== bookPart ? (
+                          <span className="chip chip-warn shrink-0">override</span>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
-                <div>
-                  <label className="label-caps">Equipment (search part # or description)</label>
-                  <input
-                    className={`${inputCls} font-mono-data`}
-                    value={s.partNbr || s.partQuery}
-                    onChange={(e) => patch(i, { partQuery: e.target.value, partNbr: "" })}
-                    placeholder="CG9+602.5CP…"
-                  />
-                  {matches.length && !s.partNbr ? (
-                    <div className="mt-1 border border-border bg-card">
-                      {matches.map((m) => (
-                        <button
-                          key={m.part_nbr}
-                          type="button"
-                          className="flex w-full items-baseline justify-between px-2 py-1 text-left text-[12px] hover:bg-row-tint"
-                          onClick={() => patch(i, { partNbr: m.part_nbr, partQuery: "" })}
-                        >
-                          <span className="font-mono-data font-semibold">{m.part_nbr}</span>
-                          <span className="ml-3 truncate text-faint">{m.description}</span>
-                          <span className="ml-3 font-mono-data">{m.cost === null ? "—" : usd(m.cost)}</span>
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-                  {part || s.partNbr ? (
-                    <div className="mt-1 flex items-center gap-2 text-[12px] text-faint">
-                      <span className="truncate">{part?.description || "—"}</span>
-                      <span className="label-caps ml-auto">cost</span>
-                      <input
-                        className="w-24 border border-input bg-card px-1 py-0.5 text-right font-mono-data text-[12px]"
-                        value={s.partCostOverride}
-                        onChange={(e) => patch(i, { partCostOverride: e.target.value })}
-                        placeholder={bookPart === null ? "0.00" : bookPart.toFixed(2)}
-                        inputMode="decimal"
-                      />
-                      {maybe(s.partCostOverride) != null && maybe(s.partCostOverride) !== bookPart ? (
-                        <span className="chip chip-warn">override</span>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-                <div className="grid grid-cols-3 gap-3">
+
+                <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className="label-caps">Sheet metal $</label>
                     <input className={numCls} value={s.sheetMetalCost} onChange={(e) => patch(i, { sheetMetalCost: e.target.value })} inputMode="decimal" />
@@ -295,89 +303,132 @@ export default function PlanForm({
                 </div>
 
                 <div>
-                  <label className="label-caps">Kit items · price editable in-bid</label>
+                  <div className="flex items-baseline justify-between border-b border-divider pb-1">
+                    <span className="label-caps">Kit items</span>
+                    {s.kitLines.some((k) => !k.picking) ? (
+                      <span className="label-caps">qty · unit $ · total</span>
+                    ) : null}
+                  </div>
+
                   {s.kitLines.map((k, ki) => {
+                    if (k.picking) {
+                      const q = (k.query ?? "").trim().toUpperCase();
+                      const found = q.length >= 1
+                        ? kits
+                            .filter(
+                              (it) =>
+                                it.label.toUpperCase().includes(q) ||
+                                it.category.toUpperCase().includes(q) ||
+                                it.code.toUpperCase().includes(q),
+                            )
+                            .slice(0, 10)
+                        : [];
+                      return (
+                        <div key={ki} className="relative mt-1.5">
+                          <div className="flex items-center gap-2">
+                            <input
+                              autoFocus
+                              className="min-w-0 flex-1 border border-ink bg-card px-2 py-1 text-[12px]"
+                              value={k.query ?? ""}
+                              onChange={(e) => patchKit(i, ki, { query: e.target.value })}
+                              onKeyDown={(e) => {
+                                if (e.key === "Escape") dropKit(i, ki);
+                                if (e.key === "Enter" && found.length) {
+                                  e.preventDefault();
+                                  patchKit(i, ki, { id: String(found[0].id), label: "", picking: false, query: "" });
+                                }
+                              }}
+                              placeholder="Type to search the book — Enter picks the top match…"
+                            />
+                            <button type="button" className="text-[12px] text-faint hover:text-destructive" onClick={() => dropKit(i, ki)}>
+                              ×
+                            </button>
+                          </div>
+                          {(found.length || q.length >= 2) ? (
+                            <div className="absolute z-10 mt-1 max-h-64 w-full overflow-auto border border-border bg-card shadow-sm">
+                              {found.map((it) => (
+                                <button
+                                  key={it.id}
+                                  type="button"
+                                  className="flex w-full items-baseline gap-2 px-2 py-1 text-left text-[12px] hover:bg-row-tint"
+                                  onClick={() => patchKit(i, ki, { id: String(it.id), label: "", picking: false, query: "" })}
+                                >
+                                  <span className="label-caps shrink-0">{it.category}</span>
+                                  <span className="min-w-0 flex-1 truncate">{it.label || it.code}</span>
+                                  <span className="font-mono-data shrink-0">{it.price === null ? "—" : usd(it.price)}</span>
+                                </button>
+                              ))}
+                              {q.length >= 2 ? (
+                                <button
+                                  type="button"
+                                  className="flex w-full items-baseline gap-2 border-t border-divider px-2 py-1 text-left text-[12px] hover:bg-row-tint"
+                                  onClick={() => patchKit(i, ki, { id: "", label: k.query ?? "", picking: false, query: "" })}
+                                >
+                                  <span className="chip chip-warn shrink-0">custom</span>
+                                  <span className="min-w-0 flex-1 truncate">Add “{k.query}” as a custom item</span>
+                                </button>
+                              ) : null}
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    }
                     const item = kitIndex.get(k.id);
                     const isCustom = k.id === "";
                     const book = item?.price ?? null;
                     const used = maybe(k.unitPrice) ?? book ?? 0;
                     const overridden = maybe(k.unitPrice) != null && maybe(k.unitPrice) !== book;
                     return (
-                      <div key={ki} className="mt-1 flex items-center gap-2">
+                      <div key={ki} className="mt-1.5 flex items-center gap-2">
                         {isCustom ? (
-                          <input
-                            className="min-w-0 flex-1 border border-input bg-card px-1 py-1 text-[12px]"
-                            value={k.label}
-                            onChange={(e) => patchKit(i, ki, { label: e.target.value })}
-                            placeholder="Custom item description…"
-                          />
+                          <span className="flex min-w-0 flex-1 items-baseline gap-2">
+                            <span className="chip chip-warn shrink-0">custom</span>
+                            <input
+                              className="min-w-0 flex-1 border border-input bg-card px-1 py-1 text-[12px]"
+                              value={k.label}
+                              onChange={(e) => patchKit(i, ki, { label: e.target.value })}
+                            />
+                          </span>
                         ) : (
-                          <select
-                            className="min-w-0 flex-1 border border-input bg-card px-1 py-1 text-[12px]"
-                            value={k.id}
-                            onChange={(e) => patchKit(i, ki, { id: e.target.value, unitPrice: "" })}
-                          >
-                            <option value="">— pick item —</option>
-                            {kitCategories.map(([cat, items]) => (
-                              <optgroup key={cat} label={cat}>
-                                {items.map((it) => (
-                                  <option key={it.id} value={String(it.id)}>
-                                    {it.label || it.code} ({it.price === null ? "—" : usd(it.price)})
-                                  </option>
-                                ))}
-                              </optgroup>
-                            ))}
-                          </select>
+                          <span className="flex min-w-0 flex-1 items-baseline gap-2 text-[12px]">
+                            <span className="label-caps shrink-0">{item?.category}</span>
+                            <span className="min-w-0 truncate">{item?.label || item?.code}</span>
+                          </span>
                         )}
                         <input
-                          className="w-14 border border-input bg-card px-1 py-1 text-right font-mono-data text-[12px]"
+                          className="w-12 shrink-0 border border-input bg-card px-1 py-1 text-right font-mono-data text-[12px]"
                           value={k.qty}
                           onChange={(e) => patchKit(i, ki, { qty: e.target.value })}
                           inputMode="numeric"
-                          title="Quantity"
                         />
                         <input
-                          className={`w-20 border px-1 py-1 text-right font-mono-data text-[12px] ${overridden || isCustom ? "border-warn-line bg-warn-bg" : "border-input bg-card"}`}
+                          className={`w-20 shrink-0 border px-1 py-1 text-right font-mono-data text-[12px] ${overridden || isCustom ? "border-warn-line bg-warn-bg" : "border-input bg-card"}`}
                           value={k.unitPrice}
                           onChange={(e) => patchKit(i, ki, { unitPrice: e.target.value })}
                           placeholder={book === null ? "0.00" : book.toFixed(2)}
                           inputMode="decimal"
-                          title="Unit price (blank = Price Book)"
                         />
-                        <span className="w-20 text-right font-mono-data text-[12px]">{usd(n(k.qty) * used)}</span>
-                        <button
-                          type="button"
-                          className="text-[12px] text-faint hover:text-destructive"
-                          onClick={() => patch(i, { kitLines: s.kitLines.filter((_, xi) => xi !== ki) })}
-                        >
+                        <span className="w-20 shrink-0 text-right font-mono-data text-[12px]">{usd(n(k.qty) * used)}</span>
+                        <button type="button" className="shrink-0 text-[12px] text-faint hover:text-destructive" onClick={() => dropKit(i, ki)}>
                           ×
                         </button>
                       </div>
                     );
                   })}
-                  <div className="mt-1 flex gap-4">
-                    <button
-                      type="button"
-                      className="text-[12px] text-faint hover:text-ink"
-                      onClick={() => patch(i, { kitLines: [...s.kitLines, { id: "", label: "", qty: "1", unitPrice: "" }] })}
-                    >
-                      + Custom item
-                    </button>
-                    <button
-                      type="button"
-                      className="text-[12px] text-faint hover:text-ink"
-                      onClick={() =>
-                        patch(i, { kitLines: [...s.kitLines, { id: String(kits[0]?.id ?? ""), label: "", qty: "1", unitPrice: "" }] })
-                      }
-                    >
-                      + Book item
-                    </button>
-                  </div>
+
+                  <button
+                    type="button"
+                    className="mt-2 text-[12px] font-semibold text-faint hover:text-ink"
+                    onClick={() => patch(i, { kitLines: [...s.kitLines, { id: "", label: "", qty: "1", unitPrice: "", picking: true, query: "" }] })}
+                  >
+                    + Add item — search the book or type your own
+                  </button>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <div className="grid grid-cols-3 gap-3">
+              {/* ————— right: labor, markup, totals ————— */}
+              <div className="space-y-4 border-t border-divider pt-4 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="label-caps">Labor hrs</label>
                     <input className={numCls} value={s.laborHours} onChange={(e) => patch(i, { laborHours: e.target.value })} inputMode="decimal" />
@@ -391,7 +442,7 @@ export default function PlanForm({
                     <input className={numCls} value={s.factor} onChange={(e) => patch(i, { factor: e.target.value })} inputMode="decimal" />
                   </div>
                   <div>
-                    <label className="label-caps">Tax (frac)</label>
+                    <label className="label-caps">Tax % or frac</label>
                     <input className={numCls} value={s.taxPct} onChange={(e) => patch(i, { taxPct: e.target.value })} inputMode="decimal" />
                   </div>
                   <div>
@@ -402,7 +453,7 @@ export default function PlanForm({
                     <label className="label-caps">Service $</label>
                     <input className={numCls} value={s.serviceCost} onChange={(e) => patch(i, { serviceCost: e.target.value })} inputMode="decimal" />
                   </div>
-                  <div>
+                  <div className="col-span-2">
                     <label className="label-caps">Commission $</label>
                     <input className={numCls} value={s.commission} onChange={(e) => patch(i, { commission: e.target.value })} inputMode="decimal" />
                   </div>

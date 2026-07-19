@@ -44,7 +44,9 @@ export type SystemTotals = {
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 // Ceiling with a float-noise guard so an exact integer quotient stays put.
-const ceil$ = (n: number) => Math.ceil(n - 1e-9);
+// (|| 0 normalizes the -0 that ceil produces on empty bids - it rendered as
+// "-$0.00" in the totals panel.)
+const ceil$ = (n: number) => Math.ceil(n - 1e-9) || 0;
 
 export function computeSystem(s: SystemInput): SystemTotals {
   const kitTotal = r2(s.kitLines.reduce((sum, k) => sum + k.qty * k.unitPrice, 0));
