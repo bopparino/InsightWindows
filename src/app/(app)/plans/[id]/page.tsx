@@ -116,6 +116,12 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
         }
         const sm = Number(raw.SM_CST ?? 0);
         const smLbs = Number(raw.SM_LBSTOT ?? 0);
+        let overrides: { what: string; book: number | null; used: number }[] = [];
+        if (raw.APP_OVERRIDES) {
+          try {
+            overrides = JSON.parse(raw.APP_OVERRIDES);
+          } catch {}
+        }
         return (
           <section key={line.id} className="border border-border bg-card">
             <div className="flex items-baseline justify-between border-b border-divider px-5 py-3">
@@ -157,6 +163,21 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
                 </tbody>
               </table>
             </div>
+            {overrides.length ? (
+              <div className="border-t border-divider px-5 py-3">
+                <span className="label-caps">Off-book pricing on this system</span>
+                <div className="mt-1 flex flex-wrap gap-x-6 gap-y-1 text-[12px]">
+                  {overrides.map((o, oi) => (
+                    <span key={oi}>
+                      {o.what}:{" "}
+                      <span className="font-mono-data">
+                        {o.book === null ? "no book price" : moneyExact(o.book)} → <strong>{moneyExact(o.used)}</strong>
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </section>
         );
       })}
