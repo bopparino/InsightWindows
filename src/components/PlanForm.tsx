@@ -74,17 +74,20 @@ const usd = (v: number) =>
 export default function PlanForm({
   parts,
   kits,
+  builders,
   planId,
   initial,
 }: {
   parts: PartOption[];
   kits: KitOption[];
+  builders: string[];
   planId?: number;
   initial?: PlanInitial;
 }) {
   const router = useRouter();
   const [planNbr, setPlanNbr] = useState(initial?.planNbr ?? "");
   const [builderName, setBuilderName] = useState(initial?.builderName ?? "");
+  const [builderFocus, setBuilderFocus] = useState(false);
   const [projName, setProjName] = useState(initial?.projName ?? "");
   const [systems, setSystems] = useState<SystemState[]>(initial?.systems?.length ? initial.systems : [blankSystem()]);
   const [error, setError] = useState("");
@@ -215,9 +218,38 @@ export default function PlanForm({
             disabled={planId != null}
           />
         </div>
-        <div>
+        <div className="relative">
           <label className="label-caps">Builder</label>
-          <input className={inputCls} value={builderName} onChange={(e) => setBuilderName(e.target.value)} placeholder="D.R. HORTON" />
+          <input
+            className={inputCls}
+            value={builderName}
+            onChange={(e) => setBuilderName(e.target.value)}
+            onFocus={() => setBuilderFocus(true)}
+            onBlur={() => setTimeout(() => setBuilderFocus(false), 150)}
+            placeholder="Type to search builders…"
+          />
+          {builderFocus && builderName.trim().length >= 2
+            ? (() => {
+                const q = builderName.trim().toUpperCase();
+                const hits = builders
+                  .filter((b) => b.toUpperCase().includes(q) && b.toUpperCase() !== q)
+                  .slice(0, 8);
+                return hits.length ? (
+                  <div className="absolute z-10 mt-1 w-full border border-border bg-card shadow-sm">
+                    {hits.map((b) => (
+                      <button
+                        key={b}
+                        type="button"
+                        className="block w-full truncate px-2 py-1 text-left text-[12px] hover:bg-row-tint"
+                        onMouseDown={() => setBuilderName(b)}
+                      >
+                        {b}
+                      </button>
+                    ))}
+                  </div>
+                ) : null;
+              })()
+            : null}
         </div>
         <div>
           <label className="label-caps">Project</label>
