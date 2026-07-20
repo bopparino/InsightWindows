@@ -10,8 +10,10 @@ const WORKSPACE = [
   { href: "/equipment", label: "Equipment" },
 ];
 const ADMIN = [
+  { href: "/admin", label: "Admin panel" },
   { href: "/equipment/import", label: "Pricing uploads" },
   { href: "/users", label: "Users" },
+  { href: "/options", label: "Options book" },
 ];
 
 export default function Sidebar({ displayName, isAdmin }: { displayName: string; isAdmin: boolean }) {

@@ -16,25 +16,25 @@ export default async function OverviewPage() {
     .prepare(
       `SELECT COUNT(*) AS plans, COALESCE(SUM(total),0) AS value,
               COALESCE(AVG(NULLIF(total,0)),0) AS avg
-       FROM plans WHERE is_master = 0 ${own}`,
+       FROM plans WHERE is_master = 0 AND deleted_at IS NULL ${own}`,
     )
     .get() as { plans: number; value: number; avg: number };
 
   const contracted = db
-    .prepare(`SELECT COUNT(*) AS n, COALESCE(SUM(total),0) AS v FROM plans WHERE is_master = 0 ${own} AND contracted_at >= '2025-01-01'`)
+    .prepare(`SELECT COUNT(*) AS n, COALESCE(SUM(total),0) AS v FROM plans WHERE is_master = 0 AND deleted_at IS NULL ${own} AND contracted_at >= '2025-01-01'`)
     .get() as { n: number; v: number };
 
   const last90 = db
     .prepare(
       `SELECT COUNT(*) AS n, COALESCE(SUM(total),0) AS v FROM plans
-       WHERE is_master = 0 ${own} AND edited_at >= datetime('now','-90 days')`,
+       WHERE is_master = 0 AND deleted_at IS NULL ${own} AND edited_at >= datetime('now','-90 days')`,
     )
     .get() as { n: number; v: number };
 
   const monthly = db
     .prepare(
       `SELECT substr(edited_at, 1, 7) AS ym, COUNT(*) AS n, COALESCE(SUM(total),0) AS v
-       FROM plans WHERE is_master = 0 ${own} AND edited_at >= '2025-01-01'
+       FROM plans WHERE is_master = 0 AND deleted_at IS NULL ${own} AND edited_at >= '2025-01-01'
        GROUP BY ym ORDER BY ym`,
     )
     .all() as { ym: string; n: number; v: number }[];
@@ -43,15 +43,24 @@ export default async function OverviewPage() {
   const topBuilders = db
     .prepare(
       `SELECT builder_name, COUNT(*) AS n, COALESCE(SUM(total),0) AS v
-       FROM plans WHERE is_master = 0 ${own} AND builder_name != ''
+       FROM plans WHERE is_master = 0 AND deleted_at IS NULL ${own} AND builder_name != ''
        GROUP BY builder_name ORDER BY v DESC LIMIT 8`,
     )
     .all() as { builder_name: string; n: number; v: number }[];
 
+  const dueSoon = db
+    .prepare(
+      `SELECT id, plan_nbr, builder_name, due_date FROM plans
+       WHERE is_master = 0 AND deleted_at IS NULL ${own} AND due_date IS NOT NULL AND due_date != ''
+         AND due_date >= date('now','-1 day') AND status NOT IN ('contracted','lost')
+       ORDER BY due_date LIMIT 6`,
+    )
+    .all() as { id: number; plan_nbr: string; builder_name: string; due_date: string }[];
+
   const recent = db
     .prepare(
       `SELECT id, plan_nbr, builder_name, proj_name, house_types, total, edited_at, contracted_at
-       FROM plans WHERE is_master = 0 ${own} ORDER BY edited_at DESC LIMIT 10`,
+       FROM plans WHERE is_master = 0 AND deleted_at IS NULL ${own} ORDER BY edited_at DESC LIMIT 10`,
     )
     .all() as {
     id: number;
@@ -72,6 +81,21 @@ export default async function OverviewPage() {
           {mineOnly ? "Your plans and pipeline only." : "Live from the bid history, 2025 to today. Master bid files excluded."}
         </p>
       </div>
+
+      {dueSoon.length ? (
+        <section>
+          <h2 className="label-caps">Bids due</h2>
+          <div className="mt-2 flex flex-wrap gap-x-8 gap-y-1 border-y border-divider py-3 text-[14px]">
+            {dueSoon.map((d) => (
+              <Link key={d.id} href={`/plans/${d.id}`} className="hover:underline">
+                <span className="font-mono-data font-semibold">{d.plan_nbr}</span>{" "}
+                <span className="text-muted-foreground">{d.builder_name}</span>{" "}
+                <span className="font-mono-data text-faint">{shortDate(d.due_date)}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section>
         <h2 className="label-caps">Recent</h2>

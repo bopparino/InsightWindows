@@ -8,6 +8,7 @@ export type PartOption = { part_nbr: string; description: string; cost: number |
 export type KitOption = { id: number; code: string; label: string; category: string; price: number | null };
 
 export type SystemState = {
+  houseNbr: string;
   houseType: string;
   partNbr: string;
   partQuery: string;
@@ -29,6 +30,7 @@ export type SystemState = {
 };
 
 export type PlanInitial = {
+  dueDate: string;
   planNbr: string;
   builderName: string;
   projName: string;
@@ -36,6 +38,7 @@ export type PlanInitial = {
 };
 
 export const blankSystem = (): SystemState => ({
+  houseNbr: "01",
   houseType: "",
   partNbr: "",
   partQuery: "",
@@ -95,6 +98,7 @@ export default function PlanForm({
   const [builderName, setBuilderName] = useState(initial?.builderName ?? "");
   const [builderFocus, setBuilderFocus] = useState(false);
   const [projName, setProjName] = useState(initial?.projName ?? "");
+  const [dueDate, setDueDate] = useState(initial?.dueDate ?? "");
   const [systems, setSystems] = useState<SystemState[]>(initial?.systems?.length ? initial.systems : [blankSystem()]);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -176,7 +180,9 @@ export default function PlanForm({
       planNbr,
       builderName,
       projName,
+      dueDate,
       systems: systems.map((s) => ({
+        houseNbr: s.houseNbr.trim() || "01",
         houseType: s.houseType.trim(),
         partNbr: s.partNbr.trim(),
         partCostOverride: maybe(s.partCostOverride),
@@ -225,7 +231,7 @@ export default function PlanForm({
 
   return (
     <div className="space-y-8">
-      <section className="grid gap-4 border-y border-divider py-5 sm:grid-cols-3">
+      <section className="grid gap-4 border-y border-divider py-5 sm:grid-cols-4">
         <div>
           <label className="label-caps">Plan #</label>
           <input
@@ -273,6 +279,10 @@ export default function PlanForm({
           <label className="label-caps">Project</label>
           <input className={inputCls} value={projName} onChange={(e) => setProjName(e.target.value)} placeholder="RENN QUARTER" />
         </div>
+        <div>
+          <label className="label-caps">Bid due date</label>
+          <input type="date" className={inputCls} value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+        </div>
       </section>
 
       {systems.map((s, i) => {
@@ -294,7 +304,7 @@ export default function PlanForm({
             <section key={i} className="border border-border bg-card">
               <div className="flex items-center justify-between px-5 py-3">
                 <div className="flex min-w-0 items-baseline gap-4">
-                  <span className="label-caps shrink-0">Zone {i + 1}</span>
+                  <span className="label-caps shrink-0">Zone {i + 1} · H{s.houseNbr || "01"}</span>
                   <span className="truncate text-[14px] font-semibold">{s.houseType || "—"}</span>
                   {s.partNbr ? (
                     <span className="truncate font-mono-data text-[13px] text-faint">{s.partNbr}</span>
@@ -331,6 +341,14 @@ export default function PlanForm({
             <div className="flex items-baseline justify-between border-b border-divider px-5 py-3">
               <div className="flex items-baseline gap-4">
                 <span className="label-caps">Zone {i + 1} — walking</span>
+                <label className="flex items-center gap-1 text-[13px] text-faint">
+                  House
+                  <input
+                    className="w-12 border border-input bg-card px-1 py-0.5 text-center font-mono-data text-[13px]"
+                    value={s.houseNbr}
+                    onChange={(e) => patch(i, { houseNbr: e.target.value })}
+                  />
+                </label>
                 <span className="font-mono-data text-[14px] font-semibold">{usd(t.finalTotal)}</span>
               </div>
               <div className="flex items-center gap-4">

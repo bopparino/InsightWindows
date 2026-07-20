@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireApiAdmin } from "@/lib/auth";
+import { hashPassword } from "@/lib/password";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,6 +27,11 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       sets.push(`${field} = ?`);
       vals.push(String(v).trim());
     }
+  }
+  const newPass = form.get("password");
+  if (newPass !== null && String(newPass).length >= 6) {
+    db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(hashPassword(String(newPass)), userId);
+    db.prepare("DELETE FROM sessions WHERE user_id = ?").run(userId);
   }
   const role = form.get("role");
   if (role !== null) {

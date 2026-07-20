@@ -41,6 +41,7 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
       }
     | undefined;
   if (!plan) notFound();
+  if ((plan as unknown as { deleted_at: string | null }).deleted_at) notFound();
   if (me.role !== "admin" && (plan as unknown as { created_by: number | null }).created_by !== me.id) notFound();
   const STATUSES = ["draft", "proposed", "contracted", "lost"] as const;
   const chipFor = (s: string) =>
@@ -108,6 +109,13 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
             <Link href={`/plans/${plan.id}/edit`} className="text-[14px] text-faint underline-offset-4 hover:text-ink hover:underline">
               Edit
             </Link>
+            {showInternals || (plan as unknown as { created_by: number | null }).created_by === me.id ? (
+              <form action={`/api/plans/${plan.id}/delete`} method="post" className="inline">
+                <button name="action" value="trash" className="text-[14px] text-faint hover:text-destructive">
+                  Delete
+                </button>
+              </form>
+            ) : null}
             <div className="font-mono-data text-2xl font-semibold">{money(plan.total)}</div>
           </div>
         </div>

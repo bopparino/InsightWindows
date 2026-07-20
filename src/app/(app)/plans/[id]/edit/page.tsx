@@ -25,6 +25,7 @@ export default async function EditPlanPage({ params }: { params: Promise<{ id: s
     | { id: number; plan_nbr: string; builder_name: string; proj_name: string }
     | undefined;
   if (!plan) notFound();
+  if ((plan as unknown as { deleted_at: string | null }).deleted_at) notFound();
   if (me.role !== "admin" && (plan as unknown as { created_by: number | null }).created_by !== me.id) notFound();
 
   const lines = db
@@ -57,6 +58,7 @@ export default async function EditPlanPage({ params }: { params: Promise<{ id: s
   const systems: SystemState[] = lines.map((line) => {
     const raw = JSON.parse(line.data) as Record<string, string>;
     const s = blankSystem();
+    s.houseNbr = (line as unknown as { house_nbr: string }).house_nbr || "01";
     s.houseType = line.house_type;
     s.partNbr = line.part_nbr;
     const bookCost = partCosts.get(line.part_nbr) ?? null;
@@ -131,6 +133,7 @@ export default async function EditPlanPage({ params }: { params: Promise<{ id: s
   });
 
   const initial: PlanInitial = {
+    dueDate: ((plan as unknown as { due_date: string | null }).due_date ?? "").slice(0, 10),
     planNbr: plan.plan_nbr,
     builderName: plan.builder_name,
     projName: plan.proj_name,

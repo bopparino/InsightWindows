@@ -20,16 +20,16 @@ export default async function PlansPage({
     query
       ? db
           .prepare(
-            `SELECT id, plan_nbr, builder_name, proj_name, house_types, total, lines_count, edited_at, contracted_at, is_master, status
+            `SELECT id, plan_nbr, builder_name, proj_name, house_types, total, lines_count, edited_at, contracted_at, is_master, status, due_date
              FROM plans
-             WHERE (plan_nbr LIKE $q OR builder_name LIKE $q OR proj_name LIKE $q OR house_types LIKE $q) ${own}
+             WHERE deleted_at IS NULL AND (plan_nbr LIKE $q OR builder_name LIKE $q OR proj_name LIKE $q OR house_types LIKE $q) ${own}
              ORDER BY edited_at DESC LIMIT 200`,
           )
           .all(mineOnly ? { q: `%${query}%`, me: me.id } : { q: `%${query}%` })
       : db
           .prepare(
-            `SELECT id, plan_nbr, builder_name, proj_name, house_types, total, lines_count, edited_at, contracted_at, is_master, status
-             FROM plans WHERE 1=1 ${own} ORDER BY edited_at DESC LIMIT 200`,
+            `SELECT id, plan_nbr, builder_name, proj_name, house_types, total, lines_count, edited_at, contracted_at, is_master, status, due_date
+             FROM plans WHERE deleted_at IS NULL ${own} ORDER BY edited_at DESC LIMIT 200`,
           )
           .all(mineOnly ? { me: me.id } : {})
   ) as {
@@ -44,11 +44,12 @@ export default async function PlansPage({
     contracted_at: string | null;
     is_master: number;
     status: string;
+    due_date: string | null;
   }[];
 
   const count = mineOnly
-    ? (db.prepare("SELECT COUNT(*) AS n FROM plans WHERE created_by = ?").get(me.id) as { n: number }).n
-    : (db.prepare("SELECT COUNT(*) AS n FROM plans").get() as { n: number }).n;
+    ? (db.prepare("SELECT COUNT(*) AS n FROM plans WHERE deleted_at IS NULL AND created_by = ?").get(me.id) as { n: number }).n
+    : (db.prepare("SELECT COUNT(*) AS n FROM plans WHERE deleted_at IS NULL").get() as { n: number }).n;
 
   return (
     <div>
@@ -84,6 +85,7 @@ export default async function PlansPage({
             <th className="label-caps py-2 pr-4 font-semibold">House</th>
             <th className="label-caps py-2 pr-4 text-right font-semibold">Systems</th>
             <th className="label-caps py-2 pr-4 text-right font-semibold">Total</th>
+            <th className="label-caps py-2 pr-4 text-right font-semibold">Due</th>
             <th className="label-caps py-2 text-right font-semibold">Edited</th>
           </tr>
         </thead>
@@ -110,6 +112,7 @@ export default async function PlansPage({
               <td className="max-w-56 truncate py-2 pr-4 text-muted-foreground">{p.house_types || "—"}</td>
               <td className="py-2 pr-4 text-right font-mono-data">{p.lines_count}</td>
               <td className="py-2 pr-4 text-right font-mono-data">{money(p.total)}</td>
+              <td className="py-2 pr-4 text-right font-mono-data">{shortDate(p.due_date)}</td>
               <td className="py-2 text-right font-mono-data text-faint">{shortDate(p.edited_at)}</td>
             </tr>
           ))}

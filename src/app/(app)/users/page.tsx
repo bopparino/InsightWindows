@@ -45,7 +45,8 @@ export default async function UsersPage() {
               <th className="label-caps py-2 pr-4 font-semibold">Email</th>
               <th className="label-caps py-2 pr-4 font-semibold">Phone</th>
               <th className="label-caps py-2 pr-4 font-semibold">Role</th>
-              <th className="label-caps py-2 text-right font-semibold">Last login</th>
+              <th className="label-caps py-2 pr-4 text-right font-semibold">Last login</th>
+              <th className="label-caps py-2 text-right font-semibold">Password</th>
             </tr>
           </thead>
           <tbody>
@@ -78,8 +79,22 @@ export default async function UsersPage() {
                     </button>
                   </form>
                 </td>
-                <td className="py-2 text-right font-mono-data text-faint">
+                <td className="py-2 pr-4 text-right font-mono-data text-faint">
                   {u.last_login_at ? u.last_login_at.slice(0, 10) : "never"}
+                </td>
+                <td className="py-2 text-right">
+                  <form action={`/api/users/${u.id}`} method="post" className="flex justify-end gap-1">
+                    <input
+                      name="password"
+                      type="password"
+                      placeholder="new password"
+                      minLength={6}
+                      className="w-32 border border-input bg-card px-1 py-0.5 text-[13px]"
+                    />
+                    <button className="text-[13px] text-faint hover:text-ink" type="submit">
+                      Reset
+                    </button>
+                  </form>
                 </td>
               </tr>
             ))}

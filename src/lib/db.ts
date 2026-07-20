@@ -231,6 +231,58 @@ function migrate(db: Database.Database): void {
     }
     db.pragma("user_version = 9");
   }
+  if (version < 10) {
+    // The big safety-and-scope batch: soft delete + due dates on plans,
+    // a settings key/value store (CompInfo + contract terms, seeded from the
+    // Access CompInfo table and Master Not Included defaults), and the
+    // Options & Standards hierarchy (master -> builder -> project).
+    const cols = db.prepare("PRAGMA table_info(plans)").all() as { name: string }[];
+    if (!cols.some((c) => c.name === "deleted_at")) db.exec("ALTER TABLE plans ADD COLUMN deleted_at TEXT");
+    if (!cols.some((c) => c.name === "due_date")) db.exec("ALTER TABLE plans ADD COLUMN due_date TEXT");
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL DEFAULT ''
+      );
+      CREATE TABLE IF NOT EXISTS options (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        level TEXT NOT NULL CHECK (level IN ('master','builder','project')),
+        ref_code TEXT NOT NULL DEFAULT '',
+        option_number TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        part_nbr TEXT NOT NULL DEFAULT '',
+        std_price REAL,
+        opt_price REAL,
+        pwk_price REAL,
+        UNIQUE (level, ref_code, option_number)
+      );
+      CREATE INDEX IF NOT EXISTS idx_options_ref ON options(level, ref_code);
+    `);
+    const seed = db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)");
+    seed.run("company_name", "William H. Metcalfe and Sons, Inc.");
+    seed.run("company_address1", "9007 Clinton Street");
+    seed.run("company_address2", "Clinton, Maryland 20735");
+    seed.run("company_phone", "301-868-6330");
+    seed.run("company_fax", "301-868-6337");
+    seed.run("company_license", "");
+    seed.run("quote_terms", "All equipment installed to manufacturer specification and local code. Proposal valid for 30 days from the date above.");
+    seed.run(
+      "contract_exclusions",
+      [
+        "Cutting of Duct Holes in Structural Members",
+        "Cutting or Drilling of Holes in Concrete Walls",
+        "Insulation of Duct in Basement",
+        "Bath Fans", "Kitchen Fans", "Condensate Pumps", "Condensate Drains",
+        "Outdoor Unit Pads", "High Voltage Wiring",
+        "Trenching and Backfill for Underground Ductwork (PVS)",
+        "Plumbing or Gas Piping", "Hot Water Heater Venting",
+        "Permits (MECHANICAL OR ELECTRICAL)",
+        "Hot Water Heaters, Piping From Hot Water Heater To Hot Water Coil",
+        "Firedampers",
+      ].join("\n"),
+    );
+    db.pragma("user_version = 10");
+  }
 
   // Seed the first admin so a fresh deploy is loggable-into. Password comes
   // from ADMIN_PASSWORD at first boot; change it after first login.
