@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
+import { requireUser } from "@/lib/auth";
 import { money, monthLabel, shortDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -8,29 +9,32 @@ export const dynamic = "force-dynamic";
 // imported Access bidsheets (2025 onward). Type and rules, no cards.
 
 export default async function OverviewPage() {
+  const me = await requireUser();
+  const mineOnly = me.role !== "admin";
+  const own = mineOnly ? `AND created_by = ${me.id}` : "";
   const totals = db
     .prepare(
       `SELECT COUNT(*) AS plans, COALESCE(SUM(total),0) AS value,
               COALESCE(AVG(NULLIF(total,0)),0) AS avg
-       FROM plans WHERE is_master = 0`,
+       FROM plans WHERE is_master = 0 ${own}`,
     )
     .get() as { plans: number; value: number; avg: number };
 
   const contracted = db
-    .prepare("SELECT COUNT(*) AS n, COALESCE(SUM(total),0) AS v FROM plans WHERE is_master = 0 AND contracted_at >= '2025-01-01'")
+    .prepare(`SELECT COUNT(*) AS n, COALESCE(SUM(total),0) AS v FROM plans WHERE is_master = 0 ${own} AND contracted_at >= '2025-01-01'`)
     .get() as { n: number; v: number };
 
   const last90 = db
     .prepare(
       `SELECT COUNT(*) AS n, COALESCE(SUM(total),0) AS v FROM plans
-       WHERE is_master = 0 AND edited_at >= datetime('now','-90 days')`,
+       WHERE is_master = 0 ${own} AND edited_at >= datetime('now','-90 days')`,
     )
     .get() as { n: number; v: number };
 
   const monthly = db
     .prepare(
       `SELECT substr(edited_at, 1, 7) AS ym, COUNT(*) AS n, COALESCE(SUM(total),0) AS v
-       FROM plans WHERE is_master = 0 AND edited_at >= '2025-01-01'
+       FROM plans WHERE is_master = 0 ${own} AND edited_at >= '2025-01-01'
        GROUP BY ym ORDER BY ym`,
     )
     .all() as { ym: string; n: number; v: number }[];
@@ -39,7 +43,7 @@ export default async function OverviewPage() {
   const topBuilders = db
     .prepare(
       `SELECT builder_name, COUNT(*) AS n, COALESCE(SUM(total),0) AS v
-       FROM plans WHERE is_master = 0 AND builder_name != ''
+       FROM plans WHERE is_master = 0 ${own} AND builder_name != ''
        GROUP BY builder_name ORDER BY v DESC LIMIT 8`,
     )
     .all() as { builder_name: string; n: number; v: number }[];
@@ -47,7 +51,7 @@ export default async function OverviewPage() {
   const recent = db
     .prepare(
       `SELECT id, plan_nbr, builder_name, proj_name, house_types, total, edited_at, contracted_at
-       FROM plans WHERE is_master = 0 ORDER BY edited_at DESC LIMIT 10`,
+       FROM plans WHERE is_master = 0 ${own} ORDER BY edited_at DESC LIMIT 10`,
     )
     .all() as {
     id: number;
@@ -63,9 +67,9 @@ export default async function OverviewPage() {
   return (
     <div className="space-y-10">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Sales Overview</h1>
-        <p className="mt-1 text-[13px] text-faint">
-          Live from the bid history, 2025 to today. Master bid files excluded.
+        <h1 className="text-3xl font-bold tracking-tight">{mineOnly ? "My Sales" : "Sales Overview"}</h1>
+        <p className="mt-1 text-[14px] text-faint">
+          {mineOnly ? "Your plans and pipeline only." : "Live from the bid history, 2025 to today. Master bid files excluded."}
         </p>
       </div>
 
@@ -79,11 +83,11 @@ export default async function OverviewPage() {
               className="border border-border bg-card px-4 py-3 hover:border-ink"
             >
               <div className="flex items-baseline justify-between">
-                <span className="font-mono-data text-[12px] text-faint">{p.plan_nbr}</span>
-                <span className="font-mono-data text-[12px]">{money(p.total)}</span>
+                <span className="font-mono-data text-[13px] text-faint">{p.plan_nbr}</span>
+                <span className="font-mono-data text-[13px]">{money(p.total)}</span>
               </div>
-              <div className="mt-1 truncate text-[13px] font-semibold">{p.builder_name || "—"}</div>
-              <div className="mt-1 truncate text-[12px] text-faint">{p.proj_name || p.house_types || "—"}</div>
+              <div className="mt-1 truncate text-[14px] font-semibold">{p.builder_name || "—"}</div>
+              <div className="mt-1 truncate text-[13px] text-faint">{p.proj_name || p.house_types || "—"}</div>
               <div className="mt-2 label-caps">{shortDate(p.edited_at)}</div>
             </Link>
           ))}
@@ -99,7 +103,7 @@ export default async function OverviewPage() {
 
       <section>
         <h2 className="label-caps">Bid value by month</h2>
-        <table className="mt-3 w-full text-[13px]">
+        <table className="mt-3 w-full text-[14px]">
           <tbody>
             {monthly.map((m) => (
               <tr key={m.ym} className="border-b border-line-faint last:border-0">
@@ -121,7 +125,7 @@ export default async function OverviewPage() {
       <div className="grid gap-10 lg:grid-cols-2">
         <section>
           <h2 className="label-caps">Top builders by bid value</h2>
-          <table className="mt-3 w-full text-[13px]">
+          <table className="mt-3 w-full text-[14px]">
             <tbody>
               {topBuilders.map((b) => (
                 <tr key={b.builder_name} className="border-b border-line-faint last:border-0">
@@ -137,11 +141,11 @@ export default async function OverviewPage() {
         <section>
           <div className="flex items-baseline justify-between">
             <h2 className="label-caps">Recent plans</h2>
-            <Link href="/plans" className="text-[12px] text-faint hover:text-ink">
+            <Link href="/plans" className="text-[13px] text-faint hover:text-ink">
               View all →
             </Link>
           </div>
-          <table className="mt-3 w-full text-[13px]">
+          <table className="mt-3 w-full text-[14px]">
             <tbody>
               {recent.map((p) => (
                 <tr key={p.id} className="border-b border-line-faint last:border-0">
@@ -168,7 +172,7 @@ function Stat({ label, value, sub }: { label: string; value: string; sub: string
     <div>
       <div className="label-caps">{label}</div>
       <div className="mt-1 font-mono-data text-[22px] font-semibold tracking-tight">{value}</div>
-      <div className="text-[12px] text-faint">{sub}</div>
+      <div className="text-[13px] text-faint">{sub}</div>
     </div>
   );
 }

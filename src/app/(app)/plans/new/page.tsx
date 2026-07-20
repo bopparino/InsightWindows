@@ -29,8 +29,8 @@ export default async function NewPlanPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight">New Plan</h1>
-      <p className="mt-1 text-[13px] text-faint">
+      <h1 className="text-3xl font-bold tracking-tight">New Plan</h1>
+      <p className="mt-1 text-[14px] text-faint">
         Prices come from the live Price Book and Equipment tables; totals use the verified bid math.
       </p>
       <div className="mt-6">

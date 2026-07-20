@@ -41,8 +41,8 @@ export default async function PricingPage() {
   return (
     <div className="space-y-10">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Price Book</h1>
-        <p className="mt-1 text-[13px] text-faint">
+        <h1 className="text-3xl font-bold tracking-tight">Price Book</h1>
+        <p className="mt-1 text-[14px] text-faint">
           {items.length} kit prices from the bid system.{" "}
           {isAdmin ? "Edit a value and press return to save — every change is logged." : "Read-only."}
         </p>
@@ -51,7 +51,7 @@ export default async function PricingPage() {
       {[...groups.entries()].map(([category, rows]) => (
         <section key={category}>
           <h2 className="label-caps">{category}</h2>
-          <table className="mt-2 w-full text-[13px]">
+          <table className="mt-2 w-full text-[14px]">
             <thead>
               <tr className="border-b border-border text-left">
                 <th className="label-caps w-40 py-1.5 pr-4 font-semibold">Code</th>
@@ -87,7 +87,7 @@ export default async function PricingPage() {
       {log.length ? (
         <section>
           <h2 className="label-caps">Recent price changes</h2>
-          <table className="mt-2 w-full text-[13px]">
+          <table className="mt-2 w-full text-[14px]">
             <tbody>
               {log.map((l, i) => (
                 <tr key={i} className="border-b border-line-faint last:border-0">

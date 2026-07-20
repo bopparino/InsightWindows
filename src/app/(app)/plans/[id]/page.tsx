@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
+import { requireUser } from "@/lib/auth";
 import { money, moneyExact, shortDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +22,8 @@ const KIT_FIELDS: [string, string][] = [
 ];
 
 export default async function PlanDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const me = await requireUser();
+  const showInternals = me.role === "admin";
   const { id } = await params;
   const plan = db.prepare("SELECT * FROM plans WHERE id = ?").get(Number(id)) as
     | {
@@ -38,6 +41,7 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
       }
     | undefined;
   if (!plan) notFound();
+  if (me.role !== "admin" && (plan as unknown as { created_by: number | null }).created_by !== me.id) notFound();
   const STATUSES = ["draft", "proposed", "contracted", "lost"] as const;
   const chipFor = (s: string) =>
     s === "contracted" ? "chip-ok" : s === "lost" ? "chip-danger" : s === "proposed" ? "chip-warn" : "chip-muted";
@@ -85,16 +89,23 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
   return (
     <div className="space-y-8">
       <div>
-        <Link href="/plans" className="text-[12px] text-faint hover:text-ink">
+        <Link href="/plans" className="text-[13px] text-faint hover:text-ink">
           ← Plans
         </Link>
         <div className="mt-2 flex items-baseline justify-between">
-          <h1 className="font-mono-data text-2xl font-bold tracking-tight">
+          <h1 className="font-mono-data text-3xl font-bold tracking-tight">
             {plan.plan_nbr}
             {plan.status ? <span className={`chip ${chipFor(plan.status)} ml-3 align-middle`}>{plan.status}</span> : null}
           </h1>
           <div className="flex items-baseline gap-4">
-            <Link href={`/plans/${plan.id}/edit`} className="text-[13px] text-faint underline-offset-4 hover:text-ink hover:underline">
+            <a
+              href={`/quote/${plan.id}`}
+              target="_blank"
+              className="btn-glow bg-primary px-4 py-1.5 text-[14px] font-semibold text-primary-foreground"
+            >
+              Print quote
+            </a>
+            <Link href={`/plans/${plan.id}/edit`} className="text-[14px] text-faint underline-offset-4 hover:text-ink hover:underline">
               Edit
             </Link>
             <div className="font-mono-data text-2xl font-semibold">{money(plan.total)}</div>
@@ -111,7 +122,7 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
             </form>
           ))}
         </div>
-        <dl className="mt-3 grid grid-cols-2 gap-x-8 gap-y-2 border-y border-divider py-4 text-[13px] sm:grid-cols-4">
+        <dl className="mt-3 grid grid-cols-2 gap-x-8 gap-y-2 border-y border-divider py-4 text-[14px] sm:grid-cols-4">
           <Meta k="Builder" v={plan.builder_name || plan.builder_code || "—"} />
           <Meta k="Project" v={plan.proj_name || plan.proj_code || "—"} />
           <Meta k="Proposed" v={shortDate(plan.proposed_at)} />
@@ -157,24 +168,23 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
                 <span className="label-caps">
                   House {line.house_nbr} · System {line.system_nbr} · Work {line.work_nbr}
                 </span>
-                <h2 className="mt-0.5 text-[15px] font-semibold">{line.house_type || "—"}</h2>
+                <h2 className="mt-0.5 text-[17px] font-semibold">{line.house_type || "—"}</h2>
               </div>
               <div className="font-mono-data text-lg font-semibold">{moneyExact(line.final_total)}</div>
             </div>
-            <div className="grid gap-x-10 gap-y-4 px-5 py-4 text-[13px] sm:grid-cols-2">
+            <div className="grid gap-x-10 gap-y-4 px-5 py-4 text-[14px] sm:grid-cols-2">
               <table className="w-full">
                 <tbody>
                   <Row k="Equipment" v={line.part_nbr || "—"} mono />
-                  <Row k="Equipment cost" v={moneyExact(line.part_cost)} mono right />
-                  {sm > 0 ? <Row k={`Sheet metal (${smLbs} lbs)`} v={moneyExact(sm)} mono right /> : null}
-                  <Row
-                    k={`Labor (${line.labor_hours || "—"} hrs)`}
-                    v={moneyExact(line.labor_cost)}
-                    mono
-                    right
-                  />
-                  <Row k="Factor" v={String(line.factor || "—")} mono right />
-                  <Row k="Selling" v={moneyExact(line.selling)} mono right />
+                  {showInternals ? (
+                    <>
+                      <Row k="Equipment cost" v={moneyExact(line.part_cost)} mono right />
+                      {sm > 0 ? <Row k={`Sheet metal (${smLbs} lbs)`} v={moneyExact(sm)} mono right /> : null}
+                      <Row k={`Labor (${line.labor_hours || "—"} hrs)`} v={moneyExact(line.labor_cost)} mono right />
+                      <Row k="Factor" v={String(line.factor || "—")} mono right />
+                      <Row k="Selling" v={moneyExact(line.selling)} mono right />
+                    </>
+                  ) : null}
                 </tbody>
               </table>
               <table className="w-full self-start">
@@ -200,7 +210,7 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
                   {[...compGroups.entries()].map(([cat, rows]) => (
                     <div key={cat}>
                       <div className="label-caps">{cat}</div>
-                      <table className="mt-1 w-full text-[12px]">
+                      <table className="mt-1 w-full text-[13px]">
                         <tbody>
                           {rows.map((d, di) => (
                             <tr key={di} className="border-b border-line-faint last:border-0">
@@ -224,10 +234,10 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
                 </div>
               </details>
             ) : null}
-            {overrides.length ? (
+            {showInternals && overrides.length ? (
               <div className="border-t border-divider px-5 py-3">
                 <span className="label-caps">Off-book pricing on this system</span>
-                <div className="mt-1 flex flex-wrap gap-x-6 gap-y-1 text-[12px]">
+                <div className="mt-1 flex flex-wrap gap-x-6 gap-y-1 text-[13px]">
                   {overrides.map((o, oi) => (
                     <span key={oi}>
                       {o.what}:{" "}

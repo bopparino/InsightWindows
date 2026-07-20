@@ -48,31 +48,31 @@ export default async function EquipmentDetailPage({
   return (
     <div className="space-y-8">
       <div>
-        <Link href="/equipment" className="text-[12px] text-faint hover:text-ink">
+        <Link href="/equipment" className="text-[13px] text-faint hover:text-ink">
           ← Equipment
         </Link>
         <div className="mt-2 flex items-baseline justify-between">
-          <h1 className="font-mono-data text-2xl font-bold tracking-tight">{partNbr}</h1>
+          <h1 className="font-mono-data text-3xl font-bold tracking-tight">{partNbr}</h1>
           {info?.cost != null ? (
             <div className="font-mono-data text-2xl font-semibold">{moneyExact(info.cost)}</div>
           ) : null}
         </div>
         {info ? (
-          <dl className="mt-3 grid grid-cols-2 gap-x-8 gap-y-2 border-y border-divider py-4 text-[13px] sm:grid-cols-4">
+          <dl className="mt-3 grid grid-cols-2 gap-x-8 gap-y-2 border-y border-divider py-4 text-[14px] sm:grid-cols-4">
             <Meta k="Description" v={info.description || "—"} />
             <Meta k="Type" v={info.eqp_type || info.category || "—"} />
             <Meta k="SEER" v={info.seer || "—"} />
             <Meta k="AFUE" v={info.afue || "—"} />
           </dl>
         ) : (
-          <p className="mt-2 text-[13px] text-faint">Not in the current Part price table.</p>
+          <p className="mt-2 text-[14px] text-faint">Not in the current Part price table.</p>
         )}
       </div>
 
       {comps.length ? (
         <section>
           <h2 className="label-caps">Bundle components</h2>
-          <table className="mt-2 w-full text-[13px]">
+          <table className="mt-2 w-full text-[14px]">
             <tbody>
               {comps.map((c) => (
                 <tr key={c.comp_nbr} className="border-b border-line-faint last:border-0">
@@ -106,7 +106,7 @@ export default async function EquipmentDetailPage({
       {usedIn.length ? (
         <section>
           <h2 className="label-caps">Used in bundles</h2>
-          <p className="mt-2 flex flex-wrap gap-2 text-[13px]">
+          <p className="mt-2 flex flex-wrap gap-2 text-[14px]">
             {usedIn.map((u) => (
               <Link
                 key={u.part_nbr}

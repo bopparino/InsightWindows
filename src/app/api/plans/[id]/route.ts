@@ -13,10 +13,13 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
   const { id } = await ctx.params;
   const planId = Number(id);
 
-  const existing = db.prepare("SELECT plan_nbr FROM plans WHERE id = ?").get(planId) as
-    | { plan_nbr: string }
+  const existing = db.prepare("SELECT plan_nbr, created_by FROM plans WHERE id = ?").get(planId) as
+    | { plan_nbr: string; created_by: number | null }
     | undefined;
   if (!existing) return new NextResponse("plan not found", { status: 404 });
+  if (me.role !== "admin" && existing.created_by !== me.id) {
+    return new NextResponse("not your plan", { status: 403 });
+  }
 
   let input: z.infer<typeof PlanSchema>;
   try {
