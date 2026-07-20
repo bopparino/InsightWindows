@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { money, moneyExact } from "@/lib/format";
 import PrintButton from "@/components/PrintButton";
+import { COMPANY_KEYS, getSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
   const contact = db
     .prepare("SELECT display_name, email, phone FROM users WHERE id = ?")
     .get(user.id) as { display_name: string; email: string; phone: string };
+  const co = getSettings(COMPANY_KEYS);
 
   const lines = db
     .prepare("SELECT * FROM plan_lines WHERE plan_id = ? ORDER BY house_nbr, system_nbr, work_nbr")
@@ -64,8 +66,12 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
 
       <header className="flex items-start justify-between border-b-2 border-black pb-5">
         <div>
-          <div className="text-2xl font-bold tracking-tight">W.H. METCALFE &amp; SONS, INC.</div>
+          <div className="text-2xl font-bold tracking-tight">{co.company_name || "W.H. Metcalfe & Sons, Inc."}</div>
           <div className="mt-0.5 text-sm">Heating &amp; Air Conditioning</div>
+          <div className="mt-0.5 text-sm">
+            {[co.company_address1, co.company_address2, co.company_phone].filter(Boolean).join(" · ")}
+          </div>
+          {co.company_license ? <div className="text-sm">{co.company_license}</div> : null}
         </div>
         <div className="text-right text-sm">
           <div className="font-mono text-lg font-bold">{plan.plan_nbr}</div>
@@ -151,8 +157,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
 
       <footer className="mt-8 border-t border-black pt-4 text-[11px] leading-relaxed">
         <p>
-          All equipment installed to manufacturer specification and local code. Proposal valid for 30 days
-          from the date above. Please contact {contact.display_name.split(" ")[0]} with any questions.
+          {co.quote_terms} Please contact {contact.display_name.split(" ")[0]} with any questions.
         </p>
       </footer>
     </div>

@@ -7,8 +7,15 @@ export default async function LoginPage({
   return (
     <div className="flex min-h-screen items-center justify-center">
       <div className="w-full max-w-sm border border-border bg-card p-8">
-        <h1 className="text-lg font-bold tracking-tight">METCALFE</h1>
-        <p className="label-caps mt-1">Bid System</p>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center bg-ink font-mono-data text-[14px] font-bold text-primary-foreground">
+            MET
+          </div>
+          <div className="leading-tight">
+            <div className="text-[17px] font-bold tracking-tight">Bid System</div>
+            <div className="label-caps">Metcalfe HVAC</div>
+          </div>
+        </div>
         <form action="/api/login" method="post" className="mt-8 space-y-4">
           <div>
             <label className="label-caps" htmlFor="username">
