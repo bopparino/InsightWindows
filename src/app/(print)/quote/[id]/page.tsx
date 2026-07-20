@@ -25,6 +25,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
     | { id: number; plan_nbr: string; builder_name: string; proj_name: string; house_types: string; total: number }
     | undefined;
   if (!plan) notFound();
+  if ((plan as unknown as { deleted_at: string | null }).deleted_at) notFound();
   if (user.role !== "admin" && (plan as unknown as { created_by: number | null }).created_by !== user.id) notFound();
 
   const contact = db

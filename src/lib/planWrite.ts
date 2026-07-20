@@ -10,6 +10,7 @@ import { computeSystem, toAccessRow, type GeoCharts, type SystemInput } from "@/
 // deviated bid is always identifiable.
 
 export const SystemSchema = z.object({
+  houseNbr: z.string().max(4).default("01"),
   houseType: z.string(),
   partNbr: z.string(),
   partCostOverride: z.number().min(0).nullable().optional(),
@@ -43,6 +44,7 @@ export const SystemSchema = z.object({
 });
 
 export const PlanSchema = z.object({
+  dueDate: z.string().max(10).default(""),
   planNbr: z.string().min(2).max(24),
   builderName: z.string().min(1),
   projName: z.string().default(""),
@@ -122,7 +124,7 @@ export function assembleSystems(input: PlanPayload) {
       serviceCost: s.serviceCost,
       commission: s.commission,
     };
-    return { input: sysInput, overrides, totals: computeSystem(sysInput, charts) };
+    return { input: sysInput, overrides, totals: computeSystem(sysInput, charts), houseNbr: s.houseNbr };
   });
 }
 
@@ -140,16 +142,16 @@ export function persistPlan(input: PlanPayload, planId: number | null, status?: 
       id = Number(
         db
           .prepare(
-            `INSERT INTO plans (plan_nbr, builder_name, proj_name, house_types, total, lines_count, edited_at, status, created_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO plans (plan_nbr, builder_name, proj_name, house_types, total, lines_count, edited_at, status, created_by, due_date)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           )
-          .run(planNbr, input.builderName.trim(), input.projName.trim(), houseTypes, total, computed.length, now, status ?? "draft", createdBy ?? null)
+          .run(planNbr, input.builderName.trim(), input.projName.trim(), houseTypes, total, computed.length, now, status ?? "draft", createdBy ?? null, input.dueDate || null)
           .lastInsertRowid,
       );
     } else {
       db.prepare(
-        `UPDATE plans SET builder_name=?, proj_name=?, house_types=?, total=?, lines_count=?, edited_at=? WHERE id=?`,
-      ).run(input.builderName.trim(), input.projName.trim(), houseTypes, total, computed.length, now, planId);
+        `UPDATE plans SET builder_name=?, proj_name=?, house_types=?, total=?, lines_count=?, edited_at=?, due_date=? WHERE id=?`,
+      ).run(input.builderName.trim(), input.projName.trim(), houseTypes, total, computed.length, now, input.dueDate || null, planId);
       db.prepare("DELETE FROM plan_lines WHERE plan_id = ?").run(planId);
     }
     const insertLine = db.prepare(
@@ -158,11 +160,15 @@ export function persistPlan(input: PlanPayload, planId: number | null, status?: 
                                edit_date, data)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
-    computed.forEach((c, i) => {
+    const sysCounter = new Map<string, number>();
+    computed.forEach((c) => {
       const row = toAccessRow(c.input, c.totals);
       if (c.overrides.length) row.APP_OVERRIDES = JSON.stringify(c.overrides);
+      const house = (c.houseNbr || "01").padStart(2, "0");
+      const nth = (sysCounter.get(house) ?? 0) + 1;
+      sysCounter.set(house, nth);
       insertLine.run(
-        id, "01", String(i + 1).padStart(2, "0"), "01", c.input.houseType, c.input.partNbr,
+        id, house, String(nth).padStart(2, "0"), "01", c.input.houseType, c.input.partNbr,
         c.input.partCost, c.input.laborHours, c.input.laborCost, c.input.factor,
         c.totals.totSelling, c.totals.finalTotal, now, JSON.stringify(row),
       );
