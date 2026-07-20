@@ -48,7 +48,7 @@ export default function Sidebar({ displayName, isAdmin }: { displayName: string;
       <nav className="mt-2 flex-1 space-y-6 overflow-y-auto">
         <div>
           <div className="label-caps px-4 pb-1.5">Workspace</div>
-          {WORKSPACE.filter((l) => isAdmin || l.href === "/" || l.href === "/plans").map((l) =>
+          {WORKSPACE.filter((l) => isAdmin || l.href !== "/pricing").map((l) =>
             item(l.href, l.label),
           )}
         </div>

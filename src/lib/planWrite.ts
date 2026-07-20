@@ -97,7 +97,7 @@ export function assembleSystems(input: PlanPayload) {
 }
 
 /** Writes plan + lines. planId null => insert; otherwise replace in place. */
-export function persistPlan(input: PlanPayload, planId: number | null, status?: string): { id: number; total: number } {
+export function persistPlan(input: PlanPayload, planId: number | null, status?: string, createdBy?: number): { id: number; total: number } {
   const computed = assembleSystems(input);
   const total = Math.round(computed.reduce((sum, c) => sum + c.totals.finalTotal, 0) * 100) / 100;
   const houseTypes = [...new Set(computed.map((c) => c.input.houseType).filter(Boolean))].join(" · ");
@@ -110,10 +110,10 @@ export function persistPlan(input: PlanPayload, planId: number | null, status?: 
       id = Number(
         db
           .prepare(
-            `INSERT INTO plans (plan_nbr, builder_name, proj_name, house_types, total, lines_count, edited_at, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO plans (plan_nbr, builder_name, proj_name, house_types, total, lines_count, edited_at, status, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           )
-          .run(planNbr, input.builderName.trim(), input.projName.trim(), houseTypes, total, computed.length, now, status ?? "draft")
+          .run(planNbr, input.builderName.trim(), input.projName.trim(), houseTypes, total, computed.length, now, status ?? "draft", createdBy ?? null)
           .lastInsertRowid,
       );
     } else {

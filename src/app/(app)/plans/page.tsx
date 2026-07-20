@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
+import { requireUser } from "@/lib/auth";
 import { money, shortDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -9,6 +10,9 @@ export default async function PlansPage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
+  const me = await requireUser();
+  const mineOnly = me.role !== "admin";
+  const own = mineOnly ? "AND created_by = $me" : "";
   const { q } = await searchParams;
   const query = (q ?? "").trim();
 
@@ -18,16 +22,16 @@ export default async function PlansPage({
           .prepare(
             `SELECT id, plan_nbr, builder_name, proj_name, house_types, total, lines_count, edited_at, contracted_at, is_master, status
              FROM plans
-             WHERE plan_nbr LIKE $q OR builder_name LIKE $q OR proj_name LIKE $q OR house_types LIKE $q
+             WHERE (plan_nbr LIKE $q OR builder_name LIKE $q OR proj_name LIKE $q OR house_types LIKE $q) ${own}
              ORDER BY edited_at DESC LIMIT 200`,
           )
-          .all({ q: `%${query}%` })
+          .all(mineOnly ? { q: `%${query}%`, me: me.id } : { q: `%${query}%` })
       : db
           .prepare(
             `SELECT id, plan_nbr, builder_name, proj_name, house_types, total, lines_count, edited_at, contracted_at, is_master, status
-             FROM plans ORDER BY edited_at DESC LIMIT 200`,
+             FROM plans WHERE 1=1 ${own} ORDER BY edited_at DESC LIMIT 200`,
           )
-          .all()
+          .all(mineOnly ? { me: me.id } : {})
   ) as {
     id: number;
     plan_nbr: string;
@@ -42,14 +46,16 @@ export default async function PlansPage({
     status: string;
   }[];
 
-  const count = (db.prepare("SELECT COUNT(*) AS n FROM plans").get() as { n: number }).n;
+  const count = mineOnly
+    ? (db.prepare("SELECT COUNT(*) AS n FROM plans WHERE created_by = ?").get(me.id) as { n: number }).n
+    : (db.prepare("SELECT COUNT(*) AS n FROM plans").get() as { n: number }).n;
 
   return (
     <div>
       <div className="flex items-baseline justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Plans</h1>
-          <p className="mt-1 text-[14px] text-faint">{count} plans since 2025</p>
+          <p className="mt-1 text-[14px] text-faint">{mineOnly ? `${count} of your plans` : `${count} plans since 2025`}</p>
         </div>
         <div className="flex items-center gap-3">
           <form method="get" className="w-72">

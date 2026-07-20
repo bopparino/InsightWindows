@@ -222,6 +222,15 @@ function migrate(db: Database.Database): void {
     if (!cols.some((c) => c.name === "phone")) db.exec("ALTER TABLE users ADD COLUMN phone TEXT NOT NULL DEFAULT ''");
     db.pragma("user_version = 8");
   }
+  if (version < 9) {
+    // Digital thumbprint: who created the plan. NULL = imported from Access.
+    // Sales accounts see only their own plans; admin sees all.
+    const cols = db.prepare("PRAGMA table_info(plans)").all() as { name: string }[];
+    if (!cols.some((c) => c.name === "created_by")) {
+      db.exec("ALTER TABLE plans ADD COLUMN created_by INTEGER REFERENCES users(id)");
+    }
+    db.pragma("user_version = 9");
+  }
 
   // Seed the first admin so a fresh deploy is loggable-into. Password comes
   // from ADMIN_PASSWORD at first boot; change it after first login.

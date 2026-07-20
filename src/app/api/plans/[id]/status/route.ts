@@ -19,8 +19,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const form = await req.formData();
   const status = String(form.get("status") ?? "");
   if (!VALID.has(status)) return new NextResponse("bad status", { status: 400 });
-  if (!db.prepare("SELECT 1 FROM plans WHERE id = ?").get(planId)) {
-    return new NextResponse("plan not found", { status: 404 });
+  const row = db.prepare("SELECT created_by FROM plans WHERE id = ?").get(planId) as
+    | { created_by: number | null }
+    | undefined;
+  if (!row) return new NextResponse("plan not found", { status: 404 });
+  if (me.role !== "admin" && row.created_by !== me.id) {
+    return new NextResponse("not your plan", { status: 403 });
   }
 
   const now = new Date().toISOString().slice(0, 19).replace("T", " ");

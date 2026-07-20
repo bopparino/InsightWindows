@@ -41,6 +41,7 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
       }
     | undefined;
   if (!plan) notFound();
+  if (me.role !== "admin" && (plan as unknown as { created_by: number | null }).created_by !== me.id) notFound();
   const STATUSES = ["draft", "proposed", "contracted", "lost"] as const;
   const chipFor = (s: string) =>
     s === "contracted" ? "chip-ok" : s === "lost" ? "chip-danger" : s === "proposed" ? "chip-warn" : "chip-muted";

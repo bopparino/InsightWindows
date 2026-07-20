@@ -17,12 +17,13 @@ const f = (r: Record<string, string>, k: string) => {
 };
 
 export default async function EditPlanPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireUser();
+  const me = await requireUser();
   const { id } = await params;
   const plan = db.prepare("SELECT * FROM plans WHERE id = ?").get(Number(id)) as
     | { id: number; plan_nbr: string; builder_name: string; proj_name: string }
     | undefined;
   if (!plan) notFound();
+  if (me.role !== "admin" && (plan as unknown as { created_by: number | null }).created_by !== me.id) notFound();
 
   const lines = db
     .prepare("SELECT * FROM plan_lines WHERE plan_id = ? ORDER BY house_nbr, system_nbr, work_nbr")

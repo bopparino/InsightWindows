@@ -24,6 +24,6 @@ export async function POST(req: Request) {
     return new NextResponse(`plan ${planNbr} already exists`, { status: 409 });
   }
 
-  const { id, total } = persistPlan(input, null);
+  const { id, total } = persistPlan(input, null, undefined, me.id);
   return NextResponse.json({ id, planNbr, total });
 }
