@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { computeSystem, type SystemInput } from "@/lib/bidmath";
+import { computeGeo, computeSystem, type GeoCharts, type SystemInput } from "@/lib/bidmath";
 
 export type PartOption = { part_nbr: string; description: string; cost: number | null };
 export type KitOption = { id: number; code: string; label: string; category: string; price: number | null };
@@ -12,6 +12,8 @@ export type SystemState = {
   partNbr: string;
   partQuery: string;
   partCostOverride: string; // "" = book price
+  smRuns: { feet: string; height: string; width: string; insulated: boolean }[];
+  dbRuns: { feet: string; height: string; width: string; insulated: boolean }[];
   sheetMetalCost: string;
   ductBoardCost: string;
   otherCost: string;
@@ -38,6 +40,8 @@ export const blankSystem = (): SystemState => ({
   partNbr: "",
   partQuery: "",
   partCostOverride: "",
+  smRuns: [],
+  dbRuns: [],
   sheetMetalCost: "",
   ductBoardCost: "",
   otherCost: "",
@@ -75,12 +79,14 @@ export default function PlanForm({
   parts,
   kits,
   builders,
+  charts,
   planId,
   initial,
 }: {
   parts: PartOption[];
   kits: KitOption[];
   builders: string[];
+  charts: GeoCharts;
   planId?: number;
   initial?: PlanInitial;
 }) {
@@ -117,6 +123,12 @@ export default function PlanForm({
       houseType: s.houseType,
       partNbr: s.partNbr,
       partCost: maybe(s.partCostOverride) ?? bookPart,
+      smRuns: s.smRuns
+        .filter((r) => n(r.feet) > 0)
+        .map((r) => ({ feet: n(r.feet), height: n(r.height), width: n(r.width), insulated: r.insulated })),
+      dbRuns: s.dbRuns
+        .filter((r) => n(r.feet) > 0)
+        .map((r) => ({ feet: n(r.feet), height: n(r.height), width: n(r.width), insulated: r.insulated })),
       sheetMetalCost: n(s.sheetMetalCost),
       ductBoardCost: n(s.ductBoardCost),
       otherCost: n(s.otherCost),
@@ -141,7 +153,7 @@ export default function PlanForm({
     };
   };
 
-  const totals = systems.map((s) => computeSystem(toInput(s)));
+  const totals = systems.map((s) => computeSystem(toInput(s), charts));
   const planTotal = totals.reduce((sum, t) => sum + t.finalTotal, 0);
 
   const patch = (i: number, p: Partial<SystemState>) =>
@@ -168,6 +180,12 @@ export default function PlanForm({
         houseType: s.houseType.trim(),
         partNbr: s.partNbr.trim(),
         partCostOverride: maybe(s.partCostOverride),
+        smRuns: s.smRuns
+          .filter((r) => n(r.feet) > 0)
+          .map((r) => ({ feet: n(r.feet), height: n(r.height), width: n(r.width), insulated: r.insulated })),
+        dbRuns: s.dbRuns
+          .filter((r) => n(r.feet) > 0)
+          .map((r) => ({ feet: n(r.feet), height: n(r.height), width: n(r.width), insulated: r.insulated })),
         sheetMetalCost: n(s.sheetMetalCost),
         ductBoardCost: n(s.ductBoardCost),
         otherCost: n(s.otherCost),
@@ -389,13 +407,38 @@ export default function PlanForm({
                   </div>
                 </div>
 
+                <GeoPanel
+                  title="Sheet metal"
+                  unit="lbs"
+                  runs={s.smRuns}
+                  result={computeGeo(
+                    s.smRuns.filter((r) => n(r.feet) > 0).map((r) => ({ feet: n(r.feet), height: n(r.height), width: n(r.width), insulated: r.insulated })),
+                    "sm",
+                    charts,
+                  )}
+                  rate={charts.smRate}
+                  onChange={(runs) => patch(i, { smRuns: runs })}
+                  allowInsulated
+                />
+                <GeoPanel
+                  title="Duct board"
+                  unit="sqft"
+                  runs={s.dbRuns}
+                  result={computeGeo(
+                    s.dbRuns.filter((r) => n(r.feet) > 0).map((r) => ({ feet: n(r.feet), height: n(r.height), width: n(r.width), insulated: r.insulated })),
+                    "db",
+                    charts,
+                  )}
+                  rate={charts.dbRate}
+                  onChange={(runs) => patch(i, { dbRuns: runs })}
+                />
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <label className="label-caps">Sheet metal $</label>
+                    <label className="label-caps">SM adjust $</label>
                     <input className={numCls} value={s.sheetMetalCost} onChange={(e) => patch(i, { sheetMetalCost: e.target.value })} inputMode="decimal" />
                   </div>
                   <div>
-                    <label className="label-caps">Duct board $</label>
+                    <label className="label-caps">DB adjust $</label>
                     <input className={numCls} value={s.ductBoardCost} onChange={(e) => patch(i, { ductBoardCost: e.target.value })} inputMode="decimal" />
                   </div>
                   <div>
@@ -669,5 +712,66 @@ function TR({ k, v }: { k: string; v: string }) {
       <td className="py-1 text-muted-foreground">{k}</td>
       <td className="py-1 text-right font-mono-data">{v}</td>
     </tr>
+  );
+}
+
+type GeoRunState = { feet: string; height: string; width: string; insulated: boolean };
+
+function GeoPanel({
+  title,
+  unit,
+  runs,
+  result,
+  rate,
+  onChange,
+  allowInsulated,
+}: {
+  title: string;
+  unit: string;
+  runs: GeoRunState[];
+  result: { lbs: number; sqft: number; cost: number };
+  rate: number;
+  onChange: (runs: GeoRunState[]) => void;
+  allowInsulated?: boolean;
+}) {
+  const cell = "w-16 border border-input bg-card px-1 py-1 text-right font-mono-data text-[13px]";
+  return (
+    <div>
+      <div className="flex items-baseline justify-between border-b border-divider pb-1">
+        <span className="label-caps">{title} — feet × H × W</span>
+        <span className="font-mono-data text-[13px]">
+          {unit === "lbs" ? `${result.lbs} lbs` : `${result.sqft.toFixed(1)} sqft`} ·{" "}
+          <strong>${result.cost.toFixed(2)}</strong>
+          <span className="text-faint"> @ ${rate.toFixed(2)}</span>
+        </span>
+      </div>
+      {runs.map((r, ri) => (
+        <div key={ri} className="mt-1.5 flex items-center gap-2 text-[13px]">
+          <input className={cell} value={r.feet} placeholder="ft" inputMode="decimal"
+            onChange={(e) => onChange(runs.map((x, xi) => (xi === ri ? { ...x, feet: e.target.value } : x)))} />
+          <span className="text-faint">ft of</span>
+          <input className={cell} value={r.height} placeholder="H" inputMode="numeric"
+            onChange={(e) => onChange(runs.map((x, xi) => (xi === ri ? { ...x, height: e.target.value } : x)))} />
+          <span className="text-faint">×</span>
+          <input className={cell} value={r.width} placeholder="W" inputMode="numeric"
+            onChange={(e) => onChange(runs.map((x, xi) => (xi === ri ? { ...x, width: e.target.value } : x)))} />
+          {allowInsulated ? (
+            <label className="flex items-center gap-1 text-[12px] text-faint">
+              <input type="checkbox" checked={r.insulated}
+                onChange={(e) => onChange(runs.map((x, xi) => (xi === ri ? { ...x, insulated: e.target.checked } : x)))} />
+              insul
+            </label>
+          ) : null}
+          <button type="button" className="text-[13px] text-faint hover:text-destructive"
+            onClick={() => onChange(runs.filter((_, xi) => xi !== ri))}>
+            ×
+          </button>
+        </div>
+      ))}
+      <button type="button" className="mt-1.5 text-[13px] text-faint hover:text-ink"
+        onClick={() => onChange([...runs, { feet: "", height: "", width: "", insulated: false }])}>
+        + Add run
+      </button>
+    </div>
   );
 }

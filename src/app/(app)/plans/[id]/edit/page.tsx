@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { loadGeoCharts } from "@/lib/planWrite";
+import { computeGeo } from "@/lib/bidmath";
 import PlanForm, { blankSystem, type KitOption, type PartOption, type PlanInitial, type SystemState } from "@/components/PlanForm";
 
 export const dynamic = "force-dynamic";
@@ -51,6 +53,7 @@ export default async function EditPlanPage({ params }: { params: Promise<{ id: s
   const partCosts = new Map(parts.map((p) => [p.part_nbr, p.cost]));
   const kitByCode = new Map(kits.map((k) => [k.code, k]));
 
+  const charts = loadGeoCharts();
   const systems: SystemState[] = lines.map((line) => {
     const raw = JSON.parse(line.data) as Record<string, string>;
     const s = blankSystem();
@@ -61,8 +64,30 @@ export default async function EditPlanPage({ params }: { params: Promise<{ id: s
 
     const sm = f(raw, "SM_CST");
     const dbCost = f(raw, "DBTOT");
-    s.sheetMetalCost = sm ? String(sm) : "";
-    s.ductBoardCost = dbCost ? String(dbCost) : "";
+    // App-born lines carry their geometry; recompute its cost at current
+    // rates and park the difference in the adjust field so totals are stable.
+    let smGeoCost = 0;
+    let dbGeoCost = 0;
+    if (raw.APP_SM_RUNS) {
+      try {
+        s.smRuns = (JSON.parse(raw.APP_SM_RUNS) as { feet: number; height: number; width: number; insulated: boolean }[]).map(
+          (r) => ({ feet: String(r.feet), height: String(r.height), width: String(r.width), insulated: r.insulated }),
+        );
+        smGeoCost = computeGeo(JSON.parse(raw.APP_SM_RUNS), "sm", charts).cost;
+      } catch {}
+    }
+    if (raw.APP_DB_RUNS) {
+      try {
+        s.dbRuns = (JSON.parse(raw.APP_DB_RUNS) as { feet: number; height: number; width: number; insulated: boolean }[]).map(
+          (r) => ({ feet: String(r.feet), height: String(r.height), width: String(r.width), insulated: r.insulated }),
+        );
+        dbGeoCost = computeGeo(JSON.parse(raw.APP_DB_RUNS), "db", charts).cost;
+      } catch {}
+    }
+    const smAdj = Math.round((sm - smGeoCost) * 100) / 100;
+    const dbAdj = Math.round((dbCost - dbGeoCost) * 100) / 100;
+    s.sheetMetalCost = smAdj ? String(smAdj) : "";
+    s.ductBoardCost = dbAdj ? String(dbAdj) : "";
 
     let kitTotal = 0;
     if (raw.APP_KIT_ITEMS) {
@@ -121,7 +146,7 @@ export default async function EditPlanPage({ params }: { params: Promise<{ id: s
         Legacy costs that don&apos;t map to Price Book picks sit in “Other $” so totals start exactly as stored.
       </p>
       <div className="mt-6">
-        <PlanForm parts={parts} kits={kits} builders={builders} planId={plan.id} initial={initial} />
+        <PlanForm parts={parts} kits={kits} builders={builders} charts={loadGeoCharts()} planId={plan.id} initial={initial} />
       </div>
     </div>
   );

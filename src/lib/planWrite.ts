@@ -1,7 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { computeSystem, toAccessRow, type SystemInput } from "@/lib/bidmath";
+import { computeSystem, toAccessRow, type GeoCharts, type SystemInput } from "@/lib/bidmath";
 
 // Shared assemble/compute/persist for plan create (POST /api/plans) and edit
 // (PUT /api/plans/[id]). Prices are server-authoritative from the live Price
@@ -13,8 +13,15 @@ export const SystemSchema = z.object({
   houseType: z.string(),
   partNbr: z.string(),
   partCostOverride: z.number().min(0).nullable().optional(),
-  sheetMetalCost: z.number().min(0).default(0),
-  ductBoardCost: z.number().min(0).default(0),
+  smRuns: z
+    .array(z.object({ feet: z.number().min(0), height: z.number().min(0), width: z.number().min(0), insulated: z.boolean().default(false) }))
+    .default([]),
+  dbRuns: z
+    .array(z.object({ feet: z.number().min(0), height: z.number().min(0), width: z.number().min(0), insulated: z.boolean().default(false) }))
+    .default([]),
+  // adjustments may be negative: legacy imports park (stored - geometry) here
+  sheetMetalCost: z.number().default(0),
+  ductBoardCost: z.number().default(0),
   otherCost: z.number().min(0).default(0),
   kitLines: z
     .array(
@@ -46,7 +53,28 @@ export type PlanPayload = z.infer<typeof PlanSchema>;
 
 type Override = { what: string; book: number | null; used: number };
 
+export function loadGeoCharts(): GeoCharts {
+  const charts: GeoCharts = { smLbf: {}, smSqf: {}, dbSqf: {}, smRate: 0, insRate: 0, dbRate: 0 };
+  for (const row of db
+    .prepare("SELECT category, code, extra FROM kit_items WHERE is_chart = 1")
+    .all() as { category: string; code: string; extra: string }[]) {
+    const e = JSON.parse(row.extra) as Record<string, string>;
+    if (row.category.startsWith("Sheet Metal Chart")) {
+      charts.smLbf[row.code] = Number(e.LBF ?? 0);
+      charts.smSqf[row.code] = Number(e.SQF ?? 0);
+    } else if (row.category.startsWith("Duct Board Chart")) {
+      charts.dbSqf[row.code] = Number(e.SQF ?? 0);
+    }
+  }
+  const rate = db.prepare("SELECT price FROM kit_items WHERE category = 'Fixed Prices' AND code = ?");
+  charts.smRate = (rate.get("SHEETMETAL") as { price: number } | undefined)?.price ?? 1.55;
+  charts.insRate = (rate.get("INSULATION") as { price: number } | undefined)?.price ?? 0.71;
+  charts.dbRate = (rate.get("DUCTBOARD") as { price: number } | undefined)?.price ?? 1.57;
+  return charts;
+}
+
 export function assembleSystems(input: PlanPayload) {
+  const charts = loadGeoCharts();
   const partRow = db.prepare("SELECT cost FROM parts WHERE part_nbr = ?");
   const kitRow = db.prepare("SELECT code, label, price FROM kit_items WHERE id = ? AND is_chart = 0");
 
@@ -80,6 +108,8 @@ export function assembleSystems(input: PlanPayload) {
       houseType: s.houseType.trim(),
       partNbr: s.partNbr.trim(),
       partCost,
+      smRuns: s.smRuns,
+      dbRuns: s.dbRuns,
       sheetMetalCost: s.sheetMetalCost,
       ductBoardCost: s.ductBoardCost,
       otherCost: s.otherCost,
@@ -92,7 +122,7 @@ export function assembleSystems(input: PlanPayload) {
       serviceCost: s.serviceCost,
       commission: s.commission,
     };
-    return { input: sysInput, overrides, totals: computeSystem(sysInput) };
+    return { input: sysInput, overrides, totals: computeSystem(sysInput, charts) };
   });
 }
 
