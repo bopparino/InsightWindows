@@ -4,6 +4,8 @@ FROM node:22-alpine AS builder
 
 RUN apk add --no-cache python3 make g++
 
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+
 WORKDIR /app
 
 COPY package.json package-lock.json ./
@@ -16,6 +18,12 @@ RUN npm prune --omit=dev
 
 FROM node:22-alpine AS runner
 
+# System Chromium for puppeteer PDF generation (cut-sheet recipe): alpine's
+# binary lives at /usr/bin/chromium-browser; fonts so PDFs have glyphs.
+RUN apk add --no-cache chromium nss freetype harfbuzz ca-certificates ttf-freefont
+
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 ENV NODE_ENV=production
 ENV PORT=3000
 

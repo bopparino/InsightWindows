@@ -28,6 +28,10 @@ export default async function NewPlanPage() {
     )
     .all() as KitOption[];
 
+  const options = db
+    .prepare("SELECT option_number, description, std_price, opt_price FROM options WHERE level = 'master' ORDER BY CAST(option_number AS INT)")
+    .all() as { option_number: string; description: string; std_price: number | null; opt_price: number | null }[];
+
   return (
     <div>
       <h1 className="text-3xl font-bold tracking-tight">New Plan</h1>
@@ -35,7 +39,7 @@ export default async function NewPlanPage() {
         Prices come from the live Price Book and Equipment tables; totals use the verified bid math.
       </p>
       <div className="mt-6">
-        <PlanForm parts={parts} kits={kits} builders={builders} charts={loadGeoCharts()} />
+        <PlanForm parts={parts} kits={kits} builders={builders} charts={loadGeoCharts()} options={options} />
       </div>
     </div>
   );

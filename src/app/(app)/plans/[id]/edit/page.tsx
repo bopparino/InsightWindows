@@ -3,7 +3,8 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { loadGeoCharts } from "@/lib/planWrite";
 import { computeGeo } from "@/lib/bidmath";
-import PlanForm, { blankSystem, type KitOption, type PartOption, type PlanInitial, type SystemState } from "@/components/PlanForm";
+import PlanForm, { type KitOption, type PartOption } from "@/components/PlanForm";
+import { blankSystem, type PlanInitial, type SystemState } from "@/lib/planFormState";
 
 export const dynamic = "force-dynamic";
 
@@ -132,6 +133,10 @@ export default async function EditPlanPage({ params }: { params: Promise<{ id: s
     return s;
   });
 
+  const options = db
+    .prepare("SELECT option_number, description, std_price, opt_price FROM options WHERE level = 'master' ORDER BY CAST(option_number AS INT)")
+    .all() as { option_number: string; description: string; std_price: number | null; opt_price: number | null }[];
+
   const initial: PlanInitial = {
     dueDate: ((plan as unknown as { due_date: string | null }).due_date ?? "").slice(0, 10),
     planNbr: plan.plan_nbr,
@@ -149,7 +154,7 @@ export default async function EditPlanPage({ params }: { params: Promise<{ id: s
         Legacy costs that don&apos;t map to Price Book picks sit in “Other $” so totals start exactly as stored.
       </p>
       <div className="mt-6">
-        <PlanForm parts={parts} kits={kits} builders={builders} charts={loadGeoCharts()} planId={plan.id} initial={initial} />
+        <PlanForm parts={parts} kits={kits} builders={builders} charts={loadGeoCharts()} options={options} planId={plan.id} initial={initial} />
       </div>
     </div>
   );
