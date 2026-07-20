@@ -42,6 +42,25 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
   const chipFor = (s: string) =>
     s === "contracted" ? "chip-ok" : s === "lost" ? "chip-danger" : s === "proposed" ? "chip-warn" : "chip-muted";
 
+  const detailRows = db
+    .prepare(
+      `SELECT house_nbr, system_nbr, category, code, label, qty, unit_cost, feet, height, width, insulated
+       FROM plan_line_details WHERE plan_id = ? ORDER BY category, id`,
+    )
+    .all(plan.id) as {
+    house_nbr: string;
+    system_nbr: string;
+    category: string;
+    code: string;
+    label: string;
+    qty: number;
+    unit_cost: number;
+    feet: number;
+    height: number;
+    width: number;
+    insulated: number;
+  }[];
+
   const lines = db
     .prepare(
       `SELECT * FROM plan_lines WHERE plan_id = ? ORDER BY house_nbr, system_nbr, work_nbr`,
@@ -122,6 +141,15 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
             overrides = JSON.parse(raw.APP_OVERRIDES);
           } catch {}
         }
+        const comp = detailRows.filter(
+          (d) => d.house_nbr === line.house_nbr && d.system_nbr === line.system_nbr,
+        );
+        const compGroups = new Map<string, typeof comp>();
+        for (const d of comp) {
+          const g = compGroups.get(d.category) ?? [];
+          g.push(d);
+          compGroups.set(d.category, g);
+        }
         return (
           <section key={line.id} className="border border-border bg-card">
             <div className="flex items-baseline justify-between border-b border-divider px-5 py-3">
@@ -163,6 +191,39 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
                 </tbody>
               </table>
             </div>
+            {comp.length ? (
+              <details className="border-t border-divider px-5 py-3">
+                <summary className="label-caps cursor-pointer select-none">
+                  Composition — {comp.length} lines from the original bid walk
+                </summary>
+                <div className="mt-3 grid gap-x-10 gap-y-4 sm:grid-cols-2">
+                  {[...compGroups.entries()].map(([cat, rows]) => (
+                    <div key={cat}>
+                      <div className="label-caps">{cat}</div>
+                      <table className="mt-1 w-full text-[12px]">
+                        <tbody>
+                          {rows.map((d, di) => (
+                            <tr key={di} className="border-b border-line-faint last:border-0">
+                              <td className="py-1 pr-3">
+                                {d.height > 0
+                                  ? `${d.feet} ft × ${d.height}×${d.width}${d.insulated ? " · insulated" : ""}`
+                                  : d.label || (d.code ? `${d.code}"` : "—")}
+                              </td>
+                              <td className="w-20 py-1 text-right font-mono-data">
+                                {d.height > 0 ? "" : `× ${d.qty}${d.feet ? ` +${d.feet}ft` : ""}`}
+                              </td>
+                              <td className="w-20 py-1 text-right font-mono-data text-faint">
+                                {d.unit_cost ? (d.qty * d.unit_cost).toFixed(2) : ""}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            ) : null}
             {overrides.length ? (
               <div className="border-t border-divider px-5 py-3">
                 <span className="label-caps">Off-book pricing on this system</span>

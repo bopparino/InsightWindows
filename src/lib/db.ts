@@ -191,6 +191,29 @@ function migrate(db: Database.Database): void {
     }
     db.pragma("user_version = 6");
   }
+  if (version < 7) {
+    // Per-bid composition from the Access "Bid *" tables - one row per picked
+    // item or geometry entry, joined to plan_lines by (plan_id, house, system).
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS plan_line_details (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        plan_id INTEGER NOT NULL REFERENCES plans(id) ON DELETE CASCADE,
+        house_nbr TEXT NOT NULL DEFAULT '',
+        system_nbr TEXT NOT NULL DEFAULT '',
+        category TEXT NOT NULL,
+        code TEXT NOT NULL DEFAULT '',
+        label TEXT NOT NULL DEFAULT '',
+        qty REAL NOT NULL DEFAULT 0,
+        unit_cost REAL NOT NULL DEFAULT 0,
+        feet REAL NOT NULL DEFAULT 0,
+        height REAL NOT NULL DEFAULT 0,
+        width REAL NOT NULL DEFAULT 0,
+        insulated INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE INDEX IF NOT EXISTS idx_details_plan ON plan_line_details(plan_id, house_nbr, system_nbr);
+    `);
+    db.pragma("user_version = 7");
+  }
 
   // Seed the first admin so a fresh deploy is loggable-into. Password comes
   // from ADMIN_PASSWORD at first boot; change it after first login.

@@ -62,6 +62,12 @@ const pct = (v: string) => {
   return x > 1 ? x / 100 : x;
 };
 
+const WALK_ORDER = [
+  "Sheet Metal Runs", "Duct Board Runs", "Flex Runs", "Flex Runs w/ Hardware",
+  "Exhaust Runs", "Fans", "FA Dampers", "RA & CA Grills", "Wall Caps & Roof Jacks",
+  "DB Triangles & RA Pans", "Round Pipe", "Miscellaneous Kit", "Stats",
+];
+
 const usd = (v: number) =>
   v.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 });
 
@@ -83,9 +89,24 @@ export default function PlanForm({
   const [systems, setSystems] = useState<SystemState[]>(initial?.systems?.length ? initial.systems : [blankSystem()]);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  // The per-zone walker: one zone open at a time; the rest collapse to cards.
+  const [openZone, setOpenZone] = useState<number | null>(planId != null ? null : 0);
 
   const partIndex = useMemo(() => new Map(parts.map((p) => [p.part_nbr, p])), [parts]);
   const kitIndex = useMemo(() => new Map(kits.map((k) => [String(k.id), k])), [kits]);
+  const walkCats = useMemo(() => {
+    const m = new Map<string, KitOption[]>();
+    for (const k of kits) {
+      const g = m.get(k.category) ?? [];
+      g.push(k);
+      m.set(k.category, g);
+    }
+    return [...m.entries()].sort(([a], [b]) => {
+      const ia = WALK_ORDER.indexOf(a);
+      const ib = WALK_ORDER.indexOf(b);
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    });
+  }, [kits]);
 
   const toInput = (s: SystemState): SystemInput => {
     const bookPart = partIndex.get(s.partNbr)?.cost ?? 0;
@@ -218,22 +239,71 @@ export default function PlanForm({
                 )
                 .slice(0, 8)
             : [];
+        if (openZone !== i) {
+          return (
+            <section key={i} className="border border-border bg-card">
+              <div className="flex items-center justify-between px-5 py-3">
+                <div className="flex min-w-0 items-baseline gap-4">
+                  <span className="label-caps shrink-0">Zone {i + 1}</span>
+                  <span className="truncate text-[13px] font-semibold">{s.houseType || "—"}</span>
+                  {s.partNbr ? (
+                    <span className="truncate font-mono-data text-[12px] text-faint">{s.partNbr}</span>
+                  ) : null}
+                </div>
+                <div className="flex shrink-0 items-center gap-4">
+                  <span className="font-mono-data text-[13px] font-semibold">{usd(t.finalTotal)}</span>
+                  <button
+                    type="button"
+                    className="text-[12px] text-faint underline-offset-4 hover:text-ink hover:underline"
+                    onClick={() => setOpenZone(i)}
+                  >
+                    Edit Zone
+                  </button>
+                  {systems.length > 1 ? (
+                    <button
+                      type="button"
+                      className="text-[12px] text-faint hover:text-destructive"
+                      onClick={() => {
+                        setSystems((prev) => prev.filter((_, j) => j !== i));
+                        setOpenZone(null);
+                      }}
+                    >
+                      ×
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            </section>
+          );
+        }
         return (
-          <section key={i} className="border border-border bg-card">
+          <section key={i} className="border-2 border-ink bg-card">
             <div className="flex items-baseline justify-between border-b border-divider px-5 py-3">
               <div className="flex items-baseline gap-4">
-                <span className="label-caps">System {i + 1}</span>
+                <span className="label-caps">Zone {i + 1} — walking</span>
                 <span className="font-mono-data text-[13px] font-semibold">{usd(t.finalTotal)}</span>
               </div>
-              {systems.length > 1 ? (
+              <div className="flex items-center gap-4">
                 <button
                   type="button"
-                  className="text-[12px] text-faint hover:text-destructive"
-                  onClick={() => setSystems((prev) => prev.filter((_, j) => j !== i))}
+                  className="btn-glow bg-primary px-4 py-1 text-[12px] font-semibold text-primary-foreground"
+                  onClick={() => setOpenZone(null)}
                 >
-                  Remove
+                  Save Zone
                 </button>
-              ) : null}
+                {systems.length > 1 ? (
+                  <button
+                    type="button"
+                    className="text-[12px] text-faint hover:text-destructive"
+                    onClick={() => {
+                      setSystems((prev) => prev.filter((_, j) => j !== i));
+                      setOpenZone(null);
+                    }}
+                  >
+                    Remove
+                  </button>
+                ) : null}
+              </div>
             </div>
 
             <div className="grid gap-x-10 gap-y-5 px-5 py-5 lg:grid-cols-[1fr_320px]">
@@ -241,7 +311,7 @@ export default function PlanForm({
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="label-caps">House type / zone</label>
+                    <label className="label-caps">Zone name / house type</label>
                     <input className={inputCls} value={s.houseType} onChange={(e) => patch(i, { houseType: e.target.value })} placeholder="HADLEY Z-1 90+" />
                   </div>
                   <div>
@@ -424,6 +494,57 @@ export default function PlanForm({
                     + Add item — search the book or type your own
                   </button>
                 </div>
+
+                <div>
+                  <div className="label-caps border-b border-divider pb-1">The walk — every box, type quantities</div>
+                  {walkCats.map(([cat, items]) => {
+                    const picked = items.reduce((sum, it) => {
+                      const line = s.kitLines.find((k) => k.id === String(it.id));
+                      return sum + (line ? n(line.qty) : 0);
+                    }, 0);
+                    return (
+                      <details key={cat} className="border-b border-line-faint">
+                        <summary className="flex cursor-pointer select-none items-baseline justify-between py-2 text-[13px]">
+                          <span className="font-semibold">{cat}</span>
+                          <span className="font-mono-data text-[12px] text-faint">
+                            {picked > 0 ? `${picked} picked` : `${items.length} items`}
+                          </span>
+                        </summary>
+                        <table className="mb-2 w-full text-[12px]">
+                          <tbody>
+                            {items.map((it) => {
+                              const ki = s.kitLines.findIndex((k) => k.id === String(it.id));
+                              const line = ki >= 0 ? s.kitLines[ki] : undefined;
+                              return (
+                                <tr key={it.id} className="border-b border-line-faint last:border-0 hover:bg-row-tint">
+                                  <td className="max-w-96 truncate py-1 pr-3">{it.label || it.code}</td>
+                                  <td className="w-20 py-1 pr-2 text-right font-mono-data text-faint">
+                                    {it.price === null ? "—" : it.price.toFixed(2)}
+                                  </td>
+                                  <td className="w-14 py-1">
+                                    <input
+                                      className="w-14 border border-input bg-card px-1 py-0.5 text-right font-mono-data text-[12px] focus:border-ink"
+                                      value={line?.qty ?? ""}
+                                      onChange={(e) => {
+                                        const v = e.target.value;
+                                        if (ki >= 0) patchKit(i, ki, { qty: v });
+                                        else if (v.trim() !== "")
+                                          patch(i, {
+                                            kitLines: [...s.kitLines, { id: String(it.id), label: "", qty: v, unitPrice: "" }],
+                                          });
+                                      }}
+                                      inputMode="numeric"
+                                    />
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </details>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* ————— right: labor, markup, totals ————— */}
@@ -483,9 +604,12 @@ export default function PlanForm({
         <button
           type="button"
           className="text-[13px] text-faint hover:text-ink"
-          onClick={() => setSystems((prev) => [...prev, blankSystem()])}
+          onClick={() => {
+            setSystems((prev) => [...prev, blankSystem()]);
+            setOpenZone(systems.length);
+          }}
         >
-          + Add system / zone
+          + Add Zone
         </button>
         <div className="flex items-center gap-6">
           <div className="text-right">
