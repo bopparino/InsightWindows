@@ -67,8 +67,8 @@ export default async function EquipmentPage({
     <div>
       <div className="flex items-baseline justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Equipment</h1>
-          <p className="mt-1 text-[13px] text-faint">
+          <h1 className="text-3xl font-bold tracking-tight">Equipment</h1>
+          <p className="mt-1 text-[14px] text-faint">
             {count} priced parts · {bundles} bundle codes in the component map
           </p>
         </div>
@@ -78,13 +78,13 @@ export default async function EquipmentPage({
               name="q"
               defaultValue={query}
               placeholder="Search part #, description, category…"
-              className="w-full border border-input bg-card px-3 py-1.5 text-[13px]"
+              className="w-full border border-input bg-card px-3 py-1.5 text-[14px]"
             />
           </form>
           {isAdmin ? (
             <Link
               href="/equipment/import"
-              className="btn-glow bg-primary px-4 py-1.5 text-[13px] font-semibold text-primary-foreground"
+              className="btn-glow bg-primary px-4 py-1.5 text-[14px] font-semibold text-primary-foreground"
             >
               Upload pricing
             </Link>
@@ -95,7 +95,7 @@ export default async function EquipmentPage({
       {grouped.map(([manufacturer, mrows]) => (
       <section key={manufacturer} className="mt-8">
       <h2 className="label-caps">{manufacturer}</h2>
-      <table className="mt-2 w-full text-[13px]">
+      <table className="mt-2 w-full text-[14px]">
         <thead>
           <tr className="border-b border-border text-left">
             <th className="label-caps py-2 pr-4 font-semibold">Part #</th>
@@ -145,7 +145,7 @@ export default async function EquipmentPage({
       </table>
       </section>
       ))}
-      {rows.length === 0 ? <p className="mt-8 text-[13px] text-faint">No parts match “{query}”.</p> : null}
+      {rows.length === 0 ? <p className="mt-8 text-[14px] text-faint">No parts match “{query}”.</p> : null}
     </div>
   );
 }

@@ -14,11 +14,11 @@ export default async function EquipmentImportPage() {
   return (
     <div className="max-w-xl space-y-8">
       <div>
-        <Link href="/equipment" className="text-[12px] text-faint hover:text-ink">
+        <Link href="/equipment" className="text-[13px] text-faint hover:text-ink">
           ← Equipment
         </Link>
-        <h1 className="mt-2 text-2xl font-bold tracking-tight">Upload manufacturer pricing</h1>
-        <p className="mt-1 text-[13px] text-faint">
+        <h1 className="mt-2 text-3xl font-bold tracking-tight">Upload manufacturer pricing</h1>
+        <p className="mt-1 text-[14px] text-faint">
           The brand&apos;s current XLS (with the COMPONT PRICING sheet). You&apos;ll preview every change
           before anything is applied.
         </p>
@@ -40,20 +40,20 @@ export default async function EquipmentImportPage() {
             <label className="label-caps" htmlFor="file">
               Price file (.xls)
             </label>
-            <input id="file" name="file" type="file" accept=".xls,.xlsx" className="mt-1 w-full text-[13px]" required />
+            <input id="file" name="file" type="file" accept=".xls,.xlsx" className="mt-1 w-full text-[14px]" required />
           </div>
           <button type="submit" className="btn-glow bg-primary px-6 py-2 text-sm font-semibold text-primary-foreground">
             Parse &amp; preview
           </button>
         </form>
       ) : (
-        <p className="text-[13px] text-faint">Uploads are admin-only.</p>
+        <p className="text-[14px] text-faint">Uploads are admin-only.</p>
       )}
 
       {pending.length ? (
         <section>
           <h2 className="label-caps">Awaiting review</h2>
-          <table className="mt-2 w-full text-[13px]">
+          <table className="mt-2 w-full text-[14px]">
             <tbody>
               {pending.map((p) => (
                 <tr key={p.id} className="border-b border-line-faint last:border-0">

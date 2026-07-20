@@ -116,7 +116,7 @@ export default async function EditPlanPage({ params }: { params: Promise<{ id: s
       <h1 className="text-2xl font-bold tracking-tight">
         Edit <span className="font-mono-data">{plan.plan_nbr}</span>
       </h1>
-      <p className="mt-1 text-[13px] text-faint">
+      <p className="mt-1 text-[14px] text-faint">
         Legacy costs that don&apos;t map to Price Book picks sit in “Other $” so totals start exactly as stored.
       </p>
       <div className="mt-6">

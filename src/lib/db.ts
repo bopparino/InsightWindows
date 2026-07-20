@@ -214,6 +214,14 @@ function migrate(db: Database.Database): void {
     `);
     db.pragma("user_version = 7");
   }
+  if (version < 8) {
+    // Salesman contact info - printed on quotes from the account of whoever
+    // prints. Roles: 'user' = Sales (clean screens), 'admin' = full detail.
+    const cols = db.prepare("PRAGMA table_info(users)").all() as { name: string }[];
+    if (!cols.some((c) => c.name === "email")) db.exec("ALTER TABLE users ADD COLUMN email TEXT NOT NULL DEFAULT ''");
+    if (!cols.some((c) => c.name === "phone")) db.exec("ALTER TABLE users ADD COLUMN phone TEXT NOT NULL DEFAULT ''");
+    db.pragma("user_version = 8");
+  }
 
   // Seed the first admin so a fresh deploy is loggable-into. Password comes
   // from ADMIN_PASSWORD at first boot; change it after first login.

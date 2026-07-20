@@ -202,8 +202,8 @@ export default function PlanForm({
     router.refresh();
   }
 
-  const inputCls = "w-full border border-input bg-card px-2 py-1.5 text-[13px]";
-  const numCls = "w-full border border-input bg-card px-2 py-1 text-right font-mono-data text-[13px]";
+  const inputCls = "w-full border border-input bg-card px-2 py-1.5 text-[14px]";
+  const numCls = "w-full border border-input bg-card px-2 py-1 text-right font-mono-data text-[14px]";
 
   return (
     <div className="space-y-8">
@@ -240,7 +240,7 @@ export default function PlanForm({
                       <button
                         key={b}
                         type="button"
-                        className="block w-full truncate px-2 py-1 text-left text-[12px] hover:bg-row-tint"
+                        className="block w-full truncate px-2 py-1 text-left text-[13px] hover:bg-row-tint"
                         onMouseDown={() => setBuilderName(b)}
                       >
                         {b}
@@ -277,16 +277,16 @@ export default function PlanForm({
               <div className="flex items-center justify-between px-5 py-3">
                 <div className="flex min-w-0 items-baseline gap-4">
                   <span className="label-caps shrink-0">Zone {i + 1}</span>
-                  <span className="truncate text-[13px] font-semibold">{s.houseType || "—"}</span>
+                  <span className="truncate text-[14px] font-semibold">{s.houseType || "—"}</span>
                   {s.partNbr ? (
-                    <span className="truncate font-mono-data text-[12px] text-faint">{s.partNbr}</span>
+                    <span className="truncate font-mono-data text-[13px] text-faint">{s.partNbr}</span>
                   ) : null}
                 </div>
                 <div className="flex shrink-0 items-center gap-4">
-                  <span className="font-mono-data text-[13px] font-semibold">{usd(t.finalTotal)}</span>
+                  <span className="font-mono-data text-[14px] font-semibold">{usd(t.finalTotal)}</span>
                   <button
                     type="button"
-                    className="text-[12px] text-faint underline-offset-4 hover:text-ink hover:underline"
+                    className="text-[13px] text-faint underline-offset-4 hover:text-ink hover:underline"
                     onClick={() => setOpenZone(i)}
                   >
                     Edit Zone
@@ -294,7 +294,7 @@ export default function PlanForm({
                   {systems.length > 1 ? (
                     <button
                       type="button"
-                      className="text-[12px] text-faint hover:text-destructive"
+                      className="text-[13px] text-faint hover:text-destructive"
                       onClick={() => {
                         setSystems((prev) => prev.filter((_, j) => j !== i));
                         setOpenZone(null);
@@ -313,12 +313,12 @@ export default function PlanForm({
             <div className="flex items-baseline justify-between border-b border-divider px-5 py-3">
               <div className="flex items-baseline gap-4">
                 <span className="label-caps">Zone {i + 1} — walking</span>
-                <span className="font-mono-data text-[13px] font-semibold">{usd(t.finalTotal)}</span>
+                <span className="font-mono-data text-[14px] font-semibold">{usd(t.finalTotal)}</span>
               </div>
               <div className="flex items-center gap-4">
                 <button
                   type="button"
-                  className="btn-glow bg-primary px-4 py-1 text-[12px] font-semibold text-primary-foreground"
+                  className="btn-glow bg-primary px-4 py-1 text-[13px] font-semibold text-primary-foreground"
                   onClick={() => setOpenZone(null)}
                 >
                   Save Zone
@@ -326,7 +326,7 @@ export default function PlanForm({
                 {systems.length > 1 ? (
                   <button
                     type="button"
-                    className="text-[12px] text-faint hover:text-destructive"
+                    className="text-[13px] text-faint hover:text-destructive"
                     onClick={() => {
                       setSystems((prev) => prev.filter((_, j) => j !== i));
                       setOpenZone(null);
@@ -360,7 +360,7 @@ export default function PlanForm({
                           <button
                             key={m.part_nbr}
                             type="button"
-                            className="flex w-full items-baseline gap-3 px-2 py-1 text-left text-[12px] hover:bg-row-tint"
+                            className="flex w-full items-baseline gap-3 px-2 py-1 text-left text-[13px] hover:bg-row-tint"
                             onClick={() => patch(i, { partNbr: m.part_nbr, partQuery: "" })}
                           >
                             <span className="font-mono-data font-semibold">{m.part_nbr}</span>
@@ -371,11 +371,11 @@ export default function PlanForm({
                       </div>
                     ) : null}
                     {part ? (
-                      <div className="mt-1 flex items-center gap-2 text-[12px] text-faint">
+                      <div className="mt-1 flex items-center gap-2 text-[13px] text-faint">
                         <span className="min-w-0 truncate">{part.description || "bundle"}</span>
                         <span className="label-caps ml-auto shrink-0">cost</span>
                         <input
-                          className="w-24 shrink-0 border border-input bg-card px-1 py-0.5 text-right font-mono-data text-[12px]"
+                          className="w-24 shrink-0 border border-input bg-card px-1 py-0.5 text-right font-mono-data text-[13px]"
                           value={s.partCostOverride}
                           onChange={(e) => patch(i, { partCostOverride: e.target.value })}
                           placeholder={bookPart === null ? "0.00" : bookPart.toFixed(2)}
@@ -430,7 +430,7 @@ export default function PlanForm({
                           <div className="flex items-center gap-2">
                             <input
                               autoFocus
-                              className="min-w-0 flex-1 border border-ink bg-card px-2 py-1 text-[12px]"
+                              className="min-w-0 flex-1 border border-ink bg-card px-2 py-1 text-[13px]"
                               value={k.query ?? ""}
                               onChange={(e) => patchKit(i, ki, { query: e.target.value })}
                               onKeyDown={(e) => {
@@ -442,7 +442,7 @@ export default function PlanForm({
                               }}
                               placeholder="Type to search the book — Enter picks the top match…"
                             />
-                            <button type="button" className="text-[12px] text-faint hover:text-destructive" onClick={() => dropKit(i, ki)}>
+                            <button type="button" className="text-[13px] text-faint hover:text-destructive" onClick={() => dropKit(i, ki)}>
                               ×
                             </button>
                           </div>
@@ -452,7 +452,7 @@ export default function PlanForm({
                                 <button
                                   key={it.id}
                                   type="button"
-                                  className="flex w-full items-baseline gap-2 px-2 py-1 text-left text-[12px] hover:bg-row-tint"
+                                  className="flex w-full items-baseline gap-2 px-2 py-1 text-left text-[13px] hover:bg-row-tint"
                                   onClick={() => patchKit(i, ki, { id: String(it.id), label: "", picking: false, query: "" })}
                                 >
                                   <span className="label-caps shrink-0">{it.category}</span>
@@ -463,7 +463,7 @@ export default function PlanForm({
                               {q.length >= 2 ? (
                                 <button
                                   type="button"
-                                  className="flex w-full items-baseline gap-2 border-t border-divider px-2 py-1 text-left text-[12px] hover:bg-row-tint"
+                                  className="flex w-full items-baseline gap-2 border-t border-divider px-2 py-1 text-left text-[13px] hover:bg-row-tint"
                                   onClick={() => patchKit(i, ki, { id: "", label: k.query ?? "", picking: false, query: "" })}
                                 >
                                   <span className="chip chip-warn shrink-0">custom</span>
@@ -486,32 +486,32 @@ export default function PlanForm({
                           <span className="flex min-w-0 flex-1 items-baseline gap-2">
                             <span className="chip chip-warn shrink-0">custom</span>
                             <input
-                              className="min-w-0 flex-1 border border-input bg-card px-1 py-1 text-[12px]"
+                              className="min-w-0 flex-1 border border-input bg-card px-1 py-1 text-[13px]"
                               value={k.label}
                               onChange={(e) => patchKit(i, ki, { label: e.target.value })}
                             />
                           </span>
                         ) : (
-                          <span className="flex min-w-0 flex-1 items-baseline gap-2 text-[12px]">
+                          <span className="flex min-w-0 flex-1 items-baseline gap-2 text-[13px]">
                             <span className="label-caps shrink-0">{item?.category}</span>
                             <span className="min-w-0 truncate">{item?.label || item?.code}</span>
                           </span>
                         )}
                         <input
-                          className="w-12 shrink-0 border border-input bg-card px-1 py-1 text-right font-mono-data text-[12px]"
+                          className="w-12 shrink-0 border border-input bg-card px-1 py-1 text-right font-mono-data text-[13px]"
                           value={k.qty}
                           onChange={(e) => patchKit(i, ki, { qty: e.target.value })}
                           inputMode="numeric"
                         />
                         <input
-                          className={`w-20 shrink-0 border px-1 py-1 text-right font-mono-data text-[12px] ${overridden || isCustom ? "border-warn-line bg-warn-bg" : "border-input bg-card"}`}
+                          className={`w-20 shrink-0 border px-1 py-1 text-right font-mono-data text-[13px] ${overridden || isCustom ? "border-warn-line bg-warn-bg" : "border-input bg-card"}`}
                           value={k.unitPrice}
                           onChange={(e) => patchKit(i, ki, { unitPrice: e.target.value })}
                           placeholder={book === null ? "0.00" : book.toFixed(2)}
                           inputMode="decimal"
                         />
-                        <span className="w-20 shrink-0 text-right font-mono-data text-[12px]">{usd(n(k.qty) * used)}</span>
-                        <button type="button" className="shrink-0 text-[12px] text-faint hover:text-destructive" onClick={() => dropKit(i, ki)}>
+                        <span className="w-20 shrink-0 text-right font-mono-data text-[13px]">{usd(n(k.qty) * used)}</span>
+                        <button type="button" className="shrink-0 text-[13px] text-faint hover:text-destructive" onClick={() => dropKit(i, ki)}>
                           ×
                         </button>
                       </div>
@@ -520,7 +520,7 @@ export default function PlanForm({
 
                   <button
                     type="button"
-                    className="mt-2 text-[12px] font-semibold text-faint hover:text-ink"
+                    className="mt-2 text-[13px] font-semibold text-faint hover:text-ink"
                     onClick={() => patch(i, { kitLines: [...s.kitLines, { id: "", label: "", qty: "1", unitPrice: "", picking: true, query: "" }] })}
                   >
                     + Add item — search the book or type your own
@@ -536,13 +536,13 @@ export default function PlanForm({
                     }, 0);
                     return (
                       <details key={cat} className="border-b border-line-faint">
-                        <summary className="flex cursor-pointer select-none items-baseline justify-between py-2 text-[13px]">
+                        <summary className="flex cursor-pointer select-none items-baseline justify-between py-2 text-[14px]">
                           <span className="font-semibold">{cat}</span>
-                          <span className="font-mono-data text-[12px] text-faint">
+                          <span className="font-mono-data text-[13px] text-faint">
                             {picked > 0 ? `${picked} picked` : `${items.length} items`}
                           </span>
                         </summary>
-                        <table className="mb-2 w-full text-[12px]">
+                        <table className="mb-2 w-full text-[13px]">
                           <tbody>
                             {items.map((it) => {
                               const ki = s.kitLines.findIndex((k) => k.id === String(it.id));
@@ -555,7 +555,7 @@ export default function PlanForm({
                                   </td>
                                   <td className="w-14 py-1">
                                     <input
-                                      className="w-14 border border-input bg-card px-1 py-0.5 text-right font-mono-data text-[12px] focus:border-ink"
+                                      className="w-14 border border-input bg-card px-1 py-0.5 text-right font-mono-data text-[13px] focus:border-ink"
                                       value={line?.qty ?? ""}
                                       onChange={(e) => {
                                         const v = e.target.value;
@@ -612,7 +612,7 @@ export default function PlanForm({
                   </div>
                 </div>
 
-                <table className="w-full text-[13px]">
+                <table className="w-full text-[14px]">
                   <tbody>
                     <TR k={`Labor (${s.laborHours || 0} × $${s.laborRate || 0})`} v={usd(n(s.laborHours) * n(s.laborRate))} />
                     <TR k="Kit total" v={usd(t.kitTotal)} />
@@ -622,7 +622,7 @@ export default function PlanForm({
                     <TR k="Sales tax" v={usd(t.salesTax)} />
                     <tr className="border-t border-border">
                       <td className="py-1.5 font-semibold">System total</td>
-                      <td className="py-1.5 text-right font-mono-data text-[15px] font-semibold">{usd(t.finalTotal)}</td>
+                      <td className="py-1.5 text-right font-mono-data text-[17px] font-semibold">{usd(t.finalTotal)}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -635,7 +635,7 @@ export default function PlanForm({
       <div className="flex items-center justify-between">
         <button
           type="button"
-          className="text-[13px] text-faint hover:text-ink"
+          className="text-[14px] text-faint hover:text-ink"
           onClick={() => {
             setSystems((prev) => [...prev, blankSystem()]);
             setOpenZone(systems.length);
@@ -658,7 +658,7 @@ export default function PlanForm({
           </button>
         </div>
       </div>
-      {error ? <p className="text-[13px] text-destructive">{error}</p> : null}
+      {error ? <p className="text-[14px] text-destructive">{error}</p> : null}
     </div>
   );
 }

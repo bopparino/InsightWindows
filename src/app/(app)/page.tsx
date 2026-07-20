@@ -63,8 +63,8 @@ export default async function OverviewPage() {
   return (
     <div className="space-y-10">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Sales Overview</h1>
-        <p className="mt-1 text-[13px] text-faint">
+        <h1 className="text-3xl font-bold tracking-tight">Sales Overview</h1>
+        <p className="mt-1 text-[14px] text-faint">
           Live from the bid history, 2025 to today. Master bid files excluded.
         </p>
       </div>
@@ -79,11 +79,11 @@ export default async function OverviewPage() {
               className="border border-border bg-card px-4 py-3 hover:border-ink"
             >
               <div className="flex items-baseline justify-between">
-                <span className="font-mono-data text-[12px] text-faint">{p.plan_nbr}</span>
-                <span className="font-mono-data text-[12px]">{money(p.total)}</span>
+                <span className="font-mono-data text-[13px] text-faint">{p.plan_nbr}</span>
+                <span className="font-mono-data text-[13px]">{money(p.total)}</span>
               </div>
-              <div className="mt-1 truncate text-[13px] font-semibold">{p.builder_name || "—"}</div>
-              <div className="mt-1 truncate text-[12px] text-faint">{p.proj_name || p.house_types || "—"}</div>
+              <div className="mt-1 truncate text-[14px] font-semibold">{p.builder_name || "—"}</div>
+              <div className="mt-1 truncate text-[13px] text-faint">{p.proj_name || p.house_types || "—"}</div>
               <div className="mt-2 label-caps">{shortDate(p.edited_at)}</div>
             </Link>
           ))}
@@ -99,7 +99,7 @@ export default async function OverviewPage() {
 
       <section>
         <h2 className="label-caps">Bid value by month</h2>
-        <table className="mt-3 w-full text-[13px]">
+        <table className="mt-3 w-full text-[14px]">
           <tbody>
             {monthly.map((m) => (
               <tr key={m.ym} className="border-b border-line-faint last:border-0">
@@ -121,7 +121,7 @@ export default async function OverviewPage() {
       <div className="grid gap-10 lg:grid-cols-2">
         <section>
           <h2 className="label-caps">Top builders by bid value</h2>
-          <table className="mt-3 w-full text-[13px]">
+          <table className="mt-3 w-full text-[14px]">
             <tbody>
               {topBuilders.map((b) => (
                 <tr key={b.builder_name} className="border-b border-line-faint last:border-0">
@@ -137,11 +137,11 @@ export default async function OverviewPage() {
         <section>
           <div className="flex items-baseline justify-between">
             <h2 className="label-caps">Recent plans</h2>
-            <Link href="/plans" className="text-[12px] text-faint hover:text-ink">
+            <Link href="/plans" className="text-[13px] text-faint hover:text-ink">
               View all →
             </Link>
           </div>
-          <table className="mt-3 w-full text-[13px]">
+          <table className="mt-3 w-full text-[14px]">
             <tbody>
               {recent.map((p) => (
                 <tr key={p.id} className="border-b border-line-faint last:border-0">
@@ -168,7 +168,7 @@ function Stat({ label, value, sub }: { label: string; value: string; sub: string
     <div>
       <div className="label-caps">{label}</div>
       <div className="mt-1 font-mono-data text-[22px] font-semibold tracking-tight">{value}</div>
-      <div className="text-[12px] text-faint">{sub}</div>
+      <div className="text-[13px] text-faint">{sub}</div>
     </div>
   );
 }

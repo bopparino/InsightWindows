@@ -171,7 +171,7 @@
 /* Mono micro-label: section/column headers, metadata keys. */
 .theme-insight .label-caps {
   font-family: var(--font-jetbrains-mono), 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
+  font-size: 11.5px;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -192,7 +192,7 @@
   padding: 2px 7px;
   border-radius: 2px;
   font-family: var(--font-jetbrains-mono), 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;

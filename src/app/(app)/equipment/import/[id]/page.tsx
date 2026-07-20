@@ -24,13 +24,13 @@ export default async function ImportPreviewPage({ params }: { params: Promise<{ 
   return (
     <div className="space-y-8">
       <div>
-        <Link href="/equipment/import" className="text-[12px] text-faint hover:text-ink">
+        <Link href="/equipment/import" className="text-[13px] text-faint hover:text-ink">
           ← Uploads
         </Link>
         <h1 className="mt-2 text-2xl font-bold tracking-tight">
           {row.manufacturer} — <span className="font-mono-data text-xl">{row.filename}</span>
         </h1>
-        <p className="mt-1 text-[13px] text-faint">
+        <p className="mt-1 text-[14px] text-faint">
           {p.totalParsed} parts parsed · {p.updates.length} price changes · {p.added.length} new ·{" "}
           {p.unchanged.length} unchanged. Nothing is applied until you approve.
         </p>
@@ -55,7 +55,7 @@ export default async function ImportPreviewPage({ params }: { params: Promise<{ 
       {p.updates.length ? (
         <section>
           <h2 className="label-caps">Price changes</h2>
-          <table className="mt-2 w-full text-[13px]">
+          <table className="mt-2 w-full text-[14px]">
             <tbody>
               {p.updates.map((u) => (
                 <tr key={u.partNbr} className="border-b border-line-faint last:border-0">
@@ -74,7 +74,7 @@ export default async function ImportPreviewPage({ params }: { params: Promise<{ 
       {p.added.length ? (
         <section>
           <h2 className="label-caps">New parts</h2>
-          <table className="mt-2 w-full text-[13px]">
+          <table className="mt-2 w-full text-[14px]">
             <tbody>
               {p.added.map((a) => (
                 <tr key={a.partNbr} className="border-b border-line-faint last:border-0">

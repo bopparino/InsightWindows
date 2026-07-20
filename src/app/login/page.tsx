@@ -35,7 +35,7 @@ export default async function LoginPage({
               required
             />
           </div>
-          {err ? <p className="text-[12px] text-destructive">Wrong username or password.</p> : null}
+          {err ? <p className="text-[13px] text-destructive">Wrong username or password.</p> : null}
           <button
             type="submit"
             className="btn-glow w-full bg-primary py-2 text-sm font-semibold text-primary-foreground"
