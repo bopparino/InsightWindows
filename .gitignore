@@ -40,3 +40,4 @@ data/
 *bundle*.json
 pricing*.json
 bids*.json
+details*.json
