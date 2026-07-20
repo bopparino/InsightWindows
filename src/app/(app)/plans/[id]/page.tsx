@@ -138,6 +138,24 @@ export default async function PlanDetailPage({ params }: { params: Promise<{ id:
         </dl>
       </div>
 
+      <details className="border border-border bg-card px-5 py-3">
+        <summary className="label-caps cursor-pointer select-none">
+          Contract inclusions — printed in the contract&apos;s Included section
+        </summary>
+        <form action={`/api/plans/${plan.id}/inclusions`} method="post" className="mt-3">
+          <textarea
+            name="inclusions"
+            rows={5}
+            defaultValue={(plan as unknown as { inclusions: string }).inclusions ?? ""}
+            placeholder={"One per line, e.g.\nRoof Flashing furnished by Metcalfe (Installed by Others)"}
+            className="w-full border border-input bg-card px-2 py-1.5 font-mono-data text-[14px]"
+          />
+          <button className="btn-glow mt-2 bg-primary px-5 py-1.5 text-[14px] font-semibold text-primary-foreground" type="submit">
+            Save inclusions
+          </button>
+        </form>
+      </details>
+
       {lines.map((line) => {
         const raw = JSON.parse(line.data) as Record<string, string>;
         const kits = KIT_FIELDS.map(([code, label]) => ({

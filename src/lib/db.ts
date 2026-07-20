@@ -283,6 +283,15 @@ function migrate(db: Database.Database): void {
     );
     db.pragma("user_version = 10");
   }
+  if (version < 11) {
+    // Per-plan contract inclusions (one per line), printed in the contract's
+    // "Included" section - the successor of Access's Contract Includes rows.
+    const cols = db.prepare("PRAGMA table_info(plans)").all() as { name: string }[];
+    if (!cols.some((c) => c.name === "inclusions")) {
+      db.exec("ALTER TABLE plans ADD COLUMN inclusions TEXT NOT NULL DEFAULT ''");
+    }
+    db.pragma("user_version = 11");
+  }
 
   // Seed the first admin so a fresh deploy is loggable-into. Password comes
   // from ADMIN_PASSWORD at first boot; change it after first login.

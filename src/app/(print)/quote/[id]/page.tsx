@@ -58,6 +58,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
         <a href={`/plans/${plan.id}`} className="border border-black px-4 py-1.5 text-sm">
           ← Back to plan
         </a>
+        <a href={`/api/pdf/quote/${plan.id}`} className="border border-black px-4 py-1.5 text-sm">Download PDF</a>
         <PrintButton />
       </div>
 

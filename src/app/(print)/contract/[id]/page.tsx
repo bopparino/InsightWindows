@@ -24,6 +24,7 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
         total: number;
         created_by: number | null;
         deleted_at: string | null;
+        inclusions: string;
       }
     | undefined;
   if (!plan) notFound();
@@ -44,6 +45,7 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
       <style>{`@media print { .no-print { display: none } @page { margin: 0.6in } } body { background: #fff !important; }`}</style>
       <div className="no-print mb-8 flex justify-end gap-3">
         <a href={`/plans/${plan.id}`} className="border border-black px-4 py-1.5 text-sm">← Back to plan</a>
+        <a href={`/api/pdf/contract/${plan.id}`} className="border border-black px-4 py-1.5 text-sm">Download PDF</a>
         <PrintButton />
       </div>
 
@@ -96,6 +98,17 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
           </tbody>
         </table>
       </section>
+
+      {(plan.inclusions ?? "").trim() ? (
+        <section className="mt-6">
+          <div className="text-[11px] font-bold uppercase tracking-wider border-b border-black pb-1">Included</div>
+          <ul className="mt-2">
+            {plan.inclusions.split("\n").map((x) => x.trim()).filter(Boolean).map((x, i) => (
+              <li key={i} className="py-0.5">— {x}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {exclusions.length ? (
         <section className="mt-6">

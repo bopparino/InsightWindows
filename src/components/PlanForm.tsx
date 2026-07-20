@@ -3,60 +3,16 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { computeGeo, computeSystem, type GeoCharts, type SystemInput } from "@/lib/bidmath";
+import { blankSystem, type PlanInitial, type SystemState } from "@/lib/planFormState";
+
+export { blankSystem, type PlanInitial, type SystemState };
 
 export type PartOption = { part_nbr: string; description: string; cost: number | null };
 export type KitOption = { id: number; code: string; label: string; category: string; price: number | null };
+export type BidOption = { option_number: string; description: string; std_price: number | null; opt_price: number | null };
 
-export type SystemState = {
-  houseNbr: string;
-  houseType: string;
-  partNbr: string;
-  partQuery: string;
-  partCostOverride: string; // "" = book price
-  smRuns: { feet: string; height: string; width: string; insulated: boolean }[];
-  dbRuns: { feet: string; height: string; width: string; insulated: boolean }[];
-  sheetMetalCost: string;
-  ductBoardCost: string;
-  otherCost: string;
-  // id "" + label => custom item; picking rows are the in-progress search UI
-  kitLines: { id: string; label: string; qty: string; unitPrice: string; picking?: boolean; query?: string }[];
-  laborHours: string;
-  laborRate: string;
-  factor: string;
-  taxPct: string;
-  permitCost: string;
-  serviceCost: string;
-  commission: string;
-};
 
-export type PlanInitial = {
-  dueDate: string;
-  planNbr: string;
-  builderName: string;
-  projName: string;
-  systems: SystemState[];
-};
 
-export const blankSystem = (): SystemState => ({
-  houseNbr: "01",
-  houseType: "",
-  partNbr: "",
-  partQuery: "",
-  partCostOverride: "",
-  smRuns: [],
-  dbRuns: [],
-  sheetMetalCost: "",
-  ductBoardCost: "",
-  otherCost: "",
-  kitLines: [],
-  laborHours: "",
-  laborRate: "86",
-  factor: "0.6",
-  taxPct: "0.06",
-  permitCost: "",
-  serviceCost: "",
-  commission: "",
-});
 
 const n = (v: string) => {
   const x = Number(v.replace(/[$,%\s]/g, ""));
@@ -83,6 +39,7 @@ export default function PlanForm({
   kits,
   builders,
   charts,
+  options = [],
   planId,
   initial,
 }: {
@@ -90,6 +47,7 @@ export default function PlanForm({
   kits: KitOption[];
   builders: string[];
   charts: GeoCharts;
+  options?: BidOption[];
   planId?: number;
   initial?: PlanInitial;
 }) {
@@ -507,7 +465,13 @@ export default function PlanForm({
                               ×
                             </button>
                           </div>
-                          {(found.length || q.length >= 2) ? (
+                          {(() => {
+                            const optHits = q.length >= 2
+                              ? options
+                                  .filter((o) => o.description.toUpperCase().includes(q) || o.option_number === q)
+                                  .slice(0, 5)
+                              : [];
+                            return (found.length || optHits.length || q.length >= 2) ? (
                             <div className="absolute z-10 mt-1 max-h-64 w-full overflow-auto border border-border bg-card shadow-sm">
                               {found.map((it) => (
                                 <button
@@ -521,6 +485,28 @@ export default function PlanForm({
                                   <span className="font-mono-data shrink-0">{it.price === null ? "—" : usd(it.price)}</span>
                                 </button>
                               ))}
+                              {optHits.map((o) => (
+                                <button
+                                  key={`opt-${o.option_number}`}
+                                  type="button"
+                                  className="flex w-full items-baseline gap-2 border-t border-divider px-2 py-1 text-left text-[13px] hover:bg-row-tint"
+                                  onClick={() =>
+                                    patchKit(i, ki, {
+                                      id: "",
+                                      label: `OPTION ${o.option_number}: ${o.description}`,
+                                      unitPrice: String(o.opt_price ?? o.std_price ?? 0),
+                                      picking: false,
+                                      query: "",
+                                    })
+                                  }
+                                >
+                                  <span className="chip chip-ok shrink-0">option</span>
+                                  <span className="min-w-0 flex-1 truncate">{o.description}</span>
+                                  <span className="font-mono-data shrink-0">
+                                    {(o.opt_price ?? o.std_price) === null ? "—" : usd((o.opt_price ?? o.std_price)!)}
+                                  </span>
+                                </button>
+                              ))}
                               {q.length >= 2 ? (
                                 <button
                                   type="button"
@@ -532,7 +518,8 @@ export default function PlanForm({
                                 </button>
                               ) : null}
                             </div>
-                          ) : null}
+                          ) : null;
+                          })()}
                         </div>
                       );
                     }
