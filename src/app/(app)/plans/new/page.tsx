@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { loadGeoCharts } from "@/lib/planWrite";
 import PlanForm, { type KitOption, type PartOption } from "@/components/PlanForm";
 
 export const dynamic = "force-dynamic";
@@ -34,7 +35,7 @@ export default async function NewPlanPage() {
         Prices come from the live Price Book and Equipment tables; totals use the verified bid math.
       </p>
       <div className="mt-6">
-        <PlanForm parts={parts} kits={kits} builders={builders} />
+        <PlanForm parts={parts} kits={kits} builders={builders} charts={loadGeoCharts()} />
       </div>
     </div>
   );
