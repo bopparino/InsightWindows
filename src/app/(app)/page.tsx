@@ -69,6 +69,27 @@ export default async function OverviewPage() {
         </p>
       </div>
 
+      <section>
+        <h2 className="label-caps">Recent</h2>
+        <div className="mt-2 grid grid-cols-2 gap-3 lg:grid-cols-5">
+          {recent.slice(0, 5).map((p) => (
+            <Link
+              key={p.id}
+              href={`/plans/${p.id}`}
+              className="border border-border bg-card px-4 py-3 hover:border-ink"
+            >
+              <div className="flex items-baseline justify-between">
+                <span className="font-mono-data text-[12px] text-faint">{p.plan_nbr}</span>
+                <span className="font-mono-data text-[12px]">{money(p.total)}</span>
+              </div>
+              <div className="mt-1 truncate text-[13px] font-semibold">{p.builder_name || "—"}</div>
+              <div className="mt-1 truncate text-[12px] text-faint">{p.proj_name || p.house_types || "—"}</div>
+              <div className="mt-2 label-caps">{shortDate(p.edited_at)}</div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       <section className="grid grid-cols-2 gap-x-10 gap-y-6 border-y border-divider py-6 sm:grid-cols-4">
         <Stat label="Bid value, 2025→" value={money(totals.value)} sub={`${totals.plans} plans`} />
         <Stat label="Contracted" value={money(contracted.v)} sub={`${contracted.n} plans`} />

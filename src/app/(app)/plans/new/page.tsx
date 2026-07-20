@@ -9,6 +9,16 @@ export default async function NewPlanPage() {
   const parts = db
     .prepare("SELECT part_nbr, description, cost FROM parts ORDER BY part_nbr")
     .all() as PartOption[];
+  const builders = (
+    db
+      .prepare(
+        `SELECT name FROM (
+           SELECT DISTINCT builder_name AS name FROM plans WHERE builder_name != ''
+           UNION SELECT DISTINCT name FROM builders
+         ) ORDER BY name`,
+      )
+      .all() as { name: string }[]
+  ).map((b) => b.name);
   const kits = db
     .prepare(
       `SELECT id, code, label, category, price FROM kit_items
@@ -24,7 +34,7 @@ export default async function NewPlanPage() {
         Prices come from the live Price Book and Equipment tables; totals use the verified bid math.
       </p>
       <div className="mt-6">
-        <PlanForm parts={parts} kits={kits} />
+        <PlanForm parts={parts} kits={kits} builders={builders} />
       </div>
     </div>
   );

@@ -37,6 +37,16 @@ export default async function EditPlanPage({ params }: { params: Promise<{ id: s
   const parts = db
     .prepare("SELECT part_nbr, description, cost FROM parts ORDER BY part_nbr")
     .all() as PartOption[];
+  const builders = (
+    db
+      .prepare(
+        `SELECT name FROM (
+           SELECT DISTINCT builder_name AS name FROM plans WHERE builder_name != ''
+           UNION SELECT DISTINCT name FROM builders
+         ) ORDER BY name`,
+      )
+      .all() as { name: string }[]
+  ).map((b) => b.name);
   const partCosts = new Map(parts.map((p) => [p.part_nbr, p.cost]));
   const kitByCode = new Map(kits.map((k) => [k.code, k]));
 
@@ -110,7 +120,7 @@ export default async function EditPlanPage({ params }: { params: Promise<{ id: s
         Legacy costs that don&apos;t map to Price Book picks sit in “Other $” so totals start exactly as stored.
       </p>
       <div className="mt-6">
-        <PlanForm parts={parts} kits={kits} planId={plan.id} initial={initial} />
+        <PlanForm parts={parts} kits={kits} builders={builders} planId={plan.id} initial={initial} />
       </div>
     </div>
   );
